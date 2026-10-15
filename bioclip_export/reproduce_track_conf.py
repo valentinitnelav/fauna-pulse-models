@@ -4,7 +4,7 @@ embeddings, off the phone (round 219).
 
 The app stores one embedding vector per crop in
 <session>/identification/embeddings_<model>.{jsonl,bin}. This script applies
-the same pooling rule as the app (see docs/IDENTIFICATION.md, "How a track
+the same pooling rule as the app (see the app's docs/IDENTIFICATION.md, "How a track
 id's Conf. is computed") against a label pack and prints, per track id, the
 ladder with Conf., the plain mean, the maximum and the agreeing-crops mean of
 the crops' own values, and the agreement share, so every number on the

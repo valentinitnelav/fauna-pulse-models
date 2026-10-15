@@ -1,0 +1,56 @@
+{
+  "owner": "Valen-Peregrine",
+  "collection": {
+    "title": "FaunaPulse",
+    "description": "Phone (LiteRT .tflite) conversions of detection and identification models for the FaunaPulse Android app."
+  },
+  "repos": {
+    "megadetector-v6-yolov10c-tflite": {
+      "card": "hf_cards/megadetector-v6-yolov10c-tflite/README.md",
+      "files": [
+        {"name": "MDV6-yolov10-c_int8_256.tflite", "local": "detector_export/out/MDV6-yolov10-c_int8_256.tflite", "input_px": 256, "precision": "int8", "role": "detector"}
+      ]
+    },
+    "flat-bug-n-tflite": {
+      "card": "hf_cards/flat-bug-n-tflite/README.md",
+      "files": [
+        {"name": "flatbug-n_640_fp16.tflite", "local": "detector_export/out/flatbug-n_640_fp16.tflite", "input_px": 640, "precision": "fp16", "role": "detector"},
+        {"name": "flatbug-n_640_fp16.json", "local": "detector_export/out/flatbug-n_640_fp16.json", "role": "export manifest"}
+      ]
+    },
+    "insectdct-v8s-tflite": {
+      "card": "hf_cards/insectdct-v8s-tflite/README.md",
+      "files": [
+        {"name": "insectdct-v8-s_640_fp16.tflite", "local": "detector_export/out/insectdct-v8-s_640_fp16.tflite", "input_px": 640, "precision": "fp16", "role": "detector"},
+        {"name": "insectdct-v8-s_640_fp16.json", "local": "detector_export/out/insectdct-v8-s_640_fp16.json", "role": "export manifest"}
+      ]
+    },
+    "insectdct-cls-v7-eff2s-tflite": {
+      "card": "hf_cards/insectdct-cls-v7-eff2s-tflite/README.md",
+      "files": [
+        {"name": "insectdct-cls-v7_eff2s_fp16.tflite", "local": "classifier_export/out/insectdct-cls-v7_eff2s_fp16.tflite", "input_px": 224, "precision": "fp16", "role": "classifier"},
+        {"name": "insectdct-cls-v7_eff2s_fp16.fpack", "local": "classifier_export/out/insectdct-cls-v7_eff2s_fp16.fpack", "role": "class list"},
+        {"name": "insectdct-cls-v7_eff2s_fp16.json", "local": "classifier_export/out/insectdct-cls-v7_eff2s_fp16.json", "role": "export manifest"}
+      ]
+    },
+    "bioclip-2-tflite": {
+      "card": "hf_cards/bioclip-2-tflite/README.md",
+      "files": [
+        {"name": "bioclip-2_image_fp16_4d.tflite", "local": "bioclip_export/out/gpu4d/bioclip-2_image_fp16.tflite", "input_px": 224, "precision": "fp16", "role": "image embedder"},
+        {"name": "bioclip2_pollinator_orders_europe_v1.fpack", "local": "bioclip_export/out/bioclip2_pollinator_orders_europe_v1.fpack", "role": "label pack"},
+        {"name": "bioclip2_flower_visitors_32fam_v1.fpack", "local": "bioclip_export/out/bioclip2_flower_visitors_32fam_v1.fpack", "role": "label pack"},
+        {"name": "bioclip-2_mammals-birds-world_v1.fpack", "local": "bioclip_export/out/bioclip-2_mammals-birds-world_v1.fpack", "role": "label pack"},
+        {"name": "bioclip-2_image_fp16_4d.json", "local": "bioclip_export/out/gpu4d/bioclip-2_image_fp16.json", "role": "export manifest"}
+      ]
+    },
+    "bioclip-2.5-vith14-tflite": {
+      "card": "hf_cards/bioclip-2.5-vith14-tflite/README.md",
+      "files": [
+        {"name": "bioclip-25_image_fp16.tflite", "local": "bioclip_export/out/bioclip25/bioclip-25_image_fp16.tflite", "input_px": 224, "precision": "fp16", "role": "image embedder"},
+        {"name": "bioclip25_pollinator_orders_europe_v1.fpack", "local": "bioclip_export/out/bioclip25/bioclip25_pollinator_orders_europe_v1.fpack", "role": "label pack"},
+        {"name": "bioclip25_flower_visitors_32fam_v1.fpack", "local": "bioclip_export/out/bioclip25/bioclip25_flower_visitors_32fam_v1.fpack", "role": "label pack"},
+        {"name": "bioclip-25_image_fp16.json", "local": "bioclip_export/out/bioclip25/bioclip-25_image_fp16.json", "role": "export manifest"}
+      ]
+    }
+  }
+}

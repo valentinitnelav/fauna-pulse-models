@@ -27,7 +27,7 @@ look larger in pixels than in training; FaunaPulse feeds the square area of inte
 
 Usage (environment: see README.md in this folder):
     python export_detector.py --weights flat_bug_S.pt --name flatbug-s --imgsz 1024 640 \
-        --check-images ../../../test_videos/frames_bumblebees_720p --out out
+        --check-images ~/InsectDetectApp/test_videos/frames_bumblebees_720p --out out
     python export_detector.py --weights insects8Color11s.pt --name insectdct-v8s --imgsz 1024 640 ...
     # full 8-bit (weights and maths, fastest on phone CPUs) needs calibration images:
     python export_detector.py --weights my.pt --name my --imgsz 640 --quantize int8 --data my_data.yaml
@@ -48,7 +48,7 @@ import zipfile
 from datetime import date
 from pathlib import Path
 
-APP_MAX_BYTES = 30 * 1024 * 1024  # kMaxTfliteModelBytes in lib/fauna_pulse/models/model_file_security.dart
+APP_MAX_BYTES = 30 * 1024 * 1024  # kMaxTfliteModelBytes in the app's lib/fauna_pulse/models/model_file_security.dart
 IMAGE_SUFFIXES = {".jpg", ".jpeg", ".png"}
 
 
@@ -246,7 +246,7 @@ def main() -> int:
             "source": {"file": args.weights.name, "sha256": sha256_of(args.weights), **info},
             "converted_to_box_detector": converted,
             "exported": date.today().isoformat(),
-            "script": "tool/detector_export/export_detector.py",
+            "script": "fauna-pulse-models/detector_export/export_detector.py",
         }
         if images:
             manifest["check_vs_pytorch"] = compare(YOLO(str(src_copy)), YOLO(str(target), task="detect"),

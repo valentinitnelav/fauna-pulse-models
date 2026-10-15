@@ -442,7 +442,7 @@ def main() -> int:
     clf, files, (h1, h2, levels) = load_upstream(args.zoo_dir, args.backbone)
     sizes = [len(level) for level in levels]
     args.out.mkdir(parents=True, exist_ok=True)
-    # Naming rule (tool/model_downloads/README.md, round 276): <model>_<input px>_<precision>,
+    # Naming rule (the app's tool/model_downloads/README.md, round 276): <model>_<input px>_<precision>,
     # the class list under the same name.
     stem = f"insectdct-cls-v7-{args.backbone}_{CROP}_{args.precision}"
     tflite = args.out / f"{stem}.tflite"

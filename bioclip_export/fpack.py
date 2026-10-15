@@ -10,8 +10,9 @@ Layout (all little-endian):
     bytes 8..8+H    UTF-8 JSON header (see write_fpack for the keys)
     then            rows x dim numbers, row-major, dtype "f16" or "f32" per header
 
-The Dart reader lives in lib/fauna_pulse/identification/label_pack.dart; both sides are
-covered by test/fauna_pulse/label_pack_test.dart through the fixture this module writes.
+The Dart reader lives in the app repo (fauna-pulse): lib/fauna_pulse/identification/label_pack.dart.
+Both sides are covered by the app's test/fauna_pulse/label_pack_test.dart through the fixtures
+this module writes, so a format change here needs the Dart reader and the fixtures updated too.
 Only numpy is needed here, so the format can be tested without torch.
 """
 
@@ -75,7 +76,7 @@ def write_class_list(path: Path, header: dict) -> None:
     for idx in hdr["head_index"]:
         if len(idx) != len(sizes) or any(not 0 <= i < n for i, n in zip(idx, sizes)):
             raise ValueError(f"head_index entry {idx} does not fit the heads {sizes}")
-    # "class_list" since round 276 (the word of assets/model_downloads.json; the app also
+    # "class_list" since round 276 (the word of the app's assets/model_downloads.json; the app also
     # reads the older "classes").
     hdr.update({"format": "fpack", "version": 1, "kind": "class_list", "rows": rows,
                 "dim": int(sum(sizes)), "dtype": "none"})
@@ -152,7 +153,8 @@ def _write_class_fixture(path: Path) -> None:
 
 if __name__ == "__main__":
     # Writes the tiny cross-language fixtures used by the Dart unit tests:
-    #   python fpack.py ../../test/fauna_pulse/fixtures/tiny_pack.fpack ../../test/fauna_pulse/fixtures/tiny_classes.fpack
+    # (APP = your clone of the app repo fauna-pulse, e.g. APP=~/InsectDetectApp/fauna-pulse)
+    #   python fpack.py "$APP/test/fauna_pulse/fixtures/tiny_pack.fpack" "$APP/test/fauna_pulse/fixtures/tiny_classes.fpack"
     import sys
 
     if len(sys.argv) > 2:

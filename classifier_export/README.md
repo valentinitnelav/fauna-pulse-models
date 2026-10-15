@@ -21,14 +21,15 @@ per-class thresholds.
 
 ## 1. Environment
 
-The `tool/bioclip_export` environment (converter and quantiser), plus pandas for
-insectDCT's own code:
+All three tools share one environment, made once from the repository root as described in
+the [repository README](../README.md#setup). Then, from the repository root:
 
 ```bash
-cd fauna-pulse/tool/bioclip_export && source .venv/bin/activate
-pip install -r ../classifier_export/requirements.txt
-cd ../classifier_export
+source .venvs/export/bin/activate
+cd classifier_export
 ```
+
+It holds the converter, the quantiser and pandas for insectDCT's own code.
 
 Weights and insectDCT's code come from the InsectAI Model Zoo download: the folder
 `insectdct-cls-v7/` holds `HierarchicalClassifierV7.zip` (unpacked into `unpacked/`) and
@@ -57,7 +58,7 @@ python export_insectdct_cls.py --zoo-dir /path/to/weights/insectdct-cls-v7 --bac
    model, without name vectors (the model scores its own classes). One row per level-3 class
    with kingdom ... species from the taxonomy table (section 4), its own name and its place
    in each head; `Vegetation` is the "none of these" row. Written by `fpack.write_class_list`
-   (`tool/bioclip_export/fpack.py`); its size field is the model's output length (164), so the
+   (`bioclip_export/fpack.py`); its size field is the model's output length (164), so the
    app refuses a wrong pairing. A corrected taxonomy table only needs a new class list
    (rerun the script; the phone file is reused) and *Re-score with this pack* on the phone.
    **GPU fixes.** Two of the plain conversions were refused by the Xiaomi's GPU. The script
@@ -93,7 +94,7 @@ Check pictures: the 34 crops of `~/InsectDetectApp/test_videos/crops_bumblebees_
 | EfficientNetV2-S (`eff2s`) | 42 MiB | 34 of 34 identical | 34 of 34 same taxon | 0.03 |
 | ResNet50 (`res`) | 51 MiB | 34 of 34 identical | 34 of 34 same taxon | 0.05 |
 
-On the Xiaomi test phone (Xiaomi 11T Pro, Snapdragon 888, plugged in), with
+On the Xiaomi test phone (Xiaomi 11T Pro, Snapdragon 888, plugged in), with the app's
 `integration_test/bioclip_gpu_check_test.dart --dart-define=MODEL=insectdct-cls` (files copied
 into the app's `files/identification/models/`; model time per crop after a warm-up, 6 crops;
 the GPU is kept only when its result on a fixed test picture matches the CPU's, cosine 0.995
@@ -193,10 +194,10 @@ the three levels into one taxonomy, nor combine the crops of one track ID. Fauna
 results already hold more (a name and a probability at every rank, per track ID), so
 FaunaPulse keeps its own form and borrows the zoo's name conversion (section 4).
 
-**How it works** (files: `label_pack.dart` class lists, `track_fusion.dart` scoring,
+**How it works in the app** (files: `label_pack.dart` class lists, `track_fusion.dart` scoring,
 `identification_store.dart` outputs, `Embedder.kt` raw output, `identification_screen.dart`
-pairing; tests share the fixture `test/fauna_pulse/fixtures/tiny_classes.fpack` written by
-`fpack.py`, so the app and `fpack.class_probabilities` compute the same numbers).
+pairing; the app's tests share the fixture `test/fauna_pulse/fixtures/tiny_classes.fpack` written by
+`bioclip_export/fpack.py`, so the app and `fpack.class_probabilities` compute the same numbers).
 
 1. *A class list in place of a label pack.* The same `.fpack` file type, without name
    vectors: one row per level-3 class with kingdom ... species from the table, the model's
@@ -253,7 +254,7 @@ photo edge with black, FaunaPulse with a grey; the resize methods differ slightl
 |---|---|
 | `export_insectdct_cls.py` | `.pth` -> `.tflite` + manifest + class list (`.fpack`); check against insectDCT's own code; `--draft-taxa` |
 | `taxa/insectdct-cls-v7.csv` | level-3 class -> kingdom ... species (drafted by the script, checked by eye) |
-| `requirements.txt` | pandas on top of the `tool/bioclip_export` environment |
+| `requirements.txt` | packages of this tool (all in the shared environment, `../requirements-lock.txt`) |
 | `out/` | outputs (git-ignored) |
 
 ## Licences

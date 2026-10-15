@@ -214,7 +214,7 @@ def main() -> int:
     if logit_scale is None:
         logit_scale = 100.0
 
-    # Naming rule (tool/model_downloads/README.md, round 276): <model>_<list>_v<n>.fpack, so the
+    # Naming rule (the app's tool/model_downloads/README.md, round 276): <model>_<list>_v<n>.fpack, so the
     # app pairs the pack with every file of its model by the first part of the name.
     words = sorted(keep_classes) or ["all"]
     words += sorted(keep_orders)
@@ -225,9 +225,9 @@ def main() -> int:
     pack_id = args.pack_id or f"{args.model}_{'-'.join(w.lower().replace('_', '-') for w in words)}_v1"
     if not pack_id.startswith(f"{args.model}_"):
         print(f"note: '{pack_id}' does not start with '{args.model}_'; the app then pairs it with its model "
-              "only through the header (naming rule: tool/model_downloads/README.md)")
+              "only through the header (naming rule: the app's tool/model_downloads/README.md)")
     header = {
-        "kind": "label_pack",  # round 276: the word of assets/model_downloads.json
+        "kind": "label_pack",  # round 276: the word of the app's assets/model_downloads.json
         "pack_id": pack_id,
         "model_id": args.model,
         "logit_scale": float(logit_scale),
@@ -241,7 +241,7 @@ def main() -> int:
             "embeddings_file": EMBEDDINGS[args.model][1],
             "classes": sorted(keep_classes), "orders": sorted(keep_orders),
             "families": sorted(keep_families),
-            "species_csv": str(args.species_csv) if args.species_csv else None,
+            "species_csv": args.species_csv.name if args.species_csv else None,
         },
         "built_with": {"script": "build_label_pack.py", "date": date.today().isoformat()},
         "license": "TreeOfLife embeddings CC0-1.0; sink rows generated with the MIT BioCLIP text tower",

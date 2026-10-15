@@ -24,24 +24,16 @@ no GPU). Times and sizes are from that run.
 
 ## 1. Create the Python environment
 
-```bash
-cd fauna-pulse/tool/bioclip_export
-python3 -m venv .venv
-source .venv/bin/activate            # Windows: .venv\Scripts\activate
-pip install --upgrade pip
-pip install --extra-index-url https://download.pytorch.org/whl/cpu -r requirements.txt
-```
-
-The `--extra-index-url` makes pip take the CPU build of PyTorch (about 300 MB) instead
-of the default CUDA build (about 3.5 GB); both give identical results here. To reproduce
-the verified environment exactly, use the lock file instead:
+All three tools share one environment, made once from the repository root as described in
+the [repository README](../README.md#setup). Then, from the repository root:
 
 ```bash
-pip install --extra-index-url https://download.pytorch.org/whl/cpu -r requirements-lock.txt
+source .venvs/export/bin/activate
+cd bioclip_export
 ```
 
-Note: `pip` keeps every downloaded wheel in its cache (`~/.cache/pip`, several GB after
-this install). `pip cache purge` frees it once the install is done.
+The environment uses the CPU build of PyTorch (about 300 MB instead of the 3.5 GB CUDA
+build); both give identical results here.
 
 ## 2. Export the image tower (about 2 minutes plus the download)
 
@@ -97,7 +89,7 @@ The float32 file stores each of BioCLIP 2's ~300 million weights in 4 bytes.
 faster, at the price of a little rounding. `quantise_tflite.py` does this step (the
 export calls it) and works on any float32 `.tflite`, so collaborators can use it for
 their own classifiers or embedders. For YOLO detectors, use Ultralytics' own export
-instead (`docs/MODEL_CONVERSION.md`). Its comments explain each kind in more detail.
+instead ([`docs/MODEL_CONVERSION.md`](../docs/MODEL_CONVERSION.md)). Its comments explain each kind in more detail.
 
 | Kind | Size (BioCLIP 2) | Top family as PyTorch (30 frames) | Faster where |
 |---|---|---|---|
@@ -145,7 +137,7 @@ bumblebee crops: cosine 1.0000, top family 34 of 34, top species 34 of 34. Packs
 `bioclip-2.5_pollinator-orders-europe_v1` (34,704 names, 74 MB) and
 `bioclip-2.5_flower-visitors-32fam_v1` (37,461 names, 80 MB); the 2.5 TreeOfLife table has
 794,878 names (BioCLIP 2's: 867,455), so the same filters keep slightly different lists.
-On the phone: `docs/IDENTIFICATION.md`, *BioCLIP 2.5* (CPU only on the 7.4 GB test phone,
+On the phone: the app's [`docs/IDENTIFICATION.md`](https://github.com/valentinitnelav/fauna-pulse/blob/main/docs/IDENTIFICATION.md), *BioCLIP 2.5* (CPU only on the 7.4 GB test phone,
 5.3 to 5.6 s per crop).
 
 int8 was tried too (`--precision int8`, 639 MB): cosine 0.996, top family 32 of 34 (one
@@ -170,7 +162,7 @@ rows of the requested families are kept (867,455 species in total; Insecta 264,0
 Arachnida 16,406); the six "none of these" prompts are embedded with the BioCLIP text
 tower; everything is written as one `.fpack` file (format documented in `fpack.py`). Since
 round 266 the same container also holds the *class lists* of fixed-class classifiers such as
-insectDCT (no name vectors; `fpack.write_class_list`, see `tool/classifier_export/README.md`).
+insectDCT (no name vectors; `fpack.write_class_list`, see [`classifier_export/README.md`](../classifier_export/README.md)).
 
 ### 3b. Regional packs (GBIF occurrence lists)
 
@@ -246,7 +238,7 @@ adb push out/bioclip-2_flower-visitors-32fam_v1.fpack /sdcard/Download/
 (or copy them over USB / a file manager into the phone's Downloads folder). Then in
 FaunaPulse: home screen Menu, **Download & import models**, *Import model files…* (the model and the
 label pack, both at once: the app sorts them). The app copies both files into its private storage; the
-Downloads copies can be deleted afterwards. `docs/IDENTIFICATION.md` explains the run and
+Downloads copies can be deleted afterwards. The app's [`docs/IDENTIFICATION.md`](https://github.com/valentinitnelav/fauna-pulse/blob/main/docs/IDENTIFICATION.md) explains the run and
 the results.
 
 ## Why the full model on the phone, and not a distilled one (for now)
@@ -327,8 +319,8 @@ References:
 | `build_region_species_list.py` | GBIF occurrence facets + TreeOfLife-to-GBIF mapping -> regional species CSV |
 | `verify_parity.py` | PyTorch vs `.tflite` comparison on real images |
 | `inspect_tflite.py` | ops, constant sizes and how each layer's weights are stored (fp16, int8, float32) |
-| `requirements.txt`, `requirements-lock.txt` | packages (ranges / exact verified versions) |
-| `out/`, `.venv/` | outputs and the environment (git-ignored) |
+| `requirements.txt` | packages (version ranges; exact verified versions: `../requirements-lock.txt`) |
+| `out/` | outputs (git-ignored) |
 
 ## Attribution of methods and data used here
 
@@ -378,4 +370,4 @@ If you use these models, even if they were adapted for smartphone usage with Fau
 please note the citation suggestions of the BioCLIP2 model card on Hugging Face at
 https://huggingface.co/imageomics/bioclip-2#citation
 
-See also `docs/THIRD_PARTY_MODELS.md`.
+See also the app's [`docs/THIRD_PARTY_MODELS.md`](https://github.com/valentinitnelav/fauna-pulse/blob/main/docs/THIRD_PARTY_MODELS.md).

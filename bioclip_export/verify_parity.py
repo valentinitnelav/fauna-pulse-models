@@ -9,7 +9,8 @@ how often the two agree on the top family and species.
 Usage:
     python verify_parity.py --tflite out/bioclip-2_224_fp16.tflite --images ./crops [--pack out/x.fpack] [--limit 200]
 
-Acceptance (plan section 7, Phase 0): mean cosine >= 0.99 and >= 95 % family agreement.
+Acceptance (the bar set when BioCLIP was first brought to the phone): mean cosine >= 0.99
+and >= 95 % family agreement.
 
 Reading the numbers for a quantised file (quantise_tflite.py): the family is taken the
 way the app reports it (the probabilities of a family's species added up), and the

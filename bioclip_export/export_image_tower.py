@@ -36,7 +36,7 @@ Usage (see README.md for the environment):
 
 Output: <out>/<model>_<input px>_<precision>.tflite and <same>.json (the manifest the app
 and verify_parity.py read: dim, input size and layout, logit scale, sha256), named by the
-rule in tool/model_downloads/README.md (round 276): bioclip-2_224_fp16.tflite,
+rule in the app's tool/model_downloads/README.md (round 276): bioclip-2_224_fp16.tflite,
 bioclip-2.5_224_fp16.tflite; int8-weights is written "w8a32"; --attention torch adds "_5d".
 """
 

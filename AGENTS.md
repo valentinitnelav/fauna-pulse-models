@@ -3,15 +3,35 @@
 This file provides guidance to AI coding agents (Claude Code, codex, etc.) when working with code in this repository. CLAUDE.md points to this file.
 
 
+## Start here (every session)
+
+1. Read `docs/AGENT_OVERVIEW.md`: a short, state-only map of this repository (what each tool does,
+   environment, where model files live, what is published on Hugging Face, what must stay in sync
+   with the app). It is enough to start most tasks; open other files only as the task needs them.
+2. `docs/DECISIONS.md` is the append-only log of past decisions (why something is the way it is).
+   Do not read it in full: search it (`grep -n -i <keyword> docs/DECISIONS.md`) when the reason for
+   a choice matters.
+3. Keep both current: when a change alters what is true, replace the affected text in
+   `AGENT_OVERVIEW.md` (no history there, keep it under ~20k characters); when a decision is made,
+   append 2 to 5 lines to `DECISIONS.md` (date, decision, why, rejected options).
+
+This repository has a sibling, the app [FaunaPulse](https://github.com/valentinitnelav/fauna-pulse/)
+(usually cloned at `~/InsectDetectApp/fauna-pulse`). The app reads the files made here; the
+"keep in sync" table in `docs/AGENT_OVERVIEW.md` lists every rule shared by both repositories.
+The app repository has its own `AGENTS.md` with its own rules: follow them when editing there.
+
+
 ## Project goal
 
-Train object detectors for deployment to the Android app [FaunPulse](https://github.com/valentinitnelav/fauna-pulse/) (Flutter, Dart, Kotlin) and / or quantize existing ones.
-The end goal is to have `*.tflite` weights that can be deployed with LiteRT for inference on Android smartphones.
+Prepare models for deployment to the Android app [FaunaPulse](https://github.com/valentinitnelav/fauna-pulse/) (Flutter, Dart, Kotlin):
+convert and quantize existing object detectors and identification models (classifiers, BioCLIP embedders), and train new detectors.
+The end goal is to have `*.tflite` weights that can be deployed with LiteRT for inference on Android smartphones,
+published with a model card each on Hugging Face (https://huggingface.co/Valen-Peregrine), from where the app downloads them.
 
 The object detectors will be mostly single class, for example: detect pollinators on floral backgrounds.
 Some of the object detectors (e.g. YOLO-nano) are needed for real-time inference, ideally running smooth at least at 5 FPS.
-More heavy object detector architectures, like YOLO -small or medium can infer in post processing on the video data or imagery collected with FaunPulse.
-Quantitation will aim for FP16 and INT8. INT8 requires calibration datasets and will be provided and updated by the maintainer.
+More heavy object detector architectures, like YOLO -small or medium can infer in post processing on the video data or imagery collected with FaunaPulse.
+Quantization will aim for FP16 and INT8. INT8 requires calibration datasets and will be provided and updated by the maintainer.
 
 
 ## General rules
@@ -28,6 +48,17 @@ Overall, do not place in any git tracked file any private or sensitive data.
 If unsure, ask for permission from the maintainer.
 
 Avoid user names if possible in file or folder paths and make use of `$HOME` in path name to indicate "home" without making use of user name.
+The same holds for host names of workstations, phone serial numbers and names of collaborators' datasets or training runs:
+use placeholders such as `/path/to/...` or `<user>@<workstation>` in tracked files.
+
+**Models and data:**
+
+- Some models belong to collaborators and must never be published or committed. Publish only models
+  whose licence allows it and that the maintainer has cleared (the published list is in `docs/AGENT_OVERVIEW.md`).
+- Never commit model weights or export outputs (`*/out/`, `*.tflite`, `*.pt`, ...; see `.gitignore`).
+- Do not read into `~/InsectDetectApp/sessions/` unless asked (many large session logs); then ask
+  first and only search by keyword, never read whole files.
+- Ask before reading anything under the app's `assets/` folder.
 
 **Git related:**
 
@@ -35,6 +66,13 @@ Avoid user names if possible in file or folder paths and make use of `$HOME` in 
 - Do not `git commit` or `git push` changes unless requested by maintainer.
 - When you edit, make sure to branch away from `main` branch, most probably into the active `develop`, then maintainer will merge to the main after review.
 - Suggest commit messages and titles that are short, clear, relevant and easy to understand what the overall edits were about.
+- Commit messages contain no author or attribution lines (no "Co-Authored-By", no tool or person names).
+
+**Hugging Face:**
+
+- Never replace, delete or squash a published file or repository history: the app pins every download
+  to a commit and checks the file's SHA-256. New weights get a new file name. Editing model cards is fine.
+- Uploading publishes: do it only after the maintainer reviewed the model card, and never without approval.
 
 
 ## Engineering workflow
@@ -47,7 +85,8 @@ Try to recycle functionality whenever applicable. For example if same functional
 
 Expect that the scripts facing the user to be executed from a terminal and adjust its documentation to be as clear, simple and easy to understand as possible without over-explaining and being verbose.
 
-When testing code and needing to install dependencies and create python environments please try to check first if the needed dependencies are already part of the project's environments (often located in local `.venv` folders).
+When testing code and needing to install dependencies and create python environments please try to check first if the needed dependencies are already part of the project's environments
+(the shared one is `.venvs/export`, see README.md "Setup").
 
 
 ## Main operating system and programming languages

@@ -4,23 +4,20 @@ FaunaPulse runs its insect detector on the phone as a LiteRT file (`.tflite`). T
 turns an Ultralytics checkpoint (`.pt`), for example one of the detectors of the
 [InsectAI Model Zoo](https://github.com/InsectAI-COST-Action/insect-model-zoo), into phone
 files and checks that they give the same boxes as the original. For the formats themselves
-(why `.tflite`, what the app accepts) see `docs/MODEL_CONVERSION.md`.
+(why `.tflite`, what the app accepts) see the app's [`docs/MODEL_CONVERSION.md`](https://github.com/valentinitnelav/fauna-pulse/blob/main/docs/MODEL_CONVERSION.md).
 
 ## 1. Environment
 
-The same Python environment as `tool/bioclip_export` (it already holds the converter,
-`litert-torch`, and the quantiser, `ai-edge-quantizer`), plus Ultralytics:
+All three tools share one environment, made once from the repository root as described in
+the [repository README](../README.md#setup). Then, from the repository root:
 
 ```bash
-cd fauna-pulse/tool/bioclip_export
-source .venv/bin/activate          # made as in tool/bioclip_export/README.md section 1
-pip install -r ../detector_export/requirements.txt
-cd ../detector_export
+source .venvs/export/bin/activate
+cd detector_export
 ```
 
-A separate environment works too: `python3 -m venv .venv`, then
-`pip install --extra-index-url https://download.pytorch.org/whl/cpu -r requirements.txt`
-(the CPU build of PyTorch is enough; no GPU is needed).
+It holds the converter (`litert-torch`), the quantiser (`ai-edge-quantizer`) and Ultralytics.
+The CPU build of PyTorch is enough; no GPU is needed (also not for full INT8).
 
 ## 2. Export
 
@@ -50,7 +47,7 @@ What happens, per model:
 
 Output names say model, input size and quantisation: `flatbug-s_1024_fp16.tflite`. Import
 them in the app (home screen Menu, Download & import models, Import model files…; detection models up to 30 MiB), then run
-**Benchmark engines** there, or time several files at once with
+**Benchmark engines** there, or time several files at once with the app's
 `integration_test/detector_speed_check_test.dart` (instructions in its header).
 
 ### Input size
@@ -67,7 +64,7 @@ live detection, 1024 for analysing videos afterwards.
 
 Round 264 (2026-10-01), weights from the InsectAI Model Zoo, checked on the 32 frames of
 `~/InsectDetectApp/test_videos/frames_bumblebees_720p` (confidence 0.25). Phone: Xiaomi
-11T Pro (Snapdragon 888, Adreno 660 GPU), plugged in, `integration_test/detector_speed_check_test.dart`
+11T Pro (Snapdragon 888, Adreno 660 GPU), plugged in, the app's `integration_test/detector_speed_check_test.dart`
 (model time only, 10 runs after 3 warm-up runs; no camera, cropping or tracking).
 
 | File | Size | Boxes vs PyTorch | Phone GPU | Phone CPU (2 threads) |
@@ -120,7 +117,7 @@ training data, a GPU and a new validation.
 | File | Purpose |
 |---|---|
 | `export_detector.py` | `.pt` -> `.tflite` (+ manifest), segmentation -> boxes, agreement check |
-| `requirements.txt` | Ultralytics on top of the `tool/bioclip_export` environment |
+| `requirements.txt` | packages of this tool (all in the shared environment, `../requirements-lock.txt`) |
 | `out/` | outputs (git-ignored) |
 
 ## Licences
