@@ -1,0 +1,25 @@
+# Python environments (one shared environment lives in .venvs/export, see README.md)
+.venvs/
+**/.venv/
+**/__pycache__/
+
+# Export outputs: model files, manifests, logs. They are published on Hugging Face,
+# never committed (large, and some models belong to collaborators).
+**/out/
+*.log
+
+# Model weights anywhere in the tree
+*.tflite
+*.mlpackage
+*.mlmodel
+*.pt
+*.pth
+*.onnx
+*.npy
+
+# Tables are usually outputs; the hand-checked taxonomy tables are the exception
+*.csv
+!**/taxa/*.csv
+
+# Local Claude Code settings (machine-specific paths)
+.claude/settings.local.json
