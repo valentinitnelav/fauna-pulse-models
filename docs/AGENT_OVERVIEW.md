@@ -35,9 +35,10 @@ Measured results (phone timings, fp16 vs w8a32 vs int8) are in each tool's READM
 
 ## Model files on this computer (git-ignored, never committed)
 
-- Export outputs: `$APP/tool/{bioclip,classifier,detector}_export/out/` (about 4.5 GB; to be moved
-  to `<tool>/out/` here). `bioclip_export/out/gpu4d/bioclip-2_image_fp16.tflite` is the GPU export
-  published as `bioclip-2_image_fp16_4d.tflite`; `bioclip_export/out/bioclip25/` holds BioCLIP 2.5.
+- Export outputs: `<tool>/out/` here (about 4.5 GB, moved from the app on 2026-10-15).
+  `bioclip_export/out/gpu4d/bioclip-2_image_fp16.tflite` is the GPU export published as
+  `bioclip-2_image_fp16_4d.tflite`; `bioclip_export/out/bioclip25/` holds BioCLIP 2.5;
+  `detector_export/out/MDV6-yolov10-c_int8_256.tflite` is the copy of the app's GitHub release asset.
 - Files tried on the phone: `~/InsectDetectApp/ForFaunaPulse/models/` (2.6 GB);
   `~/InsectDetectApp/weights/` is an older subset.
 - Those folders also hold collaborator models: publish nothing that is not in the table below
