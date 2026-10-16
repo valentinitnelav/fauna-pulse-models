@@ -41,7 +41,7 @@ Why this is the recommended export (app support added in round 155):
   from the older exports' `[1,H,W,3]`), so `format=litert` and older
   `format=tflite` files both work in the same picker.
 
-### Models from the InsectAI Model Zoo, segmentation models, input sizes (round 264)
+### Models by other authors (flat-bug, insectDCT), segmentation models, input sizes (round 264)
 
 [`detector_export/export_detector.py`](../detector_export/export_detector.py) does the export above for any Ultralytics
 checkpoint, turns segmentation models (flat-bug) into box detectors, writes one file per
@@ -75,6 +75,14 @@ yolo export model=your_model.pt format=tflite int8=True data=your_data.yaml
 
 Each `format=tflite` command writes a `..._saved_model/` folder containing the
 `.tflite` file.
+
+**Check what an "int8" file really is.** Older Ultralytics versions (8.3, used for the first
+MegaDetector V6 file in August 2026) name the *dynamic-range* file (8-bit weights, float maths,
+i.e. w8a32) `..._int8.tflite`; the fully 8-bit one gets another name (`..._integer_quant` or
+`..._full_integer_quant`). So that MegaDetector file is w8a32, although it was called int8.
+`detector_export/export_detector.py --quantize int8 --data` (Ultralytics 8.4.170) does write a
+full-INT8 file (checked 2026-10-15: 301 of the 302 intermediate tensors are 8-bit). To check a
+file, count the 8-bit tensors that operations produce: a w8a32 file has none.
 
 ### Notes:
 

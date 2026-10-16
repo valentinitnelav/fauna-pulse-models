@@ -1,9 +1,9 @@
 # Detector export: put a YOLO insect detector on the phone (PC side)
 
 FaunaPulse runs its insect detector on the phone as a LiteRT file (`.tflite`). This folder
-turns an Ultralytics checkpoint (`.pt`), for example one of the detectors of the
-[InsectAI Model Zoo](https://github.com/InsectAI-COST-Action/insect-model-zoo), into phone
-files and checks that they give the same boxes as the original. For the formats themselves
+turns an Ultralytics checkpoint (`.pt`), for example a detector published by its authors
+(flat-bug, insectDCT; the [InsectAI Model Zoo](https://github.com/InsectAI-COST-Action/insect-model-zoo)
+lists more, with links to their authors) or your own, into phone files and checks that they give the same boxes as the original. For the formats themselves
 (why `.tflite`, what the app accepts) see the app's [`docs/MODEL_CONVERSION.md`](https://github.com/valentinitnelav/fauna-pulse/blob/main/docs/MODEL_CONVERSION.md).
 
 ## 1. Environment
@@ -62,7 +62,7 @@ live detection, 1024 for analysing videos afterwards.
 
 ## 3. Models exported so far
 
-Round 264 (2026-10-01), weights from the InsectAI Model Zoo, checked on the 32 frames of
+Round 264 (2026-10-01), the authors' weights (see Licences), checked on the 32 frames of
 `~/InsectDetectApp/test_videos/frames_bumblebees_720p` (confidence 0.25). Phone: Xiaomi
 11T Pro (Snapdragon 888, Adreno 660 GPU), plugged in, the app's `integration_test/detector_speed_check_test.dart`
 (model time only, 10 runs after 3 warm-up runs; no camera, cropping or tracking).
@@ -101,7 +101,7 @@ Round 264 (2026-10-01), weights from the InsectAI Model Zoo, checked on the 32 f
 | **Lower input size** | fewer pixels per picture | no | cost falls with the square of the size (measured above: 1024 px about 2 to 3 times 640 px) | `--imgsz` |
 | **fp16** | 16-bit weights | no | half the size, same boxes; the phone GPU computes in 16 bits anyway | default |
 | **w8a32** (dynamic range) | 8-bit weights; on the CPU the values between layers are also turned into 8 bits on the fly | no | a quarter of the size; 2.3 times faster on the phone CPU for flat-bug n; boxes near the threshold moved | `--quantize w8a32` |
-| **int8** (full, static) | 8-bit weights and maths with fixed ranges | no training, but a few hundred calibration pictures of your own | the usual choice for phone CPUs and NPUs; accuracy depends on the calibration pictures | `--quantize int8 --data`, not tried yet |
+| **int8** (full, static) | 8-bit weights and maths with fixed ranges | no training, but a few hundred calibration pictures of your own | the usual choice for phone CPUs and NPUs; accuracy depends on the calibration pictures | `--quantize int8 --data`; tried once (2026-10-15, flat-bug N, 32 calibration frames, CPU, 37 s): weights and maths 8-bit as intended; boxes not yet compared with PyTorch or timed on the phone |
 | **Head surgery** | remove outputs the app does not use | no | flat-bug: the outline branch skipped, boxes identical | automatic |
 | **Smaller architecture** | n instead of s | yes (or use a published n) | about 3 times fewer operations; flat-bug publishes n | exported |
 | **Pruning** | remove the channels that matter least, then fine-tune | yes: fine-tuning on the training data | removes part of the computation for a small loss only when fine-tuned afterwards; without it accuracy drops sharply | not done: needs the training data (flat-bug's is on Zenodo), a GPU and a new validation; tool: Torch-Pruning (Fang et al. 2023, DepGraph, CVPR) |
@@ -125,5 +125,10 @@ training data, a GPU and a new validation.
 Check each model's licence before sharing a converted file. flat-bug: MIT (Svenning et
 al. 2026, Methods in Ecology and Evolution, https://doi.org/10.1111/2041-210x.70249).
 insectDCT: GPL-3.0 (Bjerge et al. 2026, bioRxiv, https://doi.org/10.64898/2026.07.07.736939).
-Both were trained with Ultralytics (AGPL-3.0). Packaging and download of the weights: the
-InsectAI Model Zoo (Markoff and InsectAI COST Action CA22129 contributors, 2026).
+Both were trained with Ultralytics (AGPL-3.0), starting from Ultralytics' pretrained weights. The
+weights are the authors' own files, from the authors' own links: flat-bug from their model
+store at Aarhus University (https://anon.erda.au.dk/share_redirect/Bb0CR1FHG6/models/flat_bug_N.pt
+and `.../flat_bug_S.pt`), insectDCT from their GitHub repository
+(`runs/detect/insects8Color11s/weights/best.pt` at commit e459ae8, saved here as
+`insects8Color11s.pt`). The SHA-256 of each is in its `.json` and model card (checked against
+those links on 2026-10-16). Model cards with full credits: `../hf_cards/`.

@@ -72,7 +72,7 @@ def sha256_of(path: Path) -> str:
 
 def load_open_clip(model_key: str, weights: Path | None = None):
     """The OpenCLIP model: from Hugging Face (downloaded once into its cache), or from a
-    checkpoint file already on disk (--weights; e.g. the InsectAI Model Zoo's copy), which
+    checkpoint file already on disk (--weights; e.g. one downloaded before from Hugging Face), which
     avoids a second multi-GB download."""
     import open_clip
 

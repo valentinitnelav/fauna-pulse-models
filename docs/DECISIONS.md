@@ -26,3 +26,34 @@ Owner's choice over GitHub release assets: a model card per model (licence, auth
 recipe), the licence is set per repo (models differ: AGPL, GPL, MIT), `base_model` links, download
 counts. App links pinned to commits (`resolve/<sha>/<file>`). First batch: only the 6 models already
 in the app catalogue; no collaborator models. Rejected: one repo for all models (one licence field).
+
+## 2026-10-15: HF layout: one repo per model family, file names by the app's naming rule
+Repo = the app's model id without size or backbone, plus `-tflite` (`mdv6-tflite`, `flatbug-tflite`,
+`insectdct-v8-tflite`, `insectdct-cls-v7-tflite`, `bioclip-2-tflite`, `bioclip-2.5-tflite`); sizes,
+input sizes and precisions are files in it (flat-bug N and S share authors, licence and card). Files
+are published under the naming rule (owner's choice; HF names can never change): 10 of 12 renamed,
+same bytes. Rejected: one repo per size (repeated cards drift), old names (frozen forever).
+`MDV6-yolov10-c_int8_256` is published as `mdv6-yolov10c_256_w8a32` because the file is w8a32.
+
+## 2026-10-15: model cards: original authors first, the zoo only as the download tool
+After the owner's request, every card names the original authors, paper, code and source weights
+(SHA-256, byte-identical to the authors' files) near the top; the InsectAI Model Zoo appears only
+where it was the download tool. Detector cards carry the owner's disclaimer (demo, not trained for
+FaunaPulse). Each repo gets the original `LICENSE` (MIT, GPL and AGPL require the text with copies).
+BioCLIP cards use `pipeline_tag: image-feature-extraction` (the file is the image tower only) with a
+`zero-shot-image-classification` tag. Upload one repo per step (`--upload` takes one `--repo`).
+
+## 2026-10-15: insectDCT class list rebuilt under the new name
+Renaming only the files would break the pair in the app: the class list's header `model_id` must
+equal the model file's stem. The network keeps its bytes (copied to the new name, reused by
+`export_insectdct_cls.py`); the class list and manifest are written again by the script, so their
+SHA-256 change and the app catalogue takes the new values. Rejected: keeping the old names for these
+two files (breaks the naming rule), loosening the app check (older app versions keep the strict one).
+
+## 2026-10-16: sources are the authors' own links, the zoo is not cited as a source
+Owner's rule: the InsectAI Model Zoo collects other people's models, so saying files were
+"downloaded with the zoo" blurred who made and distributes them. Every source file was downloaded
+again from the authors' own links (ERDA, insectDCT GitHub and Google Drive, Imageomics on HF) and
+was byte-identical; cards and docs now name only those links, and the zoo citation is gone.
+`export_insectdct_cls.py` takes `--source-dir` (authors' zip, unpacked) and `--code-dir`
+(insectDCT's `common/`); `--zoo-dir` stays as an alias. The class list was rebuilt from those files.

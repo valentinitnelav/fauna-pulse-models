@@ -6,9 +6,8 @@ phone; since round 266 the Identify screen runs them (section 5). Recommended fi
 (section 3, *Which network*). Import both on the Download & import models screen (home screen: Menu, bottom left);
 choosing the model on the Identify screen chooses its class list.
 
-insectDCT's classifier V7 (Bjerge et al. 2026; `insectdct-cls-v7` in the
-[InsectAI Model Zoo](https://github.com/InsectAI-COST-Action/insect-model-zoo)) names an insect
-crop at three levels at once:
+insectDCT's classifier V7 (Bjerge et al. 2026, https://github.com/kimbjerge/insectDCT) names an
+insect crop at three levels at once:
 
 - level 1, 19 groups, e.g. `Hymenoptera_bees`, `Hymenoptera_nobees`, `Diptera`;
 - level 2, 41 groups, mostly families;
@@ -16,7 +15,7 @@ crop at three levels at once:
 
 It is one network with three output layers ("heads"), one per level, trained on 224 x 224
 camera-trap crops of flower visitors. The V7 download holds three versions of that network:
-ConvNeXt-Base (the zoo's choice), EfficientNetV2-S and ResNet50, each with its own
+ConvNeXt-Base (insectDCT's default), EfficientNetV2-S and ResNet50, each with its own
 per-class thresholds.
 
 ## 1. Environment
@@ -31,15 +30,26 @@ cd classifier_export
 
 It holds the converter, the quantiser and pandas for insectDCT's own code.
 
-Weights and insectDCT's code come from the InsectAI Model Zoo download: the folder
-`insectdct-cls-v7/` holds `HierarchicalClassifierV7.zip` (unpacked into `unpacked/`) and
-insectDCT's code in `upstream/common/`. That code (GPL-3.0) is used where it is, never copied
-into this repository.
+The script needs two downloads from the authors, both unchanged:
+
+- the V7 weights: `HierarchicalClassifierV7_31032026.zip` (SHA-256
+  `da89fdfc64014c1d8889a19bd6baa80eac409600f290ce671327cf1fa19425ad`), linked on Google Drive
+  from the [insectDCT README](https://github.com/kimbjerge/insectDCT)
+  (https://drive.google.com/file/d/15oGWBgp3S08k8VK0r2qzMC65uUBFvsPh/view), unpacked into one
+  folder (`--source-dir`);
+- insectDCT's code: the `common/` folder of https://github.com/kimbjerge/insectDCT (a checkout,
+  or its five `common/*.py` files at commit e459ae8, the commit used here) (`--code-dir`, the
+  folder that holds `common/`; without it the script looks for `common/` under `--source-dir`).
+
+That code (GPL-3.0) is used where it is, never copied into this repository. (`--zoo-dir` is an
+older name of `--source-dir`; folders laid out by the InsectAI Model Zoo, with the code in
+`upstream/common/`, work too.)
 
 ## 2. Export and check
 
 ```bash
-python export_insectdct_cls.py --zoo-dir /path/to/weights/insectdct-cls-v7 --backbone cnb \
+python export_insectdct_cls.py --source-dir /path/to/HierarchicalClassifierV7 \
+    --code-dir /path/to/insectDCT --backbone cnb \
     --check-images ~/InsectDetectApp/test_videos/crops_bumblebees_720p_square
 ```
 
@@ -48,7 +58,7 @@ python export_insectdct_cls.py --zoo-dir /path/to/weights/insectdct-cls-v7 --bac
 
 1. insectDCT's own code builds the network and loads the V7 weights. (It would first download
    ImageNet starting weights that the V7 weights replace anyway; the script skips that
-   download, like the zoo's wrapper does.)
+   download.)
 2. The phone file `out/insectdct-cls-v7-<backbone>_224_fp16.tflite`: input one 224 x 224 RGB crop
    in 0..1 (insectDCT uses no further colour normalisation), output the 164 raw scores of the
    three heads one after the other (19 + 41 + 104). Converted with litert-torch; fp16 weights
@@ -73,15 +83,15 @@ python export_insectdct_cls.py --zoo-dir /path/to/weights/insectdct-cls-v7 --bac
      ("src has wrong size"). The pooling follows a ReLU (every value 0 or more), so padding
      with 0 gives the same maximum: zero padding, then pooling without padding.
 3. With `--check-images`: every picture is classified by insectDCT's own decision code
-   (`makePrediction`, called the way the zoo calls it) twice: with the original network, and
+   (`makePrediction` with `strongCheck=False`, the default of insectDCT's pipeline) twice: with the original network, and
    with the phone file in its place. Same crop preparation, same per-class thresholds; only
    the network differs. Next to that, two candidate rules for FaunaPulse (section 5) on the
    phone file's scores. Two files of the same network should agree; this is not an accuracy
    test.
 
 The taxonomy table (section 4) was drafted with
-`--draft-taxa /path/to/txt_emb_bioclip-2.5-vith14.json` (the TreeOfLife names list that comes
-with BioCLIP 2.5 in the zoo) and then checked by eye.
+`--draft-taxa /path/to/txt_emb_bioclip-2.5-vith14.json` (the TreeOfLife names list of BioCLIP 2.5,
+`embeddings/` of the Hugging Face dataset imageomics/TreeOfLife-200M) and then checked by eye.
 
 ## 3. Results (round 265, 2026-10-01)
 
@@ -161,7 +171,7 @@ One row per level-3 class: the class, its level-2 and level-1 groups in insectDC
 kingdom ... species (epithet only, as in FaunaPulse label packs) and a note. The taxonomy
 comes from the TreeOfLife names list BioCLIP uses, so BioCLIP and insectDCT answers share one
 taxonomy; names that are not taxa come from a short hand-made list in the script (idea from
-the zoo's conversion of insectDCT names for Camtrap DP):
+the InsectAI Model Zoo's conversion of insectDCT names for Camtrap DP):
 
 - spelling: `Aranaea` -> Araneae, `Formidicidae` -> Formicidae, `Hesperidae` -> Hesperiidae,
   `Milipedes` -> Diplopoda;
@@ -229,13 +239,13 @@ pairing; the app's tests share the fixture `test/fauna_pulse/fixtures/tiny_class
    `top1_class`), because some of its distinctions have no rank here (`Apoidea small` = a bee,
    not just Hymenoptera).
 6. *Not built:* insectDCT's own answer per crop (its per-class thresholds) as an extra
-   column, so results could be compared with the zoo and the paper.
+   column, so results could be compared with insectDCT's own pipeline and the paper.
 
 **Several models on one session.** The app already keeps results per model and per label
 pack (`embeddings_<model>`, `tracks_<pack>`, `summary_<pack>`), so one session can be
 identified with BioCLIP 2, BioCLIP 2.5 and insectDCT one after another without losing
 anything. The results screen opens only the newest results, so a chooser (or a side-by-side
-view) is needed to compare them. ISIR or Camtrap DP export (the zoo's formats) would be a
+view) is needed to compare them. ISIR or Camtrap DP export (the formats the InsectAI Model Zoo writes) would be a
 later step.
 
 **What a future classifier needs.** (a) A `.tflite`: one RGB crop in 0..1 in (its own colour
@@ -259,10 +269,11 @@ photo edge with black, FaunaPulse with a grey; the resize methods differ slightl
 
 ## Licences
 
-insectDCT (code and weights): GPL-3.0. Bjerge, Wogram, Serra-Marin, Sakhiashvili & Høye
+insectDCT (code and weights): GPL-3.0. Bjerge, Wogram, Serra-Marin, Sakhiashvili, Jepsen & Høye
 (2026). InsectDCT: A generalized pipeline for detection, taxonomic classification, and
 tracking of insects in camera-trap recordings. bioRxiv.
 https://doi.org/10.64898/2026.07.07.736939, code https://github.com/kimbjerge/insectDCT.
 Converted files are unofficial conversions, not provided or endorsed by the authors; check the
-licence before sharing them. Packaging and download: the InsectAI Model Zoo (Markoff and
-InsectAI COST Action CA22129 contributors, 2026). TreeOfLife names: Imageomics (BioCLIP 2.5).
+licence before sharing them. Weights and code from the authors' own links (section 1). Taxonomy columns:
+the TreeOfLife-200M names list (Gu et al. 2026, https://doi.org/10.57967/hf/8980, CC0 1.0).
+Model card with full credits: `../hf_cards/insectdct-cls-v7-tflite/`.

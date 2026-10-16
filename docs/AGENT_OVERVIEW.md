@@ -19,7 +19,7 @@ import path and breaks `from fpack import ...` and the sibling imports.
 | Script | Does | In -> out | Needs |
 |---|---|---|---|
 | `detector_export/export_detector.py` | YOLO `.pt` -> fp16 (default) / w8a32 / fp32 / int8 `.tflite`; flat-bug segmentation -> box detector; agreement check vs PyTorch; `.json` manifest (sha256, sizes, check) | `--weights --name --imgsz ... --check-images` -> `out/<name>_<px>_<q>.tflite/.json` | int8: `--data` YAML with calibration images; imports `../bioclip_export/quantise_tflite.py` (fp16 cast) |
-| `classifier_export/export_insectdct_cls.py` | insectDCT V7 `.pth` -> `.tflite` + `.json` + class-list `.fpack`; checks vs insectDCT's own code; `--draft-taxa` rewrites tracked `taxa/insectdct-cls-v7.csv` | `--zoo-dir` (InsectAI Model Zoo download, GPL code) -> `out/` | imports `../bioclip_export` (fpack, export_image_tower, quantise_tflite) |
+| `classifier_export/export_insectdct_cls.py` | insectDCT V7 `.pth` -> `.tflite` + `.json` + class-list `.fpack`; checks vs insectDCT's own code; `--draft-taxa` rewrites tracked `taxa/insectdct-cls-v7.csv` | `--source-dir` (authors' V7 zip, unpacked) + `--code-dir` (insectDCT's `common/`, GPL code; `--zoo-dir` = old alias) -> `out/` | imports `../bioclip_export` (fpack, export_image_tower, quantise_tflite) |
 | `bioclip_export/export_image_tower.py` | BioCLIP 1/2/2.5 image tower -> `.tflite` (GPU-friendly 4-d attention, normalisation + L2 built in) + `.json` | HF download or `--weights` -> `out/<model>_<px>_<prec>.tflite` | ~7 GB RAM (11 GB for 2.5), internet |
 | `bioclip_export/quantise_tflite.py` | fp32 `.tflite` -> fp16 / int8 (dynamic range) / int8 weights; patches an ai-edge-quantizer 0.9 bug | writes next to input | no calibration images |
 | `bioclip_export/build_label_pack.py` | TreeOfLife embeddings, filtered, + "none of these" sink rows -> label pack `.fpack` | HF dataset (2.7 GB) or `--embeddings-dir` -> `out/<pack_id>.fpack` | torch (text tower), internet |
@@ -28,8 +28,8 @@ import path and breaks `from fpack import ...` and the sibling imports.
 | `bioclip_export/inspect_tflite.py` | ops and weight storage of a `.tflite` (positional arg, no `--help`) | prints | |
 | `bioclip_export/reproduce_track_conf.py` | recomputes the app's per-track pooling off the phone | session `identification/embeddings_*` + pack | own copy of the fpack reader |
 | `bioclip_export/fpack.py` | `.fpack` format: `write_fpack`, `write_class_list`, `read_fpack`, `class_probabilities`; `__main__` writes the app's test fixtures (2 positional paths; no argparse: `--help` would create a file) | | numpy |
-| `publish/publish_hf.py` | dry run (default) / `--upload` / `--verify [--full]`; config `publish/hf_repos.json`, cards `hf_cards/<repo>/README.md` (`{{FILES_TABLE}}`, `{{CODE_COMMIT}}` filled at upload), result `publish/published.json` | `--catalogue $APP/assets/model_downloads.json` | huggingface_hub, `hf auth login`; refuses unpushed code commit, catalogue mismatch, replacing a file |
-| `legacy/*.py` | first YOLO exports (Jun-Aug 2026), superseded by `detector_export`; very likely the MDV6 int8 recipe (`yolo_pt_to_tflite_general.py`, unconfirmed) | | |
+| `publish/publish_hf.py` | dry run (default; `--write-cards DIR` writes the rendered cards, metadata checked by the Hub) / `--upload --repo <one>` / `--verify [--full]`; config `publish/hf_repos.json`, cards `hf_cards/<repo>/README.md` (`{{FILES_TABLE}}`, `{{CODE_COMMIT}}` filled at upload), result `publish/published.json` | `--catalogue $APP/assets/model_downloads.json` | huggingface_hub, `hf auth login`; refuses unpushed code commit, catalogue mismatch, replacing a file |
+| `legacy/*.py` | first YOLO exports (Jun-Aug 2026), superseded by `detector_export`; not the exact recipe of the MDV6 file (they pass options its Ultralytics 8.3.235 lacks) | | |
 
 Measured results (phone timings, fp16 vs w8a32 vs int8) are in each tool's README.
 
@@ -46,18 +46,56 @@ Measured results (phone timings, fp16 vs w8a32 vs int8) are in each tool's READM
 
 ## Published on Hugging Face
 
-Nothing yet. Planned, one public repo per model under `Valen-Peregrine` (the 6 models of the
-app's catalogue; 12 catalogue files, plus each file's `.json` manifest where one exists).
-Card sources: `hf_cards/<repo>/README.md`.
+Nothing yet. Planned (cards reviewed by the maintainer first, then one repo per upload step):
+one public repo per model family under `Valen-Peregrine`, named after the app's model id
+without the size or backbone part, plus `-tflite`; sizes, input sizes and precisions are
+separate files in it. Files are published under the app's naming rule (10 of the 12 catalogue
+files get a new name, same bytes; `publish_hf.py` matches them to the catalogue by SHA-256), each
+repo also gets the original model's `LICENSE` (`hf_cards/<repo>/LICENSE`, verbatim upstream text).
+Card sources: `hf_cards/<repo>/README.md`. Provenance (authors, citations, licences, source
+weights and their SHA-256) was researched and verified on 2026-10-15; the cards hold the result.
+All source files were downloaded again from the authors' own links and SHA-256-checked on
+2026-10-16 (byte-identical); the cards name only those links.
 
-| HF repo | Catalogue files | Licence | Status |
-|---|---|---|---|
-| `megadetector-v6-yolov10c-tflite` | `MDV6-yolov10-c_int8_256.tflite` | AGPL-3.0 | planned |
-| `flat-bug-n-tflite` | `flatbug-n_640_fp16.tflite` | as in the app catalogue | planned |
-| `insectdct-v8s-tflite` | `insectdct-v8-s_640_fp16.tflite` | GPL-3.0 | planned |
-| `insectdct-cls-v7-eff2s-tflite` | `insectdct-cls-v7_eff2s_fp16.tflite`, `.fpack` | GPL-3.0 | planned |
-| `bioclip-2-tflite` | `bioclip-2_image_fp16_4d.tflite`, `bioclip2_pollinator_orders_europe_v1.fpack`, `bioclip2_flower_visitors_32fam_v1.fpack`, `bioclip-2_mammals-birds-world_v1.fpack` | MIT (packs CC0-1.0) | planned |
-| `bioclip-2.5-vith14-tflite` | `bioclip-25_image_fp16.tflite`, `bioclip25_*_v1.fpack` (2) | MIT | planned |
+| HF repo | Files (published name) | Catalogue name today | Licence | Status |
+|---|---|---|---|---|
+| `mdv6-tflite` | `mdv6-yolov10c_256_w8a32.tflite` | `MDV6-yolov10-c_int8_256.tflite` | AGPL-3.0 | planned |
+| `flatbug-tflite` | `flatbug-n_640_fp16.tflite` (+ `.json`), `flatbug-s_640_fp16.tflite` (+ `.json`; new, gets a catalogue file when the links go in) | same / none | MIT | planned |
+| `insectdct-v8-tflite` | `insectdct-v8s_640_fp16.tflite` (+ `.json`) | `insectdct-v8-s_640_fp16.tflite` | GPL-3.0 | planned |
+| `insectdct-cls-v7-tflite` | `insectdct-cls-v7-eff2s_224_fp16.tflite`, `.fpack` (+ `.json`) | `insectdct-cls-v7_eff2s_fp16.*` | GPL-3.0 | planned |
+| `bioclip-2-tflite` | `bioclip-2_224_fp16.tflite` (+ `.json`), `bioclip-2_pollinator-orders-europe_v1.fpack`, `bioclip-2_flower-visitors-32fam_v1.fpack`, `bioclip-2_mammals-birds-world_v1.fpack` | `bioclip-2_image_fp16_4d.tflite`, `bioclip2_*_v1.fpack` | MIT (packs CC0-1.0, common names GBIF CC BY 4.0) | planned |
+| `bioclip-2.5-tflite` | `bioclip-2.5_224_fp16.tflite` (+ `.json`), `bioclip-2.5_pollinator-orders-europe_v1.fpack`, `bioclip-2.5_flower-visitors-32fam_v1.fpack` | `bioclip-25_image_fp16.tflite`, `bioclip25_*_v1.fpack` | MIT | planned |
+
+Facts that are easy to get wrong (verified 2026-10-15, sources on the cards):
+- Sources = the authors' own links only (owner's rule, 2026-10-16): flat-bug from the ERDA store
+  at Aarhus University; insectDCT from its GitHub repo (detector, code at e459ae8) and the Google
+  Drive zip its README links (classifier); BioCLIP 2 / 2.5 and the TreeOfLife embeddings from
+  Imageomics on HF; MegaDetector from Zenodo. The InsectAI Model Zoo collects other people's models:
+  it is never the author or the distributor, so cards and docs do not cite it as a source (it
+  stays only where its design is compared, e.g. `classifier_export/README.md` section 5).
+- The MegaDetector file is w8a32 (8-bit weights, float activations), not full INT8: Ultralytics
+  8.3 names its dynamic-range TFLite `_int8.tflite`; no calibration pictures were involved.
+- insectDCT "v8" = the authors' detection dataset version 8 (network YOLO11s), not YOLOv8;
+  the preprint has six authors since version 3 (Jepsen added).
+- Ultralytics writes `author: Ultralytics`, `license: AGPL-3.0` into every exported file's
+  metadata; the cards explain this.
+- A classifier's class list names its model inside (header `model_id`), and the app's Identify
+  screen refuses the pair when that differs from the model file's stem (`_pairingProblem` in
+  `$APP/lib/fauna_pulse/screens/identification_screen.dart`). So the insectDCT class list and
+  manifest were REBUILT under the new name on 2026-10-16 (`export_insectdct_cls.py --backbone eff2s`,
+  reusing `out/insectdct-cls-v7-eff2s_224_fp16.tflite`, a byte copy of the old file; same check
+  result; new `.fpack` SHA-256 `6d5ec961...`, which the catalogue takes when the links go in). Label packs
+  pair by file name and size only.
+
+Upload order (one repo per step, private first, owner checks each card on the Hub):
+`flatbug-tflite`, `insectdct-v8-tflite`, `mdv6-tflite`, `bioclip-2-tflite`,
+`insectdct-cls-v7-tflite`, `bioclip-2.5-tflite` (its card links bioclip-2,
+so bioclip-2 goes public first). Then an app round (app Round 312 already added the tool): catalogue names + pinned links
+(`update_catalogue.py --urls`, matching by SHA-256), flat-bug S entry, the new class-list SHA-256.
+The same app round should drop the zoo-as-source wording in `$APP/docs/THIRD_PARTY_MODELS.md`
+(flat-bug/insectDCT section and classifier paragraph: "Weights as packaged by the InsectAI Model
+Zoo") and `$APP/docs/IDENTIFICATION.md` (insectDCT paragraph, "from the InsectAI Model Zoo"), and
+fix there: MegaDetector Zenodo version v22 (not v27), the file is w8a32 (no calibration pictures).
 
 The MegaDetector file is also a GitHub release asset of the app (`v0.8.0-alpha.1`); that asset
 stays online forever. The owner's older HF repo `flower_visitor_order_detector` is unrelated.

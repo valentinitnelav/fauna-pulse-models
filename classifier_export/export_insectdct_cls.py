@@ -8,14 +8,14 @@ EfficientNetV2-S or ResNet50; the V7 download holds all three) with three output
 one per level.
 
 This script
-  1. builds the network with insectDCT's own code (the `upstream/` folder of the InsectAI Model
-     Zoo download, GPL-3.0, used where it is and never copied into this repository) and loads the
-     V7 weights;
+  1. builds the network with insectDCT's own code (the `common/` folder of
+     github.com/kimbjerge/insectDCT, GPL-3.0, used where it is and never copied into this
+     repository) and loads the V7 weights (the authors' HierarchicalClassifierV7 zip, unpacked);
   2. writes a phone file (.tflite): input = one 224 x 224 RGB crop in 0..1 (insectDCT applies no
      further colour normalisation), output = the 164 raw scores of the three heads one after the
      other (19 + 41 + 104); fp16 weights by default; plus a .json manifest;
   3. with --check-images: classifies every picture with insectDCT's own decision code
-     (makePrediction, called the way the InsectAI Model Zoo calls it) twice, with the original
+     (makePrediction, strongCheck=False as in insectDCT's own pipeline) twice, with the original
      network and with the phone file in its place, and prints both answers next to two candidate
      rules for FaunaPulse (README section 4);
   4. with --draft-taxa: writes the table that links every level-3 class to kingdom ... species,
@@ -23,9 +23,10 @@ This script
      that are not taxa (e.g. "Apoidea small", "Vegetation"). Review the table before using it.
 
 Usage (environment: README section 1):
-    python export_insectdct_cls.py --zoo-dir /path/to/weights/insectdct-cls-v7 --backbone cnb \
+    python export_insectdct_cls.py --source-dir /path/to/insectdct-cls-v7 --backbone cnb \
         --check-images ~/InsectDetectApp/test_videos/crops_bumblebees_720p_square
-    python export_insectdct_cls.py --zoo-dir ... --draft-taxa /path/to/txt_emb_bioclip-2.5-vith14.json
+    python export_insectdct_cls.py --source-dir ... --draft-taxa /path/to/txt_emb_bioclip-2.5-vith14.json
+(--source-dir: README section 1; --zoo-dir is an older name of the same option.)
 """
 
 from __future__ import annotations
@@ -53,7 +54,7 @@ from fpack import class_probabilities, sink_label, write_class_list  # noqa: E40
 
 # backbone key -> (file tag in the V7 download, insectDCT's model name)
 BACKBONES = {"cnb": ("CNB", "ConvNextBase"), "eff2s": ("EFF2S", "EfficientNetV2S"), "res": ("RES", "ResNet50")}
-CROP = 224          # V7 was trained on 224 x 224 crops (the zoo's insectdct_cls.py)
+CROP = 224          # V7 uses 224 x 224 crops (insectDCT's pipeDetectAndClassifyInsectsTaxon.py)
 RANKS = ["kingdom", "phylum", "class", "order", "family", "genus", "species"]
 TAU = 0.6           # FaunaPulse's default: a rank counts as identified at 60 % or more
 DEFAULT_TAXA = HERE / "taxa" / "insectdct-cls-v7.csv"
@@ -94,14 +95,14 @@ def sha256_of(path: Path) -> str:
     return h.hexdigest()
 
 
-def v7_files(zoo_dir: Path, tag: str) -> dict[str, Path]:
+def v7_files(source_dir: Path, tag: str) -> dict[str, Path]:
     names = {"weights": f"HierarchicalClassifier_{tag}_V7.pth", "labels": f"HierarchicalLabels3L_{tag}_V7.pkl",
              "thresholds": f"HierarchicalThresholds3S_{tag}_V7.csv"}
     files = {}
     for k, n in names.items():
-        hits = sorted(zoo_dir.rglob(n))
+        hits = sorted(source_dir.rglob(n))
         if not hits:
-            raise SystemExit(f"{n} not found under {zoo_dir} (unzip HierarchicalClassifierV7.zip there)")
+            raise SystemExit(f"{n} not found under {source_dir} (unzip the authors' V7 zip there)")
         files[k] = hits[0]
     return files
 
@@ -113,26 +114,35 @@ def load_labels(path: Path):
     return h1, h2, [l1, l2, l3]
 
 
-def load_upstream(zoo_dir: Path, key: str):
+def code_root(source_dir: Path, code_dir: Path | None) -> Path:
+    """The folder that holds insectDCT's `common/` code: --code-dir, else found under --source-dir."""
+    if code_dir is not None:
+        hits = [code_dir] if (code_dir / "common" / "hierarchical_classifier.py").exists() else []
+    else:
+        hits = sorted(p.parent.parent for p in source_dir.rglob("common/hierarchical_classifier.py"))
+    if not hits:
+        raise SystemExit(f"insectDCT's code (common/hierarchical_classifier.py) not found under "
+                         f"{code_dir or source_dir}; get the common/ folder of github.com/kimbjerge/insectDCT")
+    return hits[0]
+
+
+def load_upstream(source_dir: Path, key: str, code_dir: Path | None = None):
     """insectDCT's own classifier object with the V7 weights of backbone [key], on the CPU."""
     tag, model_name = BACKBONES[key]
-    upstream = zoo_dir / "upstream"
-    if not (upstream / "common" / "hierarchical_classifier.py").exists():
-        raise SystemExit(f"insectDCT's code is missing in {upstream} (the zoo downloads it next to the weights)")
-    sys.path.insert(0, str(upstream))
+    sys.path.insert(0, str(code_root(source_dir, code_dir)))
     import torchvision.models as tvm
 
     import common.convNext as m_cnb
     import common.efficientNet as m_eff
     import common.resnet50tf as m_res
     # insectDCT's code first loads ImageNet weights (a download of up to 350 MB) that the V7
-    # weights replace anyway; build the bare networks instead (the zoo's wrapper does the same).
+    # weights replace anyway; build the bare networks instead.
     m_cnb.convnext_base = lambda weights=None: tvm.convnext_base(weights=None)
     m_eff.efficientnet_v2_s = lambda weights=None: tvm.efficientnet_v2_s(weights=None)
     m_res.models = SimpleNamespace(resnet50=lambda weights=None: tvm.resnet50(weights=None))
     from common.hierarchical_classifier import HierarchicalClassifier
 
-    files = v7_files(zoo_dir, tag)
+    files = v7_files(source_dir, tag)
     h1, h2, levels = load_labels(files["labels"])
     with contextlib.redirect_stdout(io.StringIO()):  # insectDCT prints a lot while loading
         clf = HierarchicalClassifier(h1, h2, *levels, img_size=CROP, stdThreshold=0.0, device="cpu")
@@ -358,7 +368,7 @@ def app_answer(p: np.ndarray, lineages: list[list[str]], tau: float = TAU) -> st
 
 
 def upstream_answer(clf, bgr: np.ndarray) -> tuple[str, np.ndarray]:
-    """insectDCT's own answer (makePrediction, strongCheck=False as in the zoo), plus the exact
+    """insectDCT's own answer (makePrediction, strongCheck=False as in insectDCT's pipeline), plus the exact
     224 x 224 input it built (to feed the phone file the same numbers)."""
     import torch
 
@@ -418,10 +428,13 @@ def check(clf, phone: PhoneFile, images: list[Path], lineages, ancestors, sizes,
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--zoo-dir", type=Path, required=True,
-                    help="the zoo's insectdct-cls-v7 folder (HierarchicalClassifierV7.zip unpacked + upstream/)")
+    ap.add_argument("--source-dir", "--zoo-dir", dest="source_dir", type=Path, required=True,
+                    help="folder with the authors' V7 zip unpacked (any depth) and, unless --code-dir is "
+                         "given, insectDCT's common/ code folder")
+    ap.add_argument("--code-dir", type=Path,
+                    help="folder that holds insectDCT's common/ (e.g. a checkout of github.com/kimbjerge/insectDCT)")
     ap.add_argument("--backbone", choices=sorted(BACKBONES), default="cnb",
-                    help="cnb = ConvNeXt-Base (the zoo's choice), eff2s = EfficientNetV2-S, res = ResNet50")
+                    help="cnb = ConvNeXt-Base (insectDCT's default), eff2s = EfficientNetV2-S, res = ResNet50")
     ap.add_argument("--precision", choices=["fp16", "fp32", "int8"], default="fp16")
     ap.add_argument("--out", type=Path, default=HERE / "out")
     ap.add_argument("--keep-fp32", action="store_true", help="keep the float32 intermediate .tflite")
@@ -434,19 +447,20 @@ def main() -> int:
 
     tag, model_name = BACKBONES[args.backbone]
     if args.draft_taxa:
-        h1, h2, levels = load_labels(v7_files(args.zoo_dir, tag)["labels"])
+        h1, h2, levels = load_labels(v7_files(args.source_dir, tag)["labels"])
         draft_taxa(levels, h1, h2, args.draft_taxa, args.taxa)
         return 0
 
     print(f"Loading insectDCT V7 {model_name}...")
-    clf, files, (h1, h2, levels) = load_upstream(args.zoo_dir, args.backbone)
+    clf, files, (h1, h2, levels) = load_upstream(args.source_dir, args.backbone, args.code_dir)
     sizes = [len(level) for level in levels]
     args.out.mkdir(parents=True, exist_ok=True)
     # Naming rule (the app's tool/model_downloads/README.md, round 276): <model>_<input px>_<precision>,
     # the class list under the same name.
     stem = f"insectdct-cls-v7-{args.backbone}_{CROP}_{args.precision}"
     tflite = args.out / f"{stem}.tflite"
-    if tflite.exists():
+    reused = tflite.exists()
+    if reused:
         print(f"Reusing {tflite}")
     else:
         import export_image_tower as eit
@@ -466,7 +480,8 @@ def main() -> int:
         "input_range": "0..1 RGB, no further normalisation (insectDCT's ToTensor())",
         "output": "raw scores of the three heads, one after the other (level 1, 2, 3); not normalised",
         "heads": [{"level": i + 1, "size": n, "classes": levels[i]} for i, n in enumerate(sizes)],
-        "exported": date.today().isoformat(),
+        # a reused phone file keeps the date it was made; only the class list is new then
+        "exported": (date.fromtimestamp(tflite.stat().st_mtime) if reused else date.today()).isoformat(),
         "license": "GPL-3.0 (insectDCT, Bjerge et al. 2026); check before sharing",
     }
 
@@ -479,6 +494,8 @@ def main() -> int:
     class_list = args.out / f"{stem}.fpack"
     write_class_list(class_list, class_list_header(stem, levels, ancestors, lineages, manifest))
     manifest["class_list"] = class_list.name
+    if reused:
+        manifest["class_list_written"] = date.today().isoformat()
 
     if args.check_images:
         images = sorted(p for p in args.check_images.iterdir() if p.suffix.lower() in (".jpg", ".jpeg", ".png"))

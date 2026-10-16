@@ -154,8 +154,8 @@ def main() -> int:
                     help="override (normally read from the model when sink rows are built; 100 otherwise)")
     ap.add_argument("--cache-dir", type=Path, default=None, help="Hugging Face download cache folder")
     ap.add_argument("--embeddings-dir", type=Path, default=None,
-                    help="folder that already holds the TreeOfLife .npy + .json (e.g. the InsectAI Model Zoo's "
-                         "weights/bioclip-2.5) instead of the Hugging Face download")
+                    help="folder that already holds the TreeOfLife .npy + .json (e.g. downloaded before from "
+                         "imageomics/TreeOfLife-200M) instead of the Hugging Face download")
     ap.add_argument("--weights", type=Path, default=None,
                     help="model checkpoint file on disk, for the text tower of the sink rows")
     ap.add_argument("--out", type=Path, default=Path("out"))

@@ -114,13 +114,15 @@ GPU where it can.
 ## 2c. BioCLIP 2.5 (round 264)
 
 BioCLIP 2.5 Huge (ViT-H/14, embeddings of 1024 numbers) needs its own model file and its
-own label packs (BioCLIP 2 packs do not fit it). When the checkpoint and the TreeOfLife
-name embeddings are already on disk (for example downloaded by the
-[InsectAI Model Zoo](https://github.com/InsectAI-COST-Action/insect-model-zoo) into its
-`weights/bioclip-2.5/`), point the scripts at them instead of downloading 7 GB again:
+own label packs (BioCLIP 2 packs do not fit it). Without `--weights` and `--embeddings-dir` the
+scripts download the authors' files from Hugging Face. When the checkpoint
+(`open_clip_model.safetensors` of imageomics/bioclip-2.5-vith14) and the TreeOfLife name
+embeddings (`embeddings/txt_emb_bioclip-2.5-vith14.npy` and `.json` of the dataset
+imageomics/TreeOfLife-200M) are already on disk in one folder, point the scripts at them
+instead of downloading 7 GB again:
 
 ```bash
-W=/path/to/insect-model-zoo/weights/bioclip-2.5
+W=/path/to/bioclip-2.5
 python export_image_tower.py --model bioclip-2.5 --weights $W/open_clip_model.safetensors --out out/bioclip25
 python build_label_pack.py --model bioclip-2.5 --embeddings-dir $W --weights $W/open_clip_model.safetensors \
   --classes Insecta --species-csv out/species_europe_pollinator_orders.csv \

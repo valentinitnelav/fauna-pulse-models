@@ -53,6 +53,29 @@ minutes for YOLO n/s. Full INT8 needs a few hundred representative, unlabelled i
 | Label pack (names the phone can answer with) | `bioclip_export/build_label_pack.py` | no |
 | Any float32 `.tflite` to fp16 / int8 weights | `bioclip_export/quantise_tflite.py` | no |
 
+## Your own models for FaunaPulse
+
+The tools work for any model of a supported kind, not only for the ones published here:
+
+- **A detector you trained** (Ultralytics YOLO, detection or segmentation `.pt`):
+  `detector_export/export_detector.py` writes the phone file and, with `--check-images` (a folder
+  of your own pictures), checks that it finds the same boxes as your `.pt`. Import it in the app: Menu, **Download & import models**, **Import model
+  files…** (detectors up to 30 MiB). Training is not part of this repository: it needs your own
+  labelled pictures and usually a GPU.
+- **A name list for BioCLIP** (the names the Identify screen can answer with), for example the
+  pollinators of one country or the species of a park: `bioclip_export/build_label_pack.py`
+  keeps the taxa you choose (classes, orders, families, optionally a species list such as a
+  GBIF list from `build_region_species_list.py`) from the BioCLIP authors' name list
+  (TreeOfLife-200M), so only names in that list can go into a pack. No training and no GPU
+  needed.
+- **A classifier with its own fixed classes**: `classifier_export/` converts insectDCT's
+  classifier. Another network needs its own export script with the same input and output
+  layout (described in [`classifier_export/README.md`](classifier_export/README.md)) and a
+  class list written with `fpack.write_class_list`.
+
+The detectors published here were trained by others for other settings (camera traps, flat
+surfaces, collection pictures), not for FaunaPulse: see the note on each model card.
+
 ## File names
 
 Phone files follow the app's naming rule `<model>_<input px>_<precision>[_<extra>].<ext>`
@@ -71,13 +94,15 @@ Hugging Face commit and checks the file's SHA-256, so:
   new file name (or a new repository) and a new link in the app.
 - Editing a model card is fine (the files' links stay valid).
 
-`publish/publish_hf.py` does the upload. It checks every file's size and SHA-256 against
-the app's catalogue first, refuses to replace a published file, and writes the pinned links
-to `publish/published.json`:
+`publish/publish_hf.py` does the upload, one repository per run. It checks every file's size
+and SHA-256 against the app's catalogue first (by SHA-256 when a file is published under a new
+name), refuses to replace a published file, uploads the original model's `LICENSE`
+(`hf_cards/<repo>/LICENSE`) with the files, and writes the pinned links to
+`publish/published.json`:
 
 ```bash
 hf auth login                                      # once, with a write token
-python publish/publish_hf.py --catalogue "$APP/assets/model_downloads.json"          # dry run
+python publish/publish_hf.py --catalogue "$APP/assets/model_downloads.json" --write-cards /tmp/cards   # dry run + cards to read
 python publish/publish_hf.py --catalogue "$APP/assets/model_downloads.json" --upload --repo <name> --private
 python publish/publish_hf.py --verify --full       # anonymous download check of every pinned link
 ```

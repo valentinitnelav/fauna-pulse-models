@@ -16,7 +16,8 @@ with two placeholders filled here: {{FILES_TABLE}} (from the checked files) and
 
 Usage (from the repository root, shared environment active; log in once with `hf auth login`):
     python publish/publish_hf.py --catalogue "$APP/assets/model_downloads.json"            # dry run, all repos
-    python publish/publish_hf.py --catalogue ... --upload --repo flat-bug-n-tflite --private
+    python publish/publish_hf.py --catalogue ... --write-cards /tmp/cards                  # + rendered cards to read
+    python publish/publish_hf.py --catalogue ... --upload --repo flatbug-tflite --private   # one repo per step
     python publish/publish_hf.py --verify [--full]     # anonymous checks of published.json
 """
 
@@ -25,6 +26,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -49,13 +51,13 @@ def git_blob_id(path: Path) -> str:
 
 
 def catalogue_files(catalogue: Path) -> dict:
-    """name -> {bytes, sha256} of every file the app's catalogue offers."""
+    """name -> {name, bytes, sha256} of every file the app's catalogue offers."""
     cat = json.loads(catalogue.read_text(encoding="utf-8"))
     out = {}
     for model in cat.get("models", []):
         entries = [model.get("file")] + [nl.get("file") for nl in model.get("name_lists") or []]
         for f in filter(None, entries):
-            out[f["name"]] = {"bytes": f.get("bytes"), "sha256": f.get("sha256")}
+            out[f["name"]] = {"name": f["name"], "bytes": f.get("bytes"), "sha256": f.get("sha256")}
     return out
 
 
@@ -85,7 +87,11 @@ def code_commit(require_pushed: bool) -> str:
 
 
 def check_repo(name: str, cfg: dict, offered: dict) -> list[dict]:
-    """Size and SHA-256 of every local file; catalogue files must match the catalogue exactly."""
+    """Size and SHA-256 of every local file; catalogue files must match the catalogue exactly.
+
+    A file is found in the catalogue by its name or, when it is published under a new name
+    (the naming rule), by its SHA-256; the app's catalogue then takes the new name (its update_catalogue.py --urls, app Round 312)."""
+    by_sha = {w["sha256"]: w for w in offered.values() if w.get("sha256")}
     files, ok = [], True
     for f in cfg["files"]:
         local = ROOT / f["local"]
@@ -95,10 +101,19 @@ def check_repo(name: str, cfg: dict, offered: dict) -> list[dict]:
             continue
         info = {**f, "path": local, "bytes": local.stat().st_size, "sha256": sha256_of(local)}
         want = offered.get(f["name"])
-        if want is None:
+        same = by_sha.get(info["sha256"])
+        if want is None and same is None:
             state = "extra (not in the app catalogue)"
+        elif want is None:
+            if same["bytes"] != info["bytes"]:
+                state = f"DIFFERS from the app catalogue's {same['name']} (same SHA-256, other size)"
+                ok = False
+            else:
+                state = f"same bytes as the app catalogue's {same['name']} (published under the new name)"
+                info["catalogue_name"] = same["name"]
         elif (want["bytes"], want["sha256"]) == (info["bytes"], info["sha256"]):
             state = "matches the app catalogue"
+            info["catalogue_name"] = want["name"]
         else:
             state = f"DIFFERS from the app catalogue ({want['bytes']} bytes, {str(want['sha256'])[:12]}...)"
             ok = False
@@ -112,6 +127,8 @@ def check_repo(name: str, cfg: dict, offered: dict) -> list[dict]:
 def files_table(files: list[dict]) -> str:
     rows = ["| File | Bytes | SHA-256 | Input | Precision | Role |", "|---|---|---|---|---|---|"]
     for f in files:
+        if f["name"] == "LICENSE":  # the card's licence section names it
+            continue
         px = f"{f['input_px']} px" if f.get("input_px") else ""
         rows.append(f"| `{f['name']}` | {f['bytes']:,} | `{f['sha256']}` | {px} | {f.get('precision', '')} | {f['role']} |")
     return "\n".join(rows)
@@ -120,7 +137,7 @@ def files_table(files: list[dict]) -> str:
 def render_card(cfg: dict, files: list[dict], commit: str) -> str:
     text = (ROOT / cfg["card"]).read_text(encoding="utf-8")
     text = text.replace("{{FILES_TABLE}}", files_table(files)).replace("{{CODE_COMMIT}}", commit)
-    if "{{" in text:
+    if re.search(r"\{\{[A-Z_]+\}\}", text):  # not BibTeX's {{Name}} braces
         sys.exit(f"ERROR: {cfg['card']} has an unfilled placeholder")
     return text
 
@@ -157,6 +174,7 @@ def upload(api, owner: str, collection: dict, name: str, cfg: dict, files: list[
             entry["files"][f["name"]] = {
                 "commit": info.oid, "bytes": f["bytes"], "sha256": f["sha256"],
                 "url": f"https://huggingface.co/{repo_id}/resolve/{info.oid}/{f['name']}",
+                **({"catalogue_name": f["catalogue_name"]} if f.get("catalogue_name") not in (None, f["name"]) else {}),
             }
     entry["card_commit"] = info.oid
     PUBLISHED.write_text(json.dumps(published, indent=2) + "\n", encoding="utf-8")
@@ -215,7 +233,11 @@ def main() -> int:
     ap.add_argument("--private", action="store_true", help="create new repositories as private (switch to public on the Hub after review)")
     ap.add_argument("--verify", action="store_true", help="check the published files listed in publish/published.json")
     ap.add_argument("--full", action="store_true", help="with --verify: also download and hash every file")
+    ap.add_argument("--write-cards", type=Path, metavar="DIR",
+                    help="dry run: also write each rendered card to DIR/<repo>/README.md for review")
     args = ap.parse_args()
+    if args.upload and len(args.repo or []) != 1:
+        ap.error("--upload takes exactly one --repo: one repository per step, after its card was reviewed")
 
     published = json.loads(PUBLISHED.read_text(encoding="utf-8")) if PUBLISHED.exists() else {}
     if args.verify:
@@ -243,7 +265,14 @@ def main() -> int:
         files = check_repo(name, cfg, offered)
         card = render_card(cfg, files, commit)
         if api is None:
-            print(f"  dry run: card renders ({len(card):,} characters); nothing uploaded")
+            from huggingface_hub import ModelCard
+            ModelCard(card).validate()  # the Hub's check of the metadata (read-only request)
+            print(f"  dry run: card renders ({len(card):,} characters), metadata valid; nothing uploaded")
+            if args.write_cards:
+                out = args.write_cards / name / "README.md"
+                out.parent.mkdir(parents=True, exist_ok=True)
+                out.write_text(card, encoding="utf-8")
+                print(f"  card written to {out}")
         else:
             upload(api, config["owner"], config["collection"], name, cfg, files, card, args.private, published)
     return 0

@@ -2,9 +2,15 @@
 
 **Superseded by [`../detector_export/`](../detector_export/README.md)**, which exports fp16,
 w8a32, fp32 or full INT8 (with `--data`), turns segmentation models into box detectors and
-checks every phone file against PyTorch. These scripts are kept because they made the early
-phone files (June to August 2026, before `detector_export` existed), very likely including
-the MegaDetector V6 INT8 files. They are the recipe of record for those files.
+checks every phone file against PyTorch. These scripts are kept as the record of how the early
+phone files were made (June to August 2026, before `detector_export` existed).
+
+They are not the exact recipe of the MegaDetector V6 file the app offers
+(`MDV6-yolov10-c_int8_256.tflite`): in their kept form they pass options (`end2end`,
+`format="litert"`, `quantize=8`) that the Ultralytics version recorded in that file (8.3.235)
+does not accept. That file is also not full INT8: Ultralytics 8.3 names its dynamic-range output
+(8-bit weights, float maths, w8a32) `_int8.tflite`, and the file's tensors confirm it. Check any
+"int8" file before trusting the name (see `../docs/MODEL_CONVERSION.md`).
 
 | Script | What it does |
 |---|---|
