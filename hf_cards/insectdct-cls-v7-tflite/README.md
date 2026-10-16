@@ -92,9 +92,10 @@ provided or endorsed by the insectDCT authors.
   list (`embeddings/txt_emb_bioclip-2.5-vith14.json`, Gu et al. 2026, CC0 1.0), with a few hand
   fixes, and checked by eye (`classifier_export/taxa/insectdct-cls-v7.csv`). They are not by the
   insectDCT authors.
-- **How FaunaPulse uses the scores**: its own rule, not insectDCT's per-class thresholds. Each
-  head's scores become probabilities, and a level-3 class scores the mean of the
-  log-probabilities of itself and of its level-2 and level-1 groups.
+- **How FaunaPulse uses the scores**: FaunaPulse combines the three heads with its own rule,
+  not with insectDCT's per-class thresholds, so its answers can differ from those of the
+  insectDCT pipeline. The rule may change between app versions; the FaunaPulse documentation
+  describes the current one.
 
 ## Checks
 

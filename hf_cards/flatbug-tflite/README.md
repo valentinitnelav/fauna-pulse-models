@@ -14,7 +14,7 @@ tags:
   - camera-traps
   - biodiversity
   - biodiversity-monitoring
-  - yolo11
+  - yolov8
   - ultralytics
 ---
 
@@ -68,7 +68,8 @@ flat-bug authors.
   downloads the same files. The files converted here are byte-identical to these (same SHA-256,
   checked against a download from these links on 16 October 2026).
 - N and S are the original 2024 models of the paper (YOLOv8n-seg and YOLOv8s-seg). Since
-  flat-bug 1.2 (July 2026) the authors' default is a newer model, which is not converted here.
+  flat-bug 1.2 (July 2026) the authors' default is a newer model, `flat_bug_M_v2.pt` (medium
+  size, YOLO26), which is not converted here.
 
 ## What it is
 

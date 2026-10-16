@@ -7,7 +7,7 @@ TreeOfLife candidates to a regional species list built from GBIF (or Map of Life
 passing it to pybioclip's `--subset` / `apply_filter` ("Geo-Restricted Taxon List
 Predictions", https://imageomics.github.io/pybioclip/geo-restricted-taxa/, Imageomics).
 The implementation approach followed here (own code, no lines copied) is the one in
-Max Sittinger's insect-detect-post, `src/insectdetect_post/build_region_filter.py`
+Maximilian Sittinger's insect-detect-post, `src/insectdetect_post/build_region_filter.py`
 (AGPL-3.0): the GBIF occurrence facet is queried through the API (taxon keys with at
 least --min-occurrences records in the region, his default 3) instead of a manual GBIF
 download, and TreeOfLife species are mapped to GBIF backbone keys with the table he

@@ -172,7 +172,7 @@ insectDCT (no name vectors; `fpack.write_class_list`, see [`classifier_export/RE
 least 3 records for in a region (a GBIF continent or a set of countries). Restricting
 the candidates to a regional GBIF species list is what BioCLIP's documentation
 recommends ("Geo-Restricted Taxon List Predictions"); the API-based way of getting that
-list and the TreeOfLife-to-GBIF key mapping (downloaded on first use) follow Max
+list and the TreeOfLife-to-GBIF key mapping (downloaded on first use) follow Maximilian
 Sittinger's `insect-detect-post`. One GBIF request per order and region, about 10 to
 60 s each, no account needed:
 
@@ -338,7 +338,7 @@ Two sources are credited for different things; please keep both when citing.
 - the recommendation to restrict candidates to a regional GBIF or Map of Life species
   list ("Geo-Restricted Taxon List Predictions", https://imageomics.github.io/pybioclip/geo-restricted-taxa/).
 
-**From Max Sittinger's `insect-detect-post` (AGPL-3.0; Sittinger, M. 2026, Zenodo
+**From Maximilian Sittinger's `insect-detect-post` (AGPL-3.0; Sittinger, M. 2026, Zenodo
 https://doi.org/10.5281/zenodo.21822140), re-implemented in our own code:**
 - the API-based way of building the regional list (GBIF occurrence facets, minimum 3
   records) and his TreeOfLife-to-GBIF key mapping (`tol_gbif_taxon_keys_Arthropoda.csv`,

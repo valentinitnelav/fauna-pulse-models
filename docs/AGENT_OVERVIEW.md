@@ -75,6 +75,12 @@ Facts that are easy to get wrong (verified 2026-10-15, sources on the cards):
   stays only where its design is compared, e.g. `classifier_export/README.md` section 5).
 - The MegaDetector file is w8a32 (8-bit weights, float activations), not full INT8: Ultralytics
   8.3 names its dynamic-range TFLite `_int8.tflite`; no calibration pictures were involved.
+- flat-bug N and S are the 2024 YOLOv8-seg models of the paper. The authors' default since
+  flat-bug 1.2 (July 2026) is `flat_bug_M_v2.pt`: YOLO26m-seg, checkpoint 54.6 MB, trained at
+  1024 px for 300 epochs on the flatbug data (no new data named in the release or PR #153);
+  on the authors' validation set vs the old M: precision 92.3 vs 92.4, recall 96.4 vs 95.0, F1
+  93.7 vs 93.1. No N or S v2 exists. Not converted: as fp16 it would be about 45-50 MB (estimate), above
+  the app's 30 MiB detector cap, with about 3 times the compute of S.
 - insectDCT "v8" = the authors' detection dataset version 8 (network YOLO11s), not YOLOv8;
   the preprint has six authors since version 3 (Jepsen added).
 - Ultralytics writes `author: Ultralytics`, `license: AGPL-3.0` into every exported file's
@@ -125,6 +131,7 @@ stays online forever. The owner's older HF repo `flower_visitor_order_detector` 
 | output names of all export scripts | naming rule, `tool/model_downloads/README.md` | `update_catalogue.py --names` |
 | model input/output layout (NCHW 0..1; embedder output `[1,n]`; classifier heads concatenated, `dim` = their sum; detector `[1,4+c,N]`; Ultralytics metadata re-appended to fp16 files) | `packages/ultralytics_yolo` (Kotlin), `Embedder.kt`, `model_file_kind.dart` | phone checks: `integration_test/*_check_test.dart` |
 | pooling rule copy in `reproduce_track_conf.py` | `track_fusion.dart` | by hand |
+| app behaviour named on the cards, kept broad on purpose (owner, 2026-10-16): cls card "How FaunaPulse uses the scores" (no formula, points to the app docs); detector cards "the app does NMS", 640 px input, square area of interest (v8 card); every card's "Use in FaunaPulse" (menu path, "versions after v0.8.0-alpha.1") | the matching app code and screens | by hand; editing a card on the Hub is a new commit and never breaks the pinned file links |
 
 Fixture regeneration: `cd bioclip_export && python fpack.py "$APP/test/fauna_pulse/fixtures/tiny_pack.fpack" "$APP/test/fauna_pulse/fixtures/tiny_classes.fpack"`.
 Today `tiny_pack.fpack` regenerates byte-identical; the committed `tiny_classes.fpack` predates

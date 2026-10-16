@@ -91,7 +91,7 @@ Imageomics Institute.
   imageomics/TreeOfLife-200M at commit 5f2dc49 (the same files as in revision a8f38b4, on which
   BioCLIP 2 was trained).
 - **Europe list**: species counts from GBIF.org occurrence data, built with the method and the
-  TreeOfLife-to-GBIF key table of Max Sittinger's `insect-detect-post` (re-implemented; the table
+  TreeOfLife-to-GBIF key table of Maximilian Sittinger's `insect-detect-post` (re-implemented; the table
   is not redistributed).
 
 ## What it is
