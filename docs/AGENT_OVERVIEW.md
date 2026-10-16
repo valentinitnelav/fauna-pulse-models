@@ -46,7 +46,13 @@ Measured results (phone timings, fp16 vs w8a32 vs int8) are in each tool's READM
 
 ## Published on Hugging Face
 
-Nothing yet. Planned (cards reviewed by the maintainer first, then one repo per upload step):
+All six PUBLIC since 2026-10-16 (uploaded private first, checked by the owner, then switched;
+code commit `27c23bd`, HF commits in the table; public collection
+https://huggingface.co/collections/Valen-Peregrine/faunapulse-6ad22f04766aed6641688544). Every
+file was re-downloaded and SHA-256-checked while private; once public, `publish_hf.py --verify`
+(anonymous: size and SHA-256 at the pinned commit) passed for all 25 files, and one detector
+(flat-bug N) was downloaded through its pinned link like the app does (owner: no need to
+download the big BioCLIP files again). Pinned links: `publish/published.json`. Layout:
 one public repo per model family under `Valen-Peregrine`, named after the app's model id
 without the size or backbone part, plus `-tflite`; sizes, input sizes and precisions are
 separate files in it. Files are published under the app's naming rule (10 of the 12 catalogue
@@ -59,12 +65,12 @@ All source files were downloaded again from the authors' own links and SHA-256-c
 
 | HF repo | Files (published name) | Catalogue name today | Licence | Status |
 |---|---|---|---|---|
-| `mdv6-tflite` | `mdv6-yolov10c_256_w8a32.tflite` | `MDV6-yolov10-c_int8_256.tflite` | AGPL-3.0 | planned |
-| `flatbug-tflite` | `flatbug-n_640_fp16.tflite` (+ `.json`), `flatbug-s_640_fp16.tflite` (+ `.json`; new, gets a catalogue file when the links go in) | same / none | MIT | planned |
-| `insectdct-v8-tflite` | `insectdct-v8s_640_fp16.tflite` (+ `.json`) | `insectdct-v8-s_640_fp16.tflite` | GPL-3.0 | planned |
-| `insectdct-cls-v7-tflite` | `insectdct-cls-v7-eff2s_224_fp16.tflite`, `.fpack` (+ `.json`) | `insectdct-cls-v7_eff2s_fp16.*` | GPL-3.0 | planned |
-| `bioclip-2-tflite` | `bioclip-2_224_fp16.tflite` (+ `.json`), `bioclip-2_pollinator-orders-europe_v1.fpack`, `bioclip-2_flower-visitors-32fam_v1.fpack`, `bioclip-2_mammals-birds-world_v1.fpack` | `bioclip-2_image_fp16_4d.tflite`, `bioclip2_*_v1.fpack` | MIT (packs CC0-1.0, common names GBIF CC BY 4.0) | planned |
-| `bioclip-2.5-tflite` | `bioclip-2.5_224_fp16.tflite` (+ `.json`), `bioclip-2.5_pollinator-orders-europe_v1.fpack`, `bioclip-2.5_flower-visitors-32fam_v1.fpack` | `bioclip-25_image_fp16.tflite`, `bioclip25_*_v1.fpack` | MIT | planned |
+| `mdv6-tflite` | `mdv6-yolov10c_256_w8a32.tflite` | `MDV6-yolov10-c_int8_256.tflite` | AGPL-3.0 | public, `009a5a9` |
+| `flatbug-tflite` | `flatbug-n_640_fp16.tflite` (+ `.json`), `flatbug-s_640_fp16.tflite` (+ `.json`; new, gets a catalogue file when the links go in) | same / none | MIT | public, `0ab3ca4` |
+| `insectdct-v8-tflite` | `insectdct-v8s_640_fp16.tflite` (+ `.json`) | `insectdct-v8-s_640_fp16.tflite` | GPL-3.0 | public, `f5ac1bb` |
+| `insectdct-cls-v7-tflite` | `insectdct-cls-v7-eff2s_224_fp16.tflite`, `.fpack` (+ `.json`) | `insectdct-cls-v7_eff2s_fp16.*` | GPL-3.0 | public, `8ded6d9` |
+| `bioclip-2-tflite` | `bioclip-2_224_fp16.tflite` (+ `.json`), `bioclip-2_pollinator-orders-europe_v1.fpack`, `bioclip-2_flower-visitors-32fam_v1.fpack`, `bioclip-2_mammals-birds-world_v1.fpack` | `bioclip-2_image_fp16_4d.tflite`, `bioclip2_*_v1.fpack` | MIT (packs CC0-1.0, common names GBIF CC BY 4.0) | public, `cbf9b26` |
+| `bioclip-2.5-tflite` | `bioclip-2.5_224_fp16.tflite` (+ `.json`), `bioclip-2.5_pollinator-orders-europe_v1.fpack`, `bioclip-2.5_flower-visitors-32fam_v1.fpack` | `bioclip-25_image_fp16.tflite`, `bioclip25_*_v1.fpack` | MIT | public, `dd1f5b7` |
 
 Facts that are easy to get wrong (verified 2026-10-15, sources on the cards):
 - Sources = the authors' own links only (owner's rule, 2026-10-16): flat-bug from the ERDA store
@@ -94,11 +100,8 @@ Facts that are easy to get wrong (verified 2026-10-15, sources on the cards):
   result; new `.fpack` SHA-256 `6d5ec961...`, which the catalogue takes when the links go in). Label packs
   pair by file name and size only.
 
-Upload order (one repo per step, private first, owner checks each card on the Hub):
-`flatbug-tflite`, `insectdct-v8-tflite`, `mdv6-tflite`, `bioclip-2-tflite`,
-`insectdct-cls-v7-tflite`, `bioclip-2.5-tflite` (its card links bioclip-2,
-so bioclip-2 goes public first). With `--private` the "FaunaPulse" collection is also
-created private; make it public together with the repos. Then an app round (app Round 312 already added the tool): catalogue names + pinned links
+Later uploads: one repo per step, `--upload --repo X --private`, owner checks, then public;
+with `--private` a new collection is created private too. Next, an app round (app Round 312 already added the tool): catalogue names + pinned links
 (`update_catalogue.py --urls`, matching by SHA-256), flat-bug S entry, the new class-list SHA-256.
 The same app round should drop the zoo-as-source wording in `$APP/docs/THIRD_PARTY_MODELS.md`
 (flat-bug/insectDCT section and classifier paragraph: "Weights as packaged by the InsectAI Model

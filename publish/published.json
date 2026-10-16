@@ -1,0 +1,191 @@
+{
+  "Valen-Peregrine/flatbug-tflite": {
+    "files": {
+      "flatbug-n_640_fp16.tflite": {
+        "commit": "0ab3ca4374c6a6cf166591ca8f304a77def5aeeb",
+        "bytes": 5659266,
+        "sha256": "c111a732ff298a24d42a2a01d11de0f13e1eaa796a87c96a38ef59de6202f9db",
+        "url": "https://huggingface.co/Valen-Peregrine/flatbug-tflite/resolve/0ab3ca4374c6a6cf166591ca8f304a77def5aeeb/flatbug-n_640_fp16.tflite"
+      },
+      "flatbug-n_640_fp16.json": {
+        "commit": "0ab3ca4374c6a6cf166591ca8f304a77def5aeeb",
+        "bytes": 820,
+        "sha256": "07884a7a4c68859909825da198b6fb21fb1cde4ce795b33fc243f71ecc14a0ca",
+        "url": "https://huggingface.co/Valen-Peregrine/flatbug-tflite/resolve/0ab3ca4374c6a6cf166591ca8f304a77def5aeeb/flatbug-n_640_fp16.json"
+      },
+      "flatbug-s_640_fp16.tflite": {
+        "commit": "0ab3ca4374c6a6cf166591ca8f304a77def5aeeb",
+        "bytes": 19968609,
+        "sha256": "360a4cf0c4730412dffd45bdb20928c73ac556b231ca8d922681908dad156fd3",
+        "url": "https://huggingface.co/Valen-Peregrine/flatbug-tflite/resolve/0ab3ca4374c6a6cf166591ca8f304a77def5aeeb/flatbug-s_640_fp16.tflite"
+      },
+      "flatbug-s_640_fp16.json": {
+        "commit": "0ab3ca4374c6a6cf166591ca8f304a77def5aeeb",
+        "bytes": 823,
+        "sha256": "c342d5fa69f4c3ceb563565ae7717b030367ae77fd6567c968d0dc5eafc6cd6f",
+        "url": "https://huggingface.co/Valen-Peregrine/flatbug-tflite/resolve/0ab3ca4374c6a6cf166591ca8f304a77def5aeeb/flatbug-s_640_fp16.json"
+      },
+      "LICENSE": {
+        "commit": "0ab3ca4374c6a6cf166591ca8f304a77def5aeeb",
+        "bytes": 1097,
+        "sha256": "ec12a6cea8a0fbe43b9a6d18f776fd6332cf7b74e1c89fdad8bf95655b62b93e",
+        "url": "https://huggingface.co/Valen-Peregrine/flatbug-tflite/resolve/0ab3ca4374c6a6cf166591ca8f304a77def5aeeb/LICENSE"
+      }
+    },
+    "card_commit": "0ab3ca4374c6a6cf166591ca8f304a77def5aeeb"
+  },
+  "Valen-Peregrine/insectdct-v8-tflite": {
+    "files": {
+      "insectdct-v8s_640_fp16.tflite": {
+        "commit": "f5ac1bb18bb9dac2f21d2a35341de9941153224c",
+        "bytes": 19206825,
+        "sha256": "0fa7eb39974502689054f2da0fe58b8b12aabeecf0bfffd682e0dec3f3507195",
+        "url": "https://huggingface.co/Valen-Peregrine/insectdct-v8-tflite/resolve/f5ac1bb18bb9dac2f21d2a35341de9941153224c/insectdct-v8s_640_fp16.tflite",
+        "catalogue_name": "insectdct-v8-s_640_fp16.tflite"
+      },
+      "insectdct-v8s_640_fp16.json": {
+        "commit": "f5ac1bb18bb9dac2f21d2a35341de9941153224c",
+        "bytes": 833,
+        "sha256": "c83d1b4a04cd6cffbb4a220e8db4e602e559e4915c6e93e2deba4ec101f6fa5e",
+        "url": "https://huggingface.co/Valen-Peregrine/insectdct-v8-tflite/resolve/f5ac1bb18bb9dac2f21d2a35341de9941153224c/insectdct-v8s_640_fp16.json"
+      },
+      "LICENSE": {
+        "commit": "f5ac1bb18bb9dac2f21d2a35341de9941153224c",
+        "bytes": 35149,
+        "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+        "url": "https://huggingface.co/Valen-Peregrine/insectdct-v8-tflite/resolve/f5ac1bb18bb9dac2f21d2a35341de9941153224c/LICENSE"
+      }
+    },
+    "card_commit": "f5ac1bb18bb9dac2f21d2a35341de9941153224c"
+  },
+  "Valen-Peregrine/mdv6-tflite": {
+    "files": {
+      "mdv6-yolov10c_256_w8a32.tflite": {
+        "commit": "009a5a95c07ad60c71226c668b437af7a6213c3c",
+        "bytes": 2548785,
+        "sha256": "32ca01921bb6acee00d8e78f6b3a0194760bd8d8b27b17bf4aefe12e3075c9e6",
+        "url": "https://huggingface.co/Valen-Peregrine/mdv6-tflite/resolve/009a5a95c07ad60c71226c668b437af7a6213c3c/mdv6-yolov10c_256_w8a32.tflite",
+        "catalogue_name": "MDV6-yolov10-c_int8_256.tflite"
+      },
+      "LICENSE": {
+        "commit": "009a5a95c07ad60c71226c668b437af7a6213c3c",
+        "bytes": 34522,
+        "sha256": "4df3c306dddaaf4baffdff5ca820cc679ac8cd6dc263c6a74517783e42fa7a3b",
+        "url": "https://huggingface.co/Valen-Peregrine/mdv6-tflite/resolve/009a5a95c07ad60c71226c668b437af7a6213c3c/LICENSE"
+      }
+    },
+    "card_commit": "009a5a95c07ad60c71226c668b437af7a6213c3c"
+  },
+  "Valen-Peregrine/bioclip-2-tflite": {
+    "files": {
+      "bioclip-2_224_fp16.tflite": {
+        "commit": "cbf9b265cc9723783bcbb8c44a09c57870386386",
+        "bytes": 609466720,
+        "sha256": "d9a2196439cb8b41118b727b865d27e915962e1f233be2b7b0d47f154cf9495b",
+        "url": "https://huggingface.co/Valen-Peregrine/bioclip-2-tflite/resolve/cbf9b265cc9723783bcbb8c44a09c57870386386/bioclip-2_224_fp16.tflite",
+        "catalogue_name": "bioclip-2_image_fp16_4d.tflite"
+      },
+      "bioclip-2_pollinator-orders-europe_v1.fpack": {
+        "commit": "cbf9b265cc9723783bcbb8c44a09c57870386386",
+        "bytes": 57479207,
+        "sha256": "94597c90db80f8c53cba48a1adc5388e874f56edeccd1e73e9e7d2a759169f4b",
+        "url": "https://huggingface.co/Valen-Peregrine/bioclip-2-tflite/resolve/cbf9b265cc9723783bcbb8c44a09c57870386386/bioclip-2_pollinator-orders-europe_v1.fpack",
+        "catalogue_name": "bioclip2_pollinator_orders_europe_v1.fpack"
+      },
+      "bioclip-2_flower-visitors-32fam_v1.fpack": {
+        "commit": "cbf9b265cc9723783bcbb8c44a09c57870386386",
+        "bytes": 62754369,
+        "sha256": "49ce700de25266f8c9a3a55fa5086205c420ab076000552868d113516df41c16",
+        "url": "https://huggingface.co/Valen-Peregrine/bioclip-2-tflite/resolve/cbf9b265cc9723783bcbb8c44a09c57870386386/bioclip-2_flower-visitors-32fam_v1.fpack",
+        "catalogue_name": "bioclip2_flower_visitors_32fam_v1.fpack"
+      },
+      "bioclip-2_mammals-birds-world_v1.fpack": {
+        "commit": "cbf9b265cc9723783bcbb8c44a09c57870386386",
+        "bytes": 28120298,
+        "sha256": "2a78f3973af78fc1779277e43d7b8ef7266a13c68af95dbdd93e32e2af258d48",
+        "url": "https://huggingface.co/Valen-Peregrine/bioclip-2-tflite/resolve/cbf9b265cc9723783bcbb8c44a09c57870386386/bioclip-2_mammals-birds-world_v1.fpack"
+      },
+      "bioclip-2_224_fp16.json": {
+        "commit": "cbf9b265cc9723783bcbb8c44a09c57870386386",
+        "bytes": 554,
+        "sha256": "f438d12ac2ec1459530ab1c3f74871b21dccd218cab2d9ed93abb73e38d7aaaf",
+        "url": "https://huggingface.co/Valen-Peregrine/bioclip-2-tflite/resolve/cbf9b265cc9723783bcbb8c44a09c57870386386/bioclip-2_224_fp16.json"
+      },
+      "LICENSE": {
+        "commit": "cbf9b265cc9723783bcbb8c44a09c57870386386",
+        "bytes": 1372,
+        "sha256": "a8d48c87f39b50f070f727fe73641d8d9f62f9e8fd9b114f786aaf50cef12265",
+        "url": "https://huggingface.co/Valen-Peregrine/bioclip-2-tflite/resolve/cbf9b265cc9723783bcbb8c44a09c57870386386/LICENSE"
+      }
+    },
+    "card_commit": "cbf9b265cc9723783bcbb8c44a09c57870386386"
+  },
+  "Valen-Peregrine/insectdct-cls-v7-tflite": {
+    "files": {
+      "insectdct-cls-v7-eff2s_224_fp16.tflite": {
+        "commit": "8ded6d9266e3af0f5bbf6a6b56fd570fa339056c",
+        "bytes": 43853456,
+        "sha256": "f19c56fab0a4c87dc526775c1eacdc89f6267b14a6abd803ee813def34085b81",
+        "url": "https://huggingface.co/Valen-Peregrine/insectdct-cls-v7-tflite/resolve/8ded6d9266e3af0f5bbf6a6b56fd570fa339056c/insectdct-cls-v7-eff2s_224_fp16.tflite",
+        "catalogue_name": "insectdct-cls-v7_eff2s_fp16.tflite"
+      },
+      "insectdct-cls-v7-eff2s_224_fp16.fpack": {
+        "commit": "8ded6d9266e3af0f5bbf6a6b56fd570fa339056c",
+        "bytes": 13748,
+        "sha256": "6d5ec9617c1a0f6997855117530dd84b0acda7a81406e4d902e18ae9a1a65cd3",
+        "url": "https://huggingface.co/Valen-Peregrine/insectdct-cls-v7-tflite/resolve/8ded6d9266e3af0f5bbf6a6b56fd570fa339056c/insectdct-cls-v7-eff2s_224_fp16.fpack"
+      },
+      "insectdct-cls-v7-eff2s_224_fp16.json": {
+        "commit": "8ded6d9266e3af0f5bbf6a6b56fd570fa339056c",
+        "bytes": 4323,
+        "sha256": "c368f1801357de35440afda3b12af13918ef95d409d28d21cf3e46f377c7238c",
+        "url": "https://huggingface.co/Valen-Peregrine/insectdct-cls-v7-tflite/resolve/8ded6d9266e3af0f5bbf6a6b56fd570fa339056c/insectdct-cls-v7-eff2s_224_fp16.json"
+      },
+      "LICENSE": {
+        "commit": "8ded6d9266e3af0f5bbf6a6b56fd570fa339056c",
+        "bytes": 35149,
+        "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+        "url": "https://huggingface.co/Valen-Peregrine/insectdct-cls-v7-tflite/resolve/8ded6d9266e3af0f5bbf6a6b56fd570fa339056c/LICENSE"
+      }
+    },
+    "card_commit": "8ded6d9266e3af0f5bbf6a6b56fd570fa339056c"
+  },
+  "Valen-Peregrine/bioclip-2.5-tflite": {
+    "files": {
+      "bioclip-2.5_224_fp16.tflite": {
+        "commit": "dd1f5b7259ce3ee2d3aef89c200dde96745f3e85",
+        "bytes": 1266232624,
+        "sha256": "8afd4d6b8123ceced4e9ea3d43ed01222c8ff572fa2794f71bcd6472dff809bd",
+        "url": "https://huggingface.co/Valen-Peregrine/bioclip-2.5-tflite/resolve/dd1f5b7259ce3ee2d3aef89c200dde96745f3e85/bioclip-2.5_224_fp16.tflite",
+        "catalogue_name": "bioclip-25_image_fp16.tflite"
+      },
+      "bioclip-2.5_pollinator-orders-europe_v1.fpack": {
+        "commit": "dd1f5b7259ce3ee2d3aef89c200dde96745f3e85",
+        "bytes": 74339217,
+        "sha256": "4bbb26b317a4cfb849d61a48f19d3da55e836f413cc90b5f1bd8b6c5e55e1c49",
+        "url": "https://huggingface.co/Valen-Peregrine/bioclip-2.5-tflite/resolve/dd1f5b7259ce3ee2d3aef89c200dde96745f3e85/bioclip-2.5_pollinator-orders-europe_v1.fpack",
+        "catalogue_name": "bioclip25_pollinator_orders_europe_v1.fpack"
+      },
+      "bioclip-2.5_flower-visitors-32fam_v1.fpack": {
+        "commit": "dd1f5b7259ce3ee2d3aef89c200dde96745f3e85",
+        "bytes": 80131038,
+        "sha256": "6d6cc9d0158df2d5f1d9a218ae693374f3055aabcc8d2ba222e2a71d8a356c0d",
+        "url": "https://huggingface.co/Valen-Peregrine/bioclip-2.5-tflite/resolve/dd1f5b7259ce3ee2d3aef89c200dde96745f3e85/bioclip-2.5_flower-visitors-32fam_v1.fpack",
+        "catalogue_name": "bioclip25_flower_visitors_32fam_v1.fpack"
+      },
+      "bioclip-2.5_224_fp16.json": {
+        "commit": "dd1f5b7259ce3ee2d3aef89c200dde96745f3e85",
+        "bytes": 566,
+        "sha256": "0da1aefebc5ae712e9495b2edf76dab67eeedb775e30aa9728ea846d40c137bc",
+        "url": "https://huggingface.co/Valen-Peregrine/bioclip-2.5-tflite/resolve/dd1f5b7259ce3ee2d3aef89c200dde96745f3e85/bioclip-2.5_224_fp16.json"
+      },
+      "LICENSE": {
+        "commit": "dd1f5b7259ce3ee2d3aef89c200dde96745f3e85",
+        "bytes": 1372,
+        "sha256": "a8d48c87f39b50f070f727fe73641d8d9f62f9e8fd9b114f786aaf50cef12265",
+        "url": "https://huggingface.co/Valen-Peregrine/bioclip-2.5-tflite/resolve/dd1f5b7259ce3ee2d3aef89c200dde96745f3e85/LICENSE"
+      }
+    },
+    "card_commit": "dd1f5b7259ce3ee2d3aef89c200dde96745f3e85"
+  }
+}
