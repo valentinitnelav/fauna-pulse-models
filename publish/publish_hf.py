@@ -180,7 +180,7 @@ def upload(api, owner: str, collection: dict, name: str, cfg: dict, files: list[
     PUBLISHED.write_text(json.dumps(published, indent=2) + "\n", encoding="utf-8")
 
     col = api.create_collection(title=collection["title"], namespace=owner,
-                                description=collection["description"], exists_ok=True)
+                                description=collection["description"], private=private, exists_ok=True)
     api.add_collection_item(col.slug, item_id=repo_id, item_type="model", exists_ok=True)
     print(f"  in collection https://huggingface.co/collections/{col.slug}")
 

@@ -60,7 +60,7 @@ The tools work for any model of a supported kind, not only for the ones publishe
 - **A detector you trained** (Ultralytics YOLO, detection or segmentation `.pt`):
   `detector_export/export_detector.py` writes the phone file and, with `--check-images` (a folder
   of your own pictures), checks that it finds the same boxes as your `.pt`. Import it in the app: Menu, **Download & import models**, **Import model
-  files…** (detectors up to 30 MiB). Training is not part of this repository: it needs your own
+  files…**. Training is not part of this repository: it needs your own
   labelled pictures and usually a GPU.
 - **A name list for BioCLIP** (the names the Identify screen can answer with), for example the
   pollinators of one country or the species of a park: `bioclip_export/build_label_pack.py`
@@ -117,7 +117,6 @@ Some rules exist on both sides. Change them together:
 |---|---|
 | `.fpack` format, writer `bioclip_export/fpack.py` | reader `lib/fauna_pulse/identification/label_pack.dart`; fixtures `test/fauna_pulse/fixtures/tiny_pack.fpack`, `tiny_classes.fpack` (regenerate with `python fpack.py "$APP/test/fauna_pulse/fixtures/tiny_pack.fpack" "$APP/test/fauna_pulse/fixtures/tiny_classes.fpack"`) |
 | scoring `fpack.class_probabilities` | `lib/fauna_pulse/identification/track_fusion.dart` |
-| `APP_MAX_BYTES` (30 MiB) in `detector_export/export_detector.py` | `kMaxTfliteModelBytes` in `lib/fauna_pulse/models/model_file_security.dart` |
 | output names of the export scripts | naming rule in `tool/model_downloads/README.md` |
 | the model files' input and output layout (described in each tool's README) | `packages/ultralytics_yolo` (detectors), `Embedder.kt` (identification) |
 

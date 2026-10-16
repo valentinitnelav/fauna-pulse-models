@@ -79,8 +79,9 @@ Facts that are easy to get wrong (verified 2026-10-15, sources on the cards):
   flat-bug 1.2 (July 2026) is `flat_bug_M_v2.pt`: YOLO26m-seg, checkpoint 54.6 MB, trained at
   1024 px for 300 epochs on the flatbug data (no new data named in the release or PR #153);
   on the authors' validation set vs the old M: precision 92.3 vs 92.4, recall 96.4 vs 95.0, F1
-  93.7 vs 93.1. No N or S v2 exists. Not converted: as fp16 it would be about 45-50 MB (estimate), above
-  the app's 30 MiB detector cap, with about 3 times the compute of S.
+  93.7 vs 93.1. No N or S v2 exists. Not converted (owner did not ask for it): about 45-50 MB
+  as fp16 (estimate), about 3 times the compute of S; a YOLO26 export should pass
+  `nms=None` (raw head; the app reads both heads).
 - insectDCT "v8" = the authors' detection dataset version 8 (network YOLO11s), not YOLOv8;
   the preprint has six authors since version 3 (Jepsen added).
 - Ultralytics writes `author: Ultralytics`, `license: AGPL-3.0` into every exported file's
@@ -96,7 +97,8 @@ Facts that are easy to get wrong (verified 2026-10-15, sources on the cards):
 Upload order (one repo per step, private first, owner checks each card on the Hub):
 `flatbug-tflite`, `insectdct-v8-tflite`, `mdv6-tflite`, `bioclip-2-tflite`,
 `insectdct-cls-v7-tflite`, `bioclip-2.5-tflite` (its card links bioclip-2,
-so bioclip-2 goes public first). Then an app round (app Round 312 already added the tool): catalogue names + pinned links
+so bioclip-2 goes public first). With `--private` the "FaunaPulse" collection is also
+created private; make it public together with the repos. Then an app round (app Round 312 already added the tool): catalogue names + pinned links
 (`update_catalogue.py --urls`, matching by SHA-256), flat-bug S entry, the new class-list SHA-256.
 The same app round should drop the zoo-as-source wording in `$APP/docs/THIRD_PARTY_MODELS.md`
 (flat-bug/insectDCT section and classifier paragraph: "Weights as packaged by the InsectAI Model
@@ -118,7 +120,11 @@ stays online forever. The owner's older HF repo `flower_visitor_order_detector` 
 - Downloader `$APP/lib/fauna_pulse/models/file_download.dart`: HTTPS-only redirect chain, final
   HTTP 200, SHA-256 checked when given, no auth headers (HF repos must be public and not gated).
   Use `https://huggingface.co/<owner>/<repo>/resolve/<commit>/<file>`, never `/blob/`.
-- Size caps: detector `.tflite` 30 MiB; identification model or `.fpack` 2 GiB.
+- Size caps: none for detectors (owner, 2026-10-16: detectors are downloaded from HF or
+  imported, not shipped in the APK, and run live or afterwards, so a large file is a speed
+  choice). The app still rejects detector `.tflite` files above 30 MiB
+  (`kMaxTfliteModelBytes`, `$APP/lib/fauna_pulse/models/model_file_security.dart`) until an
+  app session removes that cap. Identification model or `.fpack`: 2 GiB.
 - Licences and citations of every model: `$APP/docs/THIRD_PARTY_MODELS.md`.
 
 ## Keep in sync with the app
@@ -127,7 +133,6 @@ stays online forever. The owner's older HF repo `flower_visitor_order_detector` 
 |---|---|---|
 | `.fpack` writer `bioclip_export/fpack.py` | reader `lib/fauna_pulse/identification/label_pack.dart` (header comment = format notes) | fixtures `test/fauna_pulse/fixtures/tiny_pack.fpack`, `tiny_classes.fpack`, tests `label_pack_test.dart`, `track_fusion_test.dart` |
 | `fpack.class_probabilities` | `lib/fauna_pulse/identification/track_fusion.dart` (same formula) | `track_fusion_test.dart` uses `test_scores`/`test_probs` stored in the fixture |
-| `APP_MAX_BYTES` in `detector_export/export_detector.py` | `kMaxTfliteModelBytes`, `lib/fauna_pulse/models/model_file_security.dart` | by hand |
 | output names of all export scripts | naming rule, `tool/model_downloads/README.md` | `update_catalogue.py --names` |
 | model input/output layout (NCHW 0..1; embedder output `[1,n]`; classifier heads concatenated, `dim` = their sum; detector `[1,4+c,N]`; Ultralytics metadata re-appended to fp16 files) | `packages/ultralytics_yolo` (Kotlin), `Embedder.kt`, `model_file_kind.dart` | phone checks: `integration_test/*_check_test.dart` |
 | pooling rule copy in `reproduce_track_conf.py` | `track_fusion.dart` | by hand |

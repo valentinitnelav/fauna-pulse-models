@@ -57,3 +57,11 @@ again from the authors' own links (ERDA, insectDCT GitHub and Google Drive, Imag
 was byte-identical; cards and docs now name only those links, and the zoo citation is gone.
 `export_insectdct_cls.py` takes `--source-dir` (authors' zip, unpacked) and `--code-dir`
 (insectDCT's `common/`); `--zoo-dir` stays as an alias. The class list was rebuilt from those files.
+
+## 2026-10-16: no size limit for detectors
+Owner's decision: detectors are no longer shipped inside the APK; they are downloaded from
+Hugging Face or imported, and run live or on recorded video afterwards, so a large file is a
+speed choice, not something to forbid. Here: `APP_MAX_BYTES` and its "larger than the app
+accepts" note are removed from `export_detector.py`, and the docs drop "up to 30 MiB". The app
+change (`kMaxTfliteModelBytes`) is for a separate app session; until then the app still rejects
+detector files above 30 MiB.

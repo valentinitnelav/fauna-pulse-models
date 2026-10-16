@@ -33,7 +33,9 @@ Usage (environment: see README.md in this folder):
     python export_detector.py --weights my.pt --name my --imgsz 640 --quantize int8 --data my_data.yaml
 
 Output: <out>/<name>_<imgsz>_<quantize>.tflite (+ .json), e.g. flatbug-s_1024_fp16.tflite.
-FaunaPulse imports .tflite files of up to 30 MiB (Settings -> AI -> Model -> Import...).
+Import the file in FaunaPulse: home screen Menu -> Download & import models -> Import model files...
+No size limit is planned for detectors (larger files just run slower); app versions that still
+have the old cap reject detector files above 30 MiB.
 """
 
 from __future__ import annotations
@@ -48,7 +50,6 @@ import zipfile
 from datetime import date
 from pathlib import Path
 
-APP_MAX_BYTES = 30 * 1024 * 1024  # kMaxTfliteModelBytes in the app's lib/fauna_pulse/models/model_file_security.dart
 IMAGE_SUFFIXES = {".jpg", ".jpeg", ".png"}
 
 
@@ -235,8 +236,7 @@ def main() -> int:
         else:
             exported.replace(target)
         size_mb = target.stat().st_size / 2**20
-        print(f"\n{target.name}: {size_mb:.1f} MiB, export {time.time() - t0:.0f} s"
-              f"{'' if target.stat().st_size <= APP_MAX_BYTES else '  (LARGER than the app accepts: 30 MiB)'}")
+        print(f"\n{target.name}: {size_mb:.1f} MiB, export {time.time() - t0:.0f} s")
         manifest = {
             "file": target.name,
             "bytes": target.stat().st_size,

@@ -46,7 +46,7 @@ What happens, per model:
 5. A `.json` manifest next to each file (source file and its sha256, sizes, check results).
 
 Output names say model, input size and quantisation: `flatbug-s_1024_fp16.tflite`. Import
-them in the app (home screen Menu, Download & import models, Import model files…; detection models up to 30 MiB), then run
+them in the app (home screen Menu, Download & import models, Import model files…), then run
 **Benchmark engines** there, or time several files at once with the app's
 `integration_test/detector_speed_check_test.dart` (instructions in its header).
 
