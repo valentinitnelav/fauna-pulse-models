@@ -33,14 +33,34 @@ import path and breaks `from fpack import ...` and the sibling imports.
 
 Measured results (phone timings, fp16 vs w8a32 vs int8) are in each tool's README.
 
-## Model files on this computer (git-ignored, never committed)
+## Model files (git-ignored, never committed)
 
-- Export outputs: `<tool>/out/` here (about 4.5 GB, moved from the app on 2026-10-15).
-  `bioclip_export/out/gpu4d/bioclip-2_image_fp16.tflite` is the GPU export published as
-  `bioclip-2_image_fp16_4d.tflite`; `bioclip_export/out/bioclip25/` holds BioCLIP 2.5;
-  `detector_export/out/MDV6-yolov10-c_int8_256.tflite` is the copy of the app's GitHub release asset.
-- Files tried on the phone: `~/InsectDetectApp/ForFaunaPulse/models/` (2.6 GB);
-  `~/InsectDetectApp/weights/` is an older subset.
+Since 2026-10-16 the large files live on the maintainer's portable SSD
+(`/media/$USER/PortableSSD/`, ext4), not on the laptop (`/home` was 93 % full). Plug it in
+before any task that needs them; the published files can also be fetched again from Hugging
+Face (table below) and the source models from their authors' links (model cards).
+
+- Export outputs: `<tool>/out/` is empty here (recreated by the next export). The 2026-10-16
+  state (4.9 GB, 66 files, byte-checked) is in `/media/$USER/PortableSSD/fauna-pulse-models/<tool>/out/`
+  (the SSD copy of this repo, without `.venvs/`; rebuild a venv from `requirements-lock.txt`
+  instead of copying one, its paths are absolute). `bioclip_export/out/gpu4d/bioclip-2_image_fp16.tflite`
+  is the GPU export published as `bioclip-2_image_fp16_4d.tflite`; `bioclip_export/out/bioclip25/`
+  holds BioCLIP 2.5; `detector_export/out/MDV6-yolov10-c_int8_256.tflite` is the copy of the
+  app's GitHub release asset.
+- `publish/publish_hf.py --upload` and the dry run read the `local` paths of `publish/hf_repos.json`
+  (`<tool>/out/...`): copy the needed files back from the SSD (or export again) first.
+  `--verify` needs no local files. The app's real-file test: `FAUNAPULSE_MODELS_REPO=/media/$USER/PortableSSD/fauna-pulse-models`.
+- Hugging Face cache (BioCLIP 2 source weights 1.7 GB, TreeOfLife-200M species names 2.8 GB):
+  `/media/$USER/PortableSSD/.cache/huggingface/hub`, removed from `$HOME/.cache/huggingface`.
+  Use it in place with `export HF_HUB_CACHE=/media/$USER/PortableSSD/.cache/huggingface/hub`
+  (tested offline 2026-10-16: open_clip loads BioCLIP 2, `build_label_pack.py` finds the names).
+  Set `HF_HUB_CACHE`, not `HF_HOME`: the login token stays in `$HOME/.cache/huggingface`.
+  Without the SSD the scripts download the same files again (internet, 4.5 GB).
+- BioCLIP 2.5 sources (`open_clip_model.safetensors` 3.9 GB, `txt_emb_bioclip-2.5-vith14.npy`
+  3.3 GB): `/media/$USER/PortableSSD/insect-model-zoo/weights/bioclip-2.5/` (`--weights`,
+  `--embeddings-dir`); insectDCT V7 zip and `.pth`: `.../weights/insectdct-cls-v7/`.
+- Files tried on the phone: `$HOME/InsectDetectApp/ForFaunaPulse/models/` (2.6 GB, still on the laptop);
+  `$HOME/InsectDetectApp/weights/` is an older subset.
 - Those folders also hold collaborator models: publish nothing that is not in the table below
   without the maintainer's explicit clearance.
 
