@@ -127,18 +127,17 @@ Facts that are easy to get wrong (verified 2026-10-15, sources on the cards):
   result; new `.fpack` SHA-256 `6d5ec961...`, which the catalogue takes when the links go in). Label packs
   pair by file name and size only.
 
-Pending upload (2026-10-17): the corrected cards of all six repos, and for flat-bug (N, S), insectDCT v8
-and the insectDCT classifier corrected `.json` manifests (check results removed, now in local
-`.check.json` files next to them on the SSD; classifier licence note shortened):
-`--upload --repo X --replace-manifests` once per repo, after the code commit is pushed.
+Card update 2026-10-17 (code commit `b4dc9c3`): all six cards re-uploaded; the manifests of
+flat-bug N and S, insectDCT v8 and the insectDCT classifier corrected with `--replace-manifests`
+(check results moved to local `.check.json` files next to them on the SSD). Model files, class
+list and packs unchanged; `--verify` passed for all 25 files. HF commits: `publish/published.json`.
 
 Later uploads: one repo per step, `--upload --repo X --private`, owner checks, then public;
-with `--private` a new collection is created private too. Next, an app round (app Round 312 already added the tool): catalogue names + pinned links
-(`update_catalogue.py --urls`, matching by SHA-256), flat-bug S entry, the new class-list SHA-256.
-The same app round should drop the zoo-as-source wording in `$APP/docs/THIRD_PARTY_MODELS.md`
-(flat-bug/insectDCT section and classifier paragraph: "Weights as packaged by the InsectAI Model
-Zoo") and `$APP/docs/IDENTIFICATION.md` (insectDCT paragraph, "from the InsectAI Model Zoo"), and
-fix there: MegaDetector Zenodo version v22 (not v27), the file is w8a32 (no calibration pictures).
+with `--private` a new collection is created private too. The app took the published names and
+pinned links in its round 314 (`update_catalogue.py --urls`, all 13 catalogue links match
+`published.json`). Left for an app session: `$APP/tool/model_downloads/README.md` still says the
+flat-bug and insectDCT cards give the check against the original; follow the card rules above
+in the app docs too.
 
 The MegaDetector file is also a GitHub release asset of the app (`v0.8.0-alpha.1`); that asset
 stays online forever. The owner's older HF repo `flower_visitor_order_detector` is unrelated.
