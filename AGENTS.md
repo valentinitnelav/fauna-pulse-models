@@ -6,14 +6,14 @@ This file provides guidance to AI coding agents (Claude Code, codex, etc.) when 
 ## Start here (every session)
 
 1. Read `docs/AGENT_OVERVIEW.md`: a short, state-only map of this repository (what each tool does,
-   environment, where model files live, what is published on Hugging Face, what must stay in sync
-   with the app). It is enough to start most tasks; open other files only as the task needs them.
-2. `docs/DECISIONS.md` is the append-only log of past decisions (why something is the way it is).
-   Do not read it in full: search it (`grep -n -i <keyword> docs/DECISIONS.md`) when the reason for
-   a choice matters.
-3. Keep both current: when a change alters what is true, replace the affected text in
-   `AGENT_OVERVIEW.md` (no history there, keep it under ~20k characters); when a decision is made,
-   append 2 to 5 lines to `DECISIONS.md` (date, decision, why, rejected options).
+   environment, where model files live, what is published on Hugging Face, the rules for model
+   cards, what must stay in sync with the app). It is enough to start most tasks; open other files
+   only as the task needs them.
+2. Keep it current: when a change alters what is true, replace the affected text (no history
+   there, history is git; keep it under ~20k characters). When the reason for a choice is not
+   obvious, give it in one short clause next to the fact, or in a code comment.
+3. No decision logs, journals or notes about the maintainer's thinking in tracked files: this
+   repository and the app's are public. This trickles down from the general rule of avoiding to share private information by accident.
 
 This repository has a sibling, the app [FaunaPulse](https://github.com/valentinitnelav/fauna-pulse/)
 (usually cloned at `~/InsectDetectApp/fauna-pulse`). The app reads the files made here; the
@@ -70,8 +70,10 @@ use placeholders such as `/path/to/...` or `<user>@<workstation>` in tracked fil
 
 **Hugging Face:**
 
-- Never replace, delete or squash a published file or repository history: the app pins every download
-  to a commit and checks the file's SHA-256. New weights get a new file name. Editing model cards is fine.
+- Never replace, delete or squash a published model file, class list or label pack, or a repository's
+  history: the app pins every download to a commit and checks the file's SHA-256. New weights get a new
+  file name. Editing model cards is fine, and so is correcting a `.json` manifest (the app never
+  downloads it; `publish/publish_hf.py --replace-manifests`).
 - Uploading publishes: do it only after the maintainer reviewed the model card, and never without approval.
 
 

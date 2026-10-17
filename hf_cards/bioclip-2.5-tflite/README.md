@@ -33,15 +33,19 @@ See [Original work](#original-work) below. These files are not provided or endor
 the Imageomics Institute.
 
 > I did not train BioCLIP 2.5. It is a general model for the whole tree of
-> life, not tuned for insects on flowers or for small crops from phone video, and how accurate
-> it is in FaunaPulse is not known yet: treat its answers as suggestions to check. It is slow:
-> on the tested phone (7.4 GB memory) it ran on the CPU only, about 5.5 s per crop, so it suits
-> analysing pictures afterwards; [BioCLIP 2](https://huggingface.co/Valen-Peregrine/bioclip-2-tflite)
-> is the model FaunaPulse is meant to use for now. You can build label packs for any list of
-> species that are in the authors' name list (TreeOfLife-200M, 794,878 names) with
+> life, not made specifically for FaunaPulse, and it has not yet been tested at scale in
+> FaunaPulse, so how accurate it is there is not known yet: treat its answers as suggestions to
+> check. It is slow: on the tested phone (7.4 GB memory) it ran on the CPU only, about 5.5 s per
+> crop, so it suits analysing pictures afterwards;
+> [BioCLIP 2](https://huggingface.co/Valen-Peregrine/bioclip-2-tflite) is the model FaunaPulse
+> is meant to use for now. Each label pack here narrows the authors' name list
+> (TreeOfLife-200M, 794,878 names) to certain groups of taxa: the BioCLIP software documentation
+> notes that limiting the possible names to the taxa that can be expected "may improve the
+> accuracy of the predictions"
+> ([pybioclip](https://imageomics.github.io/pybioclip/geo-restricted-taxa/)). Packs for other
+> groups of species in that list can be built with
 > `bioclip_export/build_label_pack.py` of
-> [fauna-pulse-models](https://github.com/valentinitnelav/fauna-pulse-models). I may build more
-> packs on request, but I cannot promise to.
+> [fauna-pulse-models](https://github.com/valentinitnelav/fauna-pulse-models).
 
 ## Files
 
@@ -134,6 +138,12 @@ PyTorch vs `.tflite` comparison.
 - Names and taxonomy are as published in TreeOfLife-200M, quirks included: the 32-family pack
   has 81 rows with kingdom "Metazoa" instead of "Animalia" and 105 whose species field is a code,
   an author name or a year (for example *Atherigona* "GRG-2020"); the Europe pack has none.
+- This file has not yet been tested at scale in FaunaPulse, so how accurate it is there is not
+  known yet. The app can run it, but the results depend on many factors: the quality of each
+  crop (focus, motion blur, light, resolution, video compression), how large and how complete
+  the organism is in the crop (distance, zoom, the detector's box), the label pack chosen (a
+  species that is not in the pack cannot be named), the phone and its camera, and the app's
+  settings. Try it on your own footage.
 
 ## Licence
 
@@ -141,10 +151,12 @@ PyTorch vs `.tflite` comparison.
   permission notice is in `LICENSE`, a verbatim copy of
   https://github.com/Imageomics/bioclip-2/blob/main/LICENSE (the model repository names MIT but
   has no licence file of its own).
-- **Label packs**: the names, taxonomy and embeddings come from TreeOfLife-200M, which its
-  authors release as a compilation under CC0 1.0. The common names in it come from the GBIF
-  Backbone Taxonomy (CC BY 4.0), so please credit GBIF when you reuse them. The six "none of
-  these" rows are my own and released under CC0 1.0.
+- **Label packs**: they follow the licence of their source. The names, taxonomy and embeddings
+  come from TreeOfLife-200M, which the BioCLIP authors release as a compilation under CC0 1.0
+  (see its dataset card, "Licensing Information"). The common names in it come from the GBIF
+  Backbone Taxonomy (CC BY 4.0, https://doi.org/10.15468/39omei), so please credit GBIF when you
+  reuse them. The six "none of these" rows (short descriptions such as a flower or a leaf,
+  embedded with the BioCLIP 2.5 text tower) were added for FaunaPulse on the same CC0 1.0 terms.
 
 ## Citation
 
@@ -174,6 +186,7 @@ For the label packs:
 
 ## Notes
 
-- Files in this repository are never replaced: the app pins each download to a commit and
-  checks its SHA-256. New weights or packs get a new file name.
+- Model files and label packs in this repository are never replaced: the app pins each
+  download to a commit and checks its SHA-256. New weights or packs get a new file name.
+- The `.json` manifest, which the app does not download, may be corrected.
 - BioCLIP 2.5 packs work only with BioCLIP 2.5 (1024 numbers per name), not with BioCLIP 2.

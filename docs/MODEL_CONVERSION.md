@@ -47,8 +47,8 @@ Why this is the recommended export (app support added in round 155):
 checkpoint, turns segmentation models (flat-bug) into box detectors, writes one file per
 input size and checks every file against PyTorch on your pictures
 ([`detector_export/README.md`](../detector_export/README.md), with phone timings of flat-bug n/s and insectDCT v8-s).
-Its default is fp16 weights, not w8a32: on flat-bug n at 640 px, w8a32 lost 6 of 28 boxes
-near the confidence threshold while fp16 kept all 28 with the same confidences; on the
+Its default is fp16 weights, not w8a32: fp16 stays closest to the original, while w8a32
+rounds more and can change boxes near the confidence threshold; on the
 Xiaomi's GPU both run equally fast, on its CPU w8a32 was 2.3 times faster. So w8a32 stays a
 good choice for CPU-bound phones, after checking its boxes.
 

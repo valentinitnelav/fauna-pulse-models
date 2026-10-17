@@ -4,8 +4,9 @@
 **/__pycache__/
 
 # Export outputs: model files, manifests, logs. They are published on Hugging Face,
-# never committed (large, and some models belong to collaborators).
-**/out/
+# never committed (large, and some models belong to collaborators). No trailing slash, so a
+# link to the SSD copy (ln -s .../<tool>/out <tool>/out) is ignored too.
+**/out
 *.log
 
 # Model weights anywhere in the tree

@@ -13,18 +13,20 @@ This script
      repository) and loads the V7 weights (the authors' HierarchicalClassifierV7 zip, unpacked);
   2. writes a phone file (.tflite): input = one 224 x 224 RGB crop in 0..1 (insectDCT applies no
      further colour normalisation), output = the 164 raw scores of the three heads one after the
-     other (19 + 41 + 104); fp16 weights by default; plus a .json manifest;
+     other (19 + 41 + 104); fp16 weights by default; plus a .json manifest (published with the
+     file);
   3. with --check-images: classifies every picture with insectDCT's own decision code
      (makePrediction, strongCheck=False as in insectDCT's own pipeline) twice, with the original
      network and with the phone file in its place, and prints both answers next to two candidate
-     rules for FaunaPulse (README section 4);
+     rules for FaunaPulse (README section 4); the summary goes to <stem>.check.json, kept local
+     (not in the manifest, so publishing it never publishes results on pictures that are not public);
   4. with --draft-taxa: writes the table that links every level-3 class to kingdom ... species,
      looked up in the TreeOfLife names that BioCLIP uses, plus a short hand-made list for names
      that are not taxa (e.g. "Apoidea small", "Vegetation"). Review the table before using it.
 
 Usage (environment: README section 1):
     python export_insectdct_cls.py --source-dir /path/to/insectdct-cls-v7 --backbone cnb \
-        --check-images ~/InsectDetectApp/test_videos/crops_bumblebees_720p_square
+        --check-images /path/to/check_crops
     python export_insectdct_cls.py --source-dir ... --draft-taxa /path/to/txt_emb_bioclip-2.5-vith14.json
 (--source-dir: README section 1; --zoo-dir is an older name of the same option.)
 """
@@ -482,7 +484,7 @@ def main() -> int:
         "heads": [{"level": i + 1, "size": n, "classes": levels[i]} for i, n in enumerate(sizes)],
         # a reused phone file keeps the date it was made; only the class list is new then
         "exported": (date.fromtimestamp(tflite.stat().st_mtime) if reused else date.today()).isoformat(),
-        "license": "GPL-3.0 (insectDCT, Bjerge et al. 2026); check before sharing",
+        "license": "GPL-3.0 (insectDCT, Bjerge et al. 2026)",
     }
 
     index1 = {c: i for i, c in enumerate(levels[0])}
@@ -500,9 +502,10 @@ def main() -> int:
     if args.check_images:
         images = sorted(p for p in args.check_images.iterdir() if p.suffix.lower() in (".jpg", ".jpeg", ".png"))
         print(f"\nChecking {min(len(images), args.check_limit)} pictures from {args.check_images}:")
-        manifest["check"] = check(clf, PhoneFile(tflite, sizes), images, lineages, ancestors, sizes,
-                                  args.check_limit)
-        print(json.dumps(manifest["check"], indent=1))
+        result = check(clf, PhoneFile(tflite, sizes), images, lineages, ancestors, sizes, args.check_limit)
+        print(json.dumps(result, indent=1))
+        (args.out / f"{stem}.check.json").write_text(
+            json.dumps({"file": tflite.name, "check": result}, indent=1, ensure_ascii=False))
     (args.out / f"{stem}.json").write_text(json.dumps(manifest, indent=1, ensure_ascii=False))
     print(f"\n{tflite} ({tflite.stat().st_size / 2**20:.1f} MiB) + {stem}.json + {class_list.name} (class list)")
     return 0

@@ -31,8 +31,10 @@ below. This file is not provided or endorsed by Microsoft or the MegaDetector au
 > birds, reptiles and insects, and it works best on large mammals), people and vehicles.
 > It is converted to `tflite` and published here so that FaunaPulse can be tried
 > with a ready-made detector, for example at a feeding site or a nest entrance.
-> How well it works in the app is not known, and I expect rather very poor results for insects,
-> especially in live use on natural backgrounds with insects flying to and visiting flowers.
+> It has not yet been tested at scale in the app, so how well it works there is not known yet.
+> Its authors say it works best on large mammals, so for insects, especially in live use on
+> natural backgrounds with insects flying to and visiting flowers, prefer the insect detectors
+> of the FaunaPulse collection.
 > See also [Limitations](#limitations).
 
 ## Files

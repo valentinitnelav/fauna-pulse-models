@@ -28,8 +28,8 @@ provided or endorsed by the insectDCT authors.
 > **This detector is for demo purposes for the FaunaPulse app.**
 > I did not train this model, and its authors did not make it for FaunaPulse.
 > It is converted to `tflite` and published here so that FaunaPulse can be tried
-> with a ready-made detector. How well it works in the app is unknown and not tested,
-> especially in live use on natural backgrounds with insects flying to and visiting flowers.
+> with a ready-made detector. It has not yet been tested at scale in the app, so how well it
+> works there is not known yet, especially in live use on natural backgrounds with insects flying to and visiting flowers.
 > The model was trained on whole pictures from fixed time-lapse camera traps
 > (resized to 1920 × 1080 pixels). FaunaPulse runs it on live phone video at 640 px.
 > See also [Limitations](#limitations).
@@ -39,7 +39,7 @@ provided or endorsed by the insectDCT authors.
 {{FILES_TABLE}}
 
 - `.json`: the export manifest: source weights and their SHA-256, the Ultralytics version saved
-  in the source checkpoint (8.4.156), and the agreement check below. Its `"file"` field gives the
+  in the source checkpoint (8.4.156) and file sizes. Its `"file"` field gives the
   file's name before upload (`insectdct-v8-s_640_fp16.tflite`; same SHA-256), and its `script`
   field, `tool/detector_export/export_detector.py`, is where the export script lived at the time
   (in the FaunaPulse app repository); it is now `detector_export/export_detector.py` of
@@ -87,9 +87,11 @@ not YOLOv8. FaunaPulse calls it `insectdct-v8s` (dataset version 8, size s).
 
 ## Checks
 
-- **Agreement with PyTorch** (same model, not an accuracy test): on 30 frames of a video clip of
-  bumblebees, all 17 PyTorch boxes found again, mean IoU 0.9999, confidences within 0.001.
-- **Phone** (Xiaomi 11T Pro, Snapdragon 888, model time only): 34 ms per picture on the GPU,
+- **Accuracy**: no large-scale test of this file in FaunaPulse has been carried out yet. Converting a
+  model to `.tflite` and storing its weights with fewer bits (here fp16) can change its
+  outputs, so no claim is made here about how accurately it finds insects when deployed in
+  FaunaPulse (see [Limitations](#limitations)).
+- **Phone speed** (Xiaomi 11T Pro, Snapdragon 888, model time only): 34 ms per picture on the GPU,
   1.6 s on the CPU (2 threads).
 
 ## Use in FaunaPulse
@@ -105,8 +107,7 @@ SHA-256. With any version you can also download it here and copy it via USB into
 (CPU only, Ultralytics 8.4.170, 1 October 2026):
 
 ```bash
-python export_detector.py --weights insects8Color11s.pt --name insectdct-v8-s --imgsz 640 \
-    --check-images /path/to/check_pictures --out out
+python export_detector.py --weights insects8Color11s.pt --name insectdct-v8-s --imgsz 640 --out out
 ```
 
 The script wrote `insectdct-v8-s_640_fp16.tflite`, published here as
@@ -118,11 +119,13 @@ The script wrote `insectdct-v8-s_640_fp16.tflite`, published here as
   other vegetation, mostly from European sites; dataset version 8 adds sites in Georgia, the
   Arctic and Danish farmland. The authors' tests of this YOLO11s model give a mean F1 of 0.81 over
   9 camera-trap test sets (`metrics/detectTestColorSV8.csv` in the insectDCT repository).
-- How it does on other kinds of pictures (phone video, insects in flight, light traps, lab or
-  hand-held photos) is not known.
 - FaunaPulse runs it at 640 × 640 pixels instead of 1920 × 1080 pixels.
-- The agreement check shows that the conversion matches the original, not how well it finds
-  insects in your setting.
+- This file has not yet been tested at scale in FaunaPulse, so how well it works there (live
+  phone video, insects in flight, other cameras and places) is not known yet. The app can run
+  it, but the results depend on many factors: image quality (focus, motion blur, light,
+  resolution, video compression), how large the insects appear in the picture (distance, zoom,
+  the area of interest), the background, the phone and its camera, and the app's settings (for
+  example the confidence threshold and the input size). Try it on your own footage.
 
 ## Licence
 
@@ -132,8 +135,11 @@ made here: converted to LiteRT with fp16 weights and a 640 x 640 input on 1 Octo
 was retrained. The conversion code is in fauna-pulse-models (AGPL-3.0), linked above.
 
 The insectDCT detector was fine-tuned with Ultralytics YOLO11 from Ultralytics' pretrained
-YOLO11s weights, and Ultralytics offers both under AGPL-3.0 or a paid Enterprise License, so
-check both licences before any commercial use.
+YOLO11s weights. Ultralytics offers both under AGPL-3.0 or a paid Enterprise License and
+states that "all Ultralytics YOLO trained models fall under the AGPL-3.0 License by default"
+(https://www.ultralytics.com/license). So this file is also covered by AGPL-3.0, next to
+insectDCT's GPL-3.0: use it under the terms of both, or with an Ultralytics Enterprise License
+for uses that AGPL-3.0 does not allow (for example closed-source commercial use).
 
 ## Citation
 
@@ -167,6 +173,7 @@ Also relevant:
 
 ## Notes
 
-- Files in this repository are never replaced: the app pins each download to a commit and
-  checks its SHA-256. New weights get a new file name.
+- Model files in this repository are never replaced: the app pins each download to a
+  commit and checks its SHA-256. New weights get a new file name.
+- The `.json` manifest, which the app does not download, may be corrected.
 - The authors also publish a medium model (YOLO11m).

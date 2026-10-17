@@ -9,14 +9,16 @@ What this does, in plain words:
      the phone skips the outline work (about a third of flat-bug's compute at 1024 px).
   3. Exports with Ultralytics' own LiteRT export, once per --imgsz (input size in pixels).
      Default: fp16 weights (half the size of float32; the Ultralytics float32 file is
-     cast by ../bioclip_export/quantise_tflite.py and its metadata copied over). fp16 gives
-     the same boxes as PyTorch on the CPU and is the phone GPU's own format. w8a32 (8-bit
-     weights, Ultralytics' default Android export) is a quarter of the size but changed
-     boxes near the threshold: flat-bug n at 640 px lost 6 of 28 boxes (round 264).
+     cast by ../bioclip_export/quantise_tflite.py and its metadata copied over). fp16 stays
+     closest to the original and is the phone GPU's own format. w8a32 (8-bit weights,
+     Ultralytics' default Android export) is a quarter of the size but rounds more, so it
+     can change boxes near the confidence threshold.
   4. Checks every phone file against the PyTorch model on --check-images (any photos): the
      same boxes should come out (matched by overlap), with nearly the same confidences.
      This is an agreement check between two files of the SAME model, not an accuracy test.
-  5. Writes <file>.json next to each .tflite: source, sha256, sizes, check results.
+  5. Writes <file>.json next to each .tflite (source, sha256, sizes), the manifest that is
+     published with the file. The check results go to <file>.check.json instead, kept
+     local, so publishing a manifest never publishes results on pictures that are not public.
 
 Why several input sizes: the model's cost grows with the square of the input size
 (1024 px costs 2.6x 640 px). Live detection on the phone needs speed (640 or less);
@@ -27,12 +29,13 @@ look larger in pixels than in training; FaunaPulse feeds the square area of inte
 
 Usage (environment: see README.md in this folder):
     python export_detector.py --weights flat_bug_S.pt --name flatbug-s --imgsz 1024 640 \
-        --check-images ~/InsectDetectApp/test_videos/frames_bumblebees_720p --out out
+        --check-images /path/to/check_pictures --out out
     python export_detector.py --weights insects8Color11s.pt --name insectdct-v8s --imgsz 1024 640 ...
     # full 8-bit (weights and maths, fastest on phone CPUs) needs calibration images:
     python export_detector.py --weights my.pt --name my --imgsz 640 --quantize int8 --data my_data.yaml
 
-Output: <out>/<name>_<imgsz>_<quantize>.tflite (+ .json), e.g. flatbug-s_1024_fp16.tflite.
+Output: <out>/<name>_<imgsz>_<quantize>.tflite (+ .json; + .check.json with --check-images),
+e.g. flatbug-s_1024_fp16.tflite.
 Import the file in FaunaPulse: home screen Menu -> Download & import models -> Import model files...
 No size limit is planned for detectors (larger files just run slower); app versions that still
 have the old cap reject detector files above 30 MiB.
@@ -249,9 +252,10 @@ def main() -> int:
             "script": "fauna-pulse-models/detector_export/export_detector.py",
         }
         if images:
-            manifest["check_vs_pytorch"] = compare(YOLO(str(src_copy)), YOLO(str(target), task="detect"),
-                                                   images, size, args.conf)
-            print(f"check vs PyTorch at {size} px: {manifest['check_vs_pytorch']}")
+            check = compare(YOLO(str(src_copy)), YOLO(str(target), task="detect"), images, size, args.conf)
+            print(f"check vs PyTorch at {size} px: {check}")
+            target.with_suffix(".check.json").write_text(
+                json.dumps({"file": target.name, "conf": args.conf, "check_vs_pytorch": check}, indent=2))
         target.with_suffix(".json").write_text(json.dumps(manifest, indent=2))
     return 0
 

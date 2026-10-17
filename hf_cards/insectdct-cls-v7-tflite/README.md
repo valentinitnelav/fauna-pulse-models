@@ -30,9 +30,9 @@ provided or endorsed by the insectDCT authors.
 > **This model is for demo purposes for the FaunaPulse app.**
 > I did not train this classifier, and its authors did not make it for FaunaPulse.
 > They trained it on crops from their own camera traps, mostly of Northern and
-> Central European flower visitors. How accurate it is on FaunaPulse crops (other cameras, other
-> places, insects in flight, small crops from phone video) is not known. Treat its answers as
-> suggestions to check. For identification, FaunaPulse is meant to use
+> Central European flower visitors. It has not yet been tested at scale in FaunaPulse, so how
+> accurate it is on FaunaPulse crops (from phone video, other cameras and places, insects in
+> flight, small crops) is not known yet. Treat its answers as suggestions to check. For identification, FaunaPulse is meant to use
 > [BioCLIP 2](https://huggingface.co/Valen-Peregrine/bioclip-2-tflite) with custom label
 > packs for now. This `tflite` converted insectDCT classifier is offered as an
 > alternative to compare with. Its 104 classes are fixed by its authors' training.
@@ -45,8 +45,7 @@ provided or endorsed by the insectDCT authors.
 - `.fpack`: its class list, which the app needs next to the model (same name). One row per
   level-3 class with the class's place in each of the three outputs and a taxonomy from kingdom
   to species; `Vegetation` is the "none of these" row.
-- `.json`: the export manifest (classes of each level, source file and its SHA-256, the check
-  below).
+- `.json`: the export manifest (classes of each level, source file and its SHA-256).
 - `LICENSE`: insectDCT's licence (GPL-3.0), copied from the authors' repository.
 
 ## Original work
@@ -99,11 +98,13 @@ provided or endorsed by the insectDCT authors.
 
 ## Checks
 
-- **Agreement with insectDCT's own code** (same model, not an accuracy test): on 34 crops from a
-  video clip of bumblebees, insectDCT's own decision code gave the same answer with the phone file
-  as with the original network on 34 of 34 crops; the largest score difference was 0.033.
-- **Phone** (Xiaomi 11T Pro, Snapdragon 888): 0.02 s per crop on the GPU, 0.13 s on the CPU
-  (2 threads); GPU and CPU agree (cosine 0.9998).
+- **Accuracy**: no large-scale test of this file in FaunaPulse has been carried out yet. Converting a
+  model to `.tflite` and storing its weights with fewer bits (here fp16) can change its
+  outputs, so no claim is made here about how accurately it names insects when deployed in
+  FaunaPulse (see [Limitations](#limitations)).
+- **Phone speed** (Xiaomi 11T Pro, Snapdragon 888): 0.02 s per crop on the GPU, 0.13 s on the
+  CPU (2 threads); on the app's fixed synthetic test picture, GPU and CPU agree (cosine
+  0.9998).
 - The authors publish per-network test results only for V6 (`metrics/*V6_ClassScoresTest.csv`;
   128 px crops, 80 classes): there, EfficientNetV2-S is ahead of ResNet50 at every level and
   ConvNeXt-Base ahead of both. No such results are published for V7. ConvNeXt-Base does not run
@@ -126,14 +127,13 @@ loads the V7 weights from the authors' zip (unpacked) and converts them:
 
 ```bash
 python export_insectdct_cls.py --source-dir /path/to/HierarchicalClassifierV7 \
-    --code-dir /path/to/insectDCT --backbone eff2s --check-images /path/to/check_crops
+    --code-dir /path/to/insectDCT --backbone eff2s
 ```
 
 The network file was written on 1 October 2026 as `insectdct-cls-v7_eff2s_fp16.tflite` (the
 script's naming at the time) and is published here under the FaunaPulse naming rule (same
 bytes). The class list and the manifest were written again by the script on 16 October 2026
-under the new name, from the authors' zip and code downloaded from their links (same check
-result), because the class list names the model file it belongs to and the app checks that
+under the new name, from the authors' zip and code downloaded from their links, because the class list names the model file it belongs to and the app checks that
 name. The `.json` keeps the network's date (`exported`) and records the class list's
 (`class_list_written`).
 
@@ -142,9 +142,11 @@ name. The `.json` keeps the network's date (`exported`) and records the class li
 - Trained by its authors on camera-trap crops of flower visitors, mostly Northern and Central
   European taxa. It can only answer with its 104 classes, so a taxon it was not trained on gets
   the most similar class.
-- How accurate it is on other cameras, places and kinds of crops is not known.
-- The agreement check shows that the conversion matches the original, not how well it names
-  insects in your setting.
+- This file has not yet been tested at scale in FaunaPulse, so how accurate it is there is not
+  known yet. The app can run it, but the results depend on many factors: the quality of each
+  crop (focus, motion blur, light, resolution, video compression), how large and how complete
+  the insect is in the crop (distance, zoom, the detector's box), whether the taxon is among its
+  104 classes, the phone and its camera, and the app's settings. Try it on your own footage.
 
 ## Licence
 
@@ -187,5 +189,6 @@ Also relevant:
 
 ## Notes
 
-- Files in this repository are never replaced: the app pins each download to a commit and
-  checks its SHA-256. New weights get a new file name.
+- The model file and its class list in this repository are never replaced: the app pins
+  each download to a commit and checks its SHA-256. New weights get a new file name.
+- The `.json` manifest, which the app does not download, may be corrected.

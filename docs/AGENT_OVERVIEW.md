@@ -1,7 +1,7 @@
 # Agent overview (state only)
 
-What is true now and where it lives. Replace text when it changes; history goes to
-`docs/DECISIONS.md` (append-only) and git. Keep under ~20k characters.
+What is true now, where it lives, and the reason where it is not obvious. Replace text when it
+changes; history is git. Keep under ~20k characters.
 
 ## Purpose
 
@@ -9,6 +9,11 @@ PC side of the FaunaPulse Android app (app repo `valentinitnelav/fauna-pulse`, u
 `~/InsectDetectApp/fauna-pulse`, called `$APP` below). Converts detectors and identification
 models to LiteRT `.tflite` (+ `.fpack` name lists), publishes them on Hugging Face
 (`Valen-Peregrine`) with model cards; the app's bundled download catalogue points at them.
+
+The tools came from the app repo by plain copy (fauna-pulse@c4c367d, 2026-10-15); their older
+history stays there. Still in the app: `tool/video_eval` (scores the app's tracking output),
+`tool/perf_summary.dart` (imported by a CI test), `tool/model_downloads` (edits the bundled
+catalogue) and the `.fpack` test fixtures.
 
 ## Tools (all CPU-only; Python 3.12; shared venv `.venvs/export`, exact pins `requirements-lock.txt`)
 
@@ -18,8 +23,8 @@ import path and breaks `from fpack import ...` and the sibling imports.
 
 | Script | Does | In -> out | Needs |
 |---|---|---|---|
-| `detector_export/export_detector.py` | YOLO `.pt` -> fp16 (default) / w8a32 / fp32 / int8 `.tflite`; flat-bug segmentation -> box detector; agreement check vs PyTorch; `.json` manifest (sha256, sizes, check) | `--weights --name --imgsz ... --check-images` -> `out/<name>_<px>_<q>.tflite/.json` | int8: `--data` YAML with calibration images; imports `../bioclip_export/quantise_tflite.py` (fp16 cast) |
-| `classifier_export/export_insectdct_cls.py` | insectDCT V7 `.pth` -> `.tflite` + `.json` + class-list `.fpack`; checks vs insectDCT's own code; `--draft-taxa` rewrites tracked `taxa/insectdct-cls-v7.csv` | `--source-dir` (authors' V7 zip, unpacked) + `--code-dir` (insectDCT's `common/`, GPL code; `--zoo-dir` = old alias) -> `out/` | imports `../bioclip_export` (fpack, export_image_tower, quantise_tflite) |
+| `detector_export/export_detector.py` | YOLO `.pt` -> fp16 (default) / w8a32 / fp32 / int8 `.tflite`; flat-bug segmentation -> box detector; agreement check vs PyTorch; `.json` manifest (sha256, sizes; published) + local `.check.json` (check results, never published) | `--weights --name --imgsz ... --check-images` -> `out/<name>_<px>_<q>.tflite/.json` | int8: `--data` YAML with calibration images; imports `../bioclip_export/quantise_tflite.py` (fp16 cast) |
+| `classifier_export/export_insectdct_cls.py` | insectDCT V7 `.pth` -> `.tflite` + `.json` + class-list `.fpack`; checks vs insectDCT's own code (local `.check.json`); `--draft-taxa` rewrites tracked `taxa/insectdct-cls-v7.csv` | `--source-dir` (authors' V7 zip, unpacked) + `--code-dir` (insectDCT's `common/`, GPL code; `--zoo-dir` = old alias) -> `out/` | imports `../bioclip_export` (fpack, export_image_tower, quantise_tflite) |
 | `bioclip_export/export_image_tower.py` | BioCLIP 1/2/2.5 image tower -> `.tflite` (GPU-friendly 4-d attention, normalisation + L2 built in) + `.json` | HF download or `--weights` -> `out/<model>_<px>_<prec>.tflite` | ~7 GB RAM (11 GB for 2.5), internet |
 | `bioclip_export/quantise_tflite.py` | fp32 `.tflite` -> fp16 / int8 (dynamic range) / int8 weights; patches an ai-edge-quantizer 0.9 bug | writes next to input | no calibration images |
 | `bioclip_export/build_label_pack.py` | TreeOfLife embeddings, filtered, + "none of these" sink rows -> label pack `.fpack` | HF dataset (2.7 GB) or `--embeddings-dir` -> `out/<pack_id>.fpack` | torch (text tower), internet |
@@ -28,7 +33,7 @@ import path and breaks `from fpack import ...` and the sibling imports.
 | `bioclip_export/inspect_tflite.py` | ops and weight storage of a `.tflite` (positional arg, no `--help`) | prints | |
 | `bioclip_export/reproduce_track_conf.py` | recomputes the app's per-track pooling off the phone | session `identification/embeddings_*` + pack | own copy of the fpack reader |
 | `bioclip_export/fpack.py` | `.fpack` format: `write_fpack`, `write_class_list`, `read_fpack`, `class_probabilities`; `__main__` writes the app's test fixtures (2 positional paths; no argparse: `--help` would create a file) | | numpy |
-| `publish/publish_hf.py` | dry run (default; `--write-cards DIR` writes the rendered cards, metadata checked by the Hub) / `--upload --repo <one>` / `--verify [--full]`; config `publish/hf_repos.json`, cards `hf_cards/<repo>/README.md` (`{{FILES_TABLE}}`, `{{CODE_COMMIT}}` filled at upload), result `publish/published.json` | `--catalogue $APP/assets/model_downloads.json` | huggingface_hub, `hf auth login`; refuses unpushed code commit, catalogue mismatch, replacing a file |
+| `publish/publish_hf.py` | dry run (default; `--write-cards DIR` writes the rendered cards, metadata checked by the Hub) / `--upload --repo <one>` / `--verify [--full]`; config `publish/hf_repos.json`, cards `hf_cards/<repo>/README.md` (`{{FILES_TABLE}}`, `{{CODE_COMMIT}}` filled at upload), result `publish/published.json` | `--catalogue $APP/assets/model_downloads.json` | huggingface_hub, `hf auth login`; refuses unpushed code commit, catalogue mismatch, replacing a file (except a corrected `.json` with `--replace-manifests`) |
 | `legacy/*.py` | first YOLO exports (Jun-Aug 2026), superseded by `detector_export`; not the exact recipe of the MDV6 file (they pass options its Ultralytics 8.3.235 lacks) | | |
 
 Measured results (phone timings, fp16 vs w8a32 vs int8) are in each tool's README.
@@ -48,7 +53,8 @@ Face (table below) and the source models from their authors' links (model cards)
   holds BioCLIP 2.5; `detector_export/out/MDV6-yolov10-c_int8_256.tflite` is the copy of the
   app's GitHub release asset.
 - `publish/publish_hf.py --upload` and the dry run read the `local` paths of `publish/hf_repos.json`
-  (`<tool>/out/...`): copy the needed files back from the SSD (or export again) first.
+  (`<tool>/out/...`): with the SSD plugged in, link them (`ln -s
+  /media/$USER/PortableSSD/fauna-pulse-models/<tool>/out <tool>/out`, git-ignored) or copy them back.
   `--verify` needs no local files. The app's real-file test: `FAUNAPULSE_MODELS_REPO=/media/$USER/PortableSSD/fauna-pulse-models`.
 - Hugging Face cache (BioCLIP 2 source weights 1.7 GB, TreeOfLife-200M species names 2.8 GB):
   `/media/$USER/PortableSSD/.cache/huggingface/hub`, removed from `$HOME/.cache/huggingface`.
@@ -75,8 +81,9 @@ file was re-downloaded and SHA-256-checked while private; once public, `publish_
 download the big BioCLIP files again). Pinned links: `publish/published.json`. Layout:
 one public repo per model family under `Valen-Peregrine`, named after the app's model id
 without the size or backbone part, plus `-tflite`; sizes, input sizes and precisions are
-separate files in it. Files are published under the app's naming rule (10 of the 12 catalogue
-files get a new name, same bytes; `publish_hf.py` matches them to the catalogue by SHA-256), each
+separate files in it (one card and licence per family; a repo per size would repeat cards that
+drift apart). Files are published under the app's naming rule, because a published name can
+never change (10 of the 12 catalogue files got a new name, same bytes; `publish_hf.py` matches them to the catalogue by SHA-256), each
 repo also gets the original model's `LICENSE` (`hf_cards/<repo>/LICENSE`, verbatim upstream text).
 Card sources: `hf_cards/<repo>/README.md`. Provenance (authors, citations, licences, source
 weights and their SHA-256) was researched and verified on 2026-10-15; the cards hold the result.
@@ -120,6 +127,11 @@ Facts that are easy to get wrong (verified 2026-10-15, sources on the cards):
   result; new `.fpack` SHA-256 `6d5ec961...`, which the catalogue takes when the links go in). Label packs
   pair by file name and size only.
 
+Pending upload (2026-10-17): the corrected cards of all six repos, and for flat-bug (N, S), insectDCT v8
+and the insectDCT classifier corrected `.json` manifests (check results removed, now in local
+`.check.json` files next to them on the SSD; classifier licence note shortened):
+`--upload --repo X --replace-manifests` once per repo, after the code commit is pushed.
+
 Later uploads: one repo per step, `--upload --repo X --private`, owner checks, then public;
 with `--private` a new collection is created private too. Next, an app round (app Round 312 already added the tool): catalogue names + pinned links
 (`update_catalogue.py --urls`, matching by SHA-256), flat-bug S entry, the new class-list SHA-256.
@@ -130,6 +142,24 @@ fix there: MegaDetector Zenodo version v22 (not v27), the file is w8a32 (no cali
 
 The MegaDetector file is also a GitHub release asset of the app (`v0.8.0-alpha.1`); that asset
 stays online forever. The owner's older HF repo `flower_visitor_order_detector` is unrelated.
+
+## Model card rules (owner's)
+
+- Original authors, paper, code and source weights (with SHA-256) near the top, from the
+  authors' own links only; detector cards carry the owner's demo disclaimer.
+- No accuracy claims for the converted files: say that no large-scale test in FaunaPulse has
+  been carried out yet and what results depend on (image quality, size of the insect in the
+  picture, background, phone, app settings). Do not publish agreement-check results. Phone
+  speeds and the authors' own published results are fine.
+- Do not cast doubt on the authors' models: "not yet tested at scale in FaunaPulse", not "how it
+  does on X is not known".
+- Licences: the original `LICENSE` verbatim in each repo. Ultralytics-trained models: quote
+  https://www.ultralytics.com/license ("all Ultralytics YOLO trained models fall under the
+  AGPL-3.0 License by default") and say AGPL-3.0 applies (or an Enterprise License). Label packs
+  follow their source, TreeOfLife-200M (CC0 1.0, the BioCLIP authors' licence); its common names
+  are from the GBIF Backbone Taxonomy (CC BY 4.0, credit GBIF).
+- Label packs narrow the authors' name list to some taxa (pybioclip: this "may improve the
+  accuracy"); they are not presented as own work.
 
 ## How the app uses published files (app side, for reference)
 
@@ -168,8 +198,9 @@ both), so regenerating it changes the file.
 
 ## Invariants
 
-- Never replace or delete a published HF file or squash history (pinned links + SHA-256 in installed apps).
+- Never replace or delete a published model file, class list or label pack, or squash history (pinned
+  links + SHA-256 in installed apps); `.json` manifests may be corrected (the app never downloads them).
 - Collaborator models are never published or committed.
 - No usernames, host names, phone serials or collaborators' dataset/run names in tracked files.
-- fp16 is the default phone precision (w8a32 changed boxes near the threshold, round 264);
+- fp16 is the default phone precision (w8a32 rounds more and can change boxes near the threshold);
   full INT8 is for CPU-only phones and needs calibration images.

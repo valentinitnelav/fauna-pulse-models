@@ -26,17 +26,9 @@ Does quantising need a GPU? No. This script runs on any computer's CPU (the
 slow part, converting PyTorch to .tflite, is done before it). Whether the quantised
 model then runs faster depends on where it runs: fp16 helps a GPU, int8 can help a CPU.
 
-Measured with BioCLIP 2 (ViT-L/14) on 30 frames of a bee, against the original PyTorch
-model (round 250, verify_parity.py):
-
-    kind          size     same family as the original
-    fp32          1216 MB  (reference)
-    fp16           609 MB  30 of 30 (cosine 1.0000)
-    int8-weights   309 MB  29 of 30 (cosine 0.9995)
-    int8           309 MB  24 of 30 (cosine 0.9969)
-
-All int8 misses were frames where the original model itself was unsure (its top family
-below 50 %). On a laptop CPU (Intel i5-8350U, 4 threads) all four took 1.0 to 2.0 s per
+Sizes with BioCLIP 2 (ViT-L/14): fp32 1216 MB, fp16 609 MB, int8-weights and int8 309 MB.
+Fewer bits round more, so check a quantised file against the original with
+verify_parity.py on your own crops. On a laptop CPU (Intel i5-8350U, 4 threads) all four took 1.0 to 2.0 s per
 crop; int8 was at most about 20 % faster, less than the laptop's own run-to-run spread.
 On the phone, fp16 on the GPU took 0.27 s per crop against 2.6 s on the CPU (Xiaomi test
 phone, Snapdragon 888). The app therefore ships BioCLIP as fp16 and runs it on the GPU

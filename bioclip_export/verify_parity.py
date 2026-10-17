@@ -16,8 +16,7 @@ Reading the numbers for a quantised file (quantise_tflite.py): the family is tak
 way the app reports it (the probabilities of a family's species added up), and the
 agreement is also shown for the images where PyTorch itself is sure (top family at 50 %
 or more). Disagreements only on unsure images are near-ties that small rounding flips;
-disagreements on sure images mean the file is not fit for use. Round 250, BioCLIP 2 on
-30 frames: fp16 30/30, int8-weights 29/30, int8 24/30 (every miss on an unsure frame).
+disagreements on sure images mean the file is not fit for use.
 """
 
 from __future__ import annotations

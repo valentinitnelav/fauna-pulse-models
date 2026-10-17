@@ -23,7 +23,7 @@ The CPU build of PyTorch is enough; no GPU is needed (also not for full INT8).
 
 ```bash
 python export_detector.py --weights /path/to/flat_bug_S.pt --name flatbug-s --imgsz 1024 640 \
-    --check-images ~/InsectDetectApp/test_videos/frames_bumblebees_720p --out out
+    --check-images /path/to/check_pictures --out out
 ```
 
 What happens, per model:
@@ -36,14 +36,17 @@ What happens, per model:
 3. One phone file per `--imgsz`, made by Ultralytics' own LiteRT export, with **fp16**
    weights (half the float32 size; the float32 file is cast by
    `../bioclip_export/quantise_tflite.py` and the Ultralytics metadata copied over).
-   fp16 gives the same boxes as PyTorch and is the phone GPU's own format. `--quantize
+   fp16 stays closest to the original and is the phone GPU's own format. `--quantize
    w8a32` (8-bit weights, Ultralytics' default Android export, a quarter of the size) is
-   faster on a phone CPU but moved boxes near the threshold (see section 3).
+   faster on a phone CPU but rounds more, so it can change boxes near the confidence
+   threshold: check it on your own pictures.
 4. Agreement check: every phone file against the PyTorch model on `--check-images`
    (boxes matched by overlap; missed/extra boxes, mean overlap, largest confidence
    difference, PC time per image). Two files of the same model should agree; this is not
    an accuracy test.
-5. A `.json` manifest next to each file (source file and its sha256, sizes, check results).
+5. A `.json` manifest next to each file (source file and its sha256, sizes), published with the
+   file. The check results go to a separate `.check.json`, kept local, so a published manifest
+   never carries results on pictures that are not public.
 
 Output names say model, input size and quantisation: `flatbug-s_1024_fp16.tflite`. Import
 them in the app (home screen Menu, Download & import models, Import model files…), then run
@@ -62,27 +65,23 @@ live detection, 1024 for analysing videos afterwards.
 
 ## 3. Models exported so far
 
-Round 264 (2026-10-01), the authors' weights (see Licences), checked on the 32 frames of
-`~/InsectDetectApp/test_videos/frames_bumblebees_720p` (confidence 0.25). Phone: Xiaomi
+Round 264 (2026-10-01), the authors' weights (see Licences). Phone speed: Xiaomi
 11T Pro (Snapdragon 888, Adreno 660 GPU), plugged in, the app's `integration_test/detector_speed_check_test.dart`
 (model time only, 10 runs after 3 warm-up runs; no camera, cropping or tracking).
 
-| File | Size | Boxes vs PyTorch | Phone GPU | Phone CPU (2 threads) |
-|---|---|---|---|---|
-| `ArthroNat_flatbug_yolo11n_int8_640` (today's live model, for comparison) | 2.8 MiB | | 20 ms | 293 ms |
-| `flatbug-n_640_fp16` | 5.4 MiB | 28 of 28, conf. within 0.006 | 19 ms | 653 ms |
-| `flatbug-n_640_w8a32` | 2.9 MiB | 22 of 28 (6 lost near the threshold), conf. within 0.12 | 17 ms | 278 ms |
-| `flatbug-n_1024_fp16` | 5.5 MiB | 40 of 40, conf. within 0.005 | 37 ms | 1.9 s |
-| `flatbug-s_640_fp16` | 19.0 MiB | 18 of 18, conf. within 0.002 | 34 ms | 1.7 s |
-| `flatbug-s_1024_fp16` | 19.2 MiB | 31 of 31, conf. within 0.002 | 71 ms | 5.0 s |
-| `insectdct-v8s_640_fp16` | 18.3 MiB | 17 of 17, conf. within 0.001 | 34 ms | 1.6 s |
-| `insectdct-v8s_1024_fp16` | 18.5 MiB | 22 of 22, conf. within 0.002 | 76 ms | 4.2 s |
+| File | Size | Phone GPU | Phone CPU (2 threads) |
+|---|---|---|---|
+| `ArthroNat_flatbug_yolo11n_int8_640` (today's live model, for comparison) | 2.8 MiB | 20 ms | 293 ms |
+| `flatbug-n_640_fp16` | 5.4 MiB | 19 ms | 653 ms |
+| `flatbug-n_640_w8a32` | 2.9 MiB | 17 ms | 278 ms |
+| `flatbug-n_1024_fp16` | 5.5 MiB | 37 ms | 1.9 s |
+| `flatbug-s_640_fp16` | 19.0 MiB | 34 ms | 1.7 s |
+| `flatbug-s_1024_fp16` | 19.2 MiB | 71 ms | 5.0 s |
+| `insectdct-v8s_640_fp16` | 18.3 MiB | 34 ms | 1.6 s |
+| `insectdct-v8s_1024_fp16` | 18.5 MiB | 76 ms | 4.2 s |
 
-- Every file compiled on the phone's GPU. On a single check picture the phone's boxes
-  matched the PC's to within 0.003 of the picture size (GPU in 16-bit), so the app decodes
-  these files correctly.
-- Removing flat-bug's outline branch changed no box (40 of 40 and 31 of 31 identical,
-  same confidences).
+- Every file compiled and ran on the phone's GPU.
+- Removing flat-bug's outline branch leaves its box and class layers untouched.
 - On this phone's GPU even the "s" models at 1024 px take 70 to 80 ms per picture (about
   13 per second, model time only), fine for analysing videos afterwards and possibly for
   live use; at 640 px they take 34 ms. Long runs heat the phone, so check the frame rate
@@ -91,8 +90,9 @@ Round 264 (2026-10-01), the authors' weights (see Licences), checked on the 32 f
 - On the CPU, w8a32 (8-bit maths) was 2.3 times faster than fp16 for flat-bug n; on the
   GPU the two are equal. So fp16 for GPU phones and for analysing afterwards; w8a32 or a
   calibrated int8 only where a phone must run on its CPU, after checking its boxes.
-- The bundled check pictures are a YouTube clip: they show that files agree, not how well
-  a model finds insects. Choose between models and sizes on your own field footage.
+- None of these files has been tested at scale for accuracy, in FaunaPulse or elsewhere;
+  conversion and fewer bits can change a model's outputs. Choose between models and sizes on
+  your own field footage.
 
 ## 4. Making models smaller or faster: what exists
 

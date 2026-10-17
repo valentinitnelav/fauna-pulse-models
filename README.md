@@ -92,7 +92,8 @@ Hugging Face commit and checks the file's SHA-256, so:
 - **Never replace or delete a published file**, and never squash a repository's history:
   installed apps would get a different file (rejected) or none at all. New weights get a
   new file name (or a new repository) and a new link in the app.
-- Editing a model card is fine (the files' links stay valid).
+- Editing a model card is fine (the files' links stay valid), and so is correcting a `.json`
+  manifest, which the app never downloads (`publish_hf.py --upload --replace-manifests`).
 
 `publish/publish_hf.py` does the upload, one repository per run. It checks every file's size
 and SHA-256 against the app's catalogue first (by SHA-256 when a file is published under a new

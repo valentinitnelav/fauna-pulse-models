@@ -6,8 +6,10 @@ rejects a file whose SHA-256 differs from the one in its bundled catalogue
 (assets/model_downloads.json in the app repository). So this script:
 
   * checks every local file against that catalogue BEFORE anything is uploaded;
-  * never replaces a published file (only the model card, README.md, may change);
-  * writes publish/published.json: per file the commit it was added in and its pinned URL
+  * never replaces a published file; only the model card (README.md) may change and, with
+    --replace-manifests, a corrected .json manifest (the app never downloads a manifest);
+  * writes publish/published.json: per file the commit it was added in (a corrected manifest:
+    the commit of the correction) and its pinned URL
     https://huggingface.co/<owner>/<repo>/resolve/<commit>/<file>, which goes into the app.
 
 What goes where is in publish/hf_repos.json; the model cards are hf_cards/<repo>/README.md
@@ -18,6 +20,7 @@ Usage (from the repository root, shared environment active; log in once with `hf
     python publish/publish_hf.py --catalogue "$APP/assets/model_downloads.json"            # dry run, all repos
     python publish/publish_hf.py --catalogue ... --write-cards /tmp/cards                  # + rendered cards to read
     python publish/publish_hf.py --catalogue ... --upload --repo flatbug-tflite --private   # one repo per step
+    python publish/publish_hf.py --catalogue ... --upload --repo flatbug-tflite --replace-manifests  # + corrected .json
     python publish/publish_hf.py --verify [--full]     # anonymous checks of published.json
 """
 
@@ -143,7 +146,7 @@ def render_card(cfg: dict, files: list[dict], commit: str) -> str:
 
 
 def upload(api, owner: str, collection: dict, name: str, cfg: dict, files: list[dict], card: str,
-           private: bool, published: dict) -> None:
+           private: bool, published: dict, replace_manifests: bool = False) -> None:
     from huggingface_hub import CommitOperationAdd, ModelCard
 
     ModelCard(card).validate()  # the Hub's own check of the card's metadata
@@ -151,26 +154,35 @@ def upload(api, owner: str, collection: dict, name: str, cfg: dict, files: list[
     api.create_repo(repo_id, repo_type="model", private=private, exist_ok=True)
     existing = {p.path: p for p in api.get_paths_info(repo_id, [f["name"] for f in files], expand=True)}
 
-    ops, new_names = [], []
+    ops, new_names, replaced = [], [], []
     for f in files:
         old = existing.get(f["name"])
         if old is not None:
             same = old.lfs.sha256 == f["sha256"] if old.lfs else old.blob_id == git_blob_id(f["path"])
-            if not same:
+            if same:
+                continue
+            # The app pins model files and class lists to a commit and checks their SHA-256, so those
+            # are never replaced. A manifest (.json) is never downloaded by the app: it may be corrected.
+            if not (replace_manifests and f["name"].endswith(".json")):
                 sys.exit(f"ERROR: {repo_id}/{f['name']} is already published with different content. "
-                         "Published files are never replaced: give the new file a new name.")
-            continue
+                         "Published files are never replaced: give the new file a new name"
+                         + (" (a corrected .json manifest: --replace-manifests)." if f["name"].endswith(".json") else "."))
+            replaced.append(f["name"])
+        else:
+            new_names.append(f["name"])
         ops.append(CommitOperationAdd(path_in_repo=f["name"], path_or_fileobj=str(f["path"])))
-        new_names.append(f["name"])
     ops.append(CommitOperationAdd(path_in_repo="README.md", path_or_fileobj=card.encode("utf-8")))
 
+    parts = ([f"Add {', '.join(new_names)}"] if new_names else []) + \
+            ([f"Correct {', '.join(replaced)}"] if replaced else [])
     info = api.create_commit(repo_id, operations=ops, repo_type="model",
-                             commit_message=f"Add {', '.join(new_names)}" if new_names else "Update model card")
-    print(f"  committed {info.oid} ({len(new_names)} new file(s) + model card)")
+                             commit_message="; ".join(parts) if parts else "Update model card")
+    print(f"  committed {info.oid} ({len(new_names)} new file(s), {len(replaced)} corrected manifest(s) + model card)")
 
     entry = published.setdefault(repo_id, {"files": {}})
     for f in files:
-        if f["name"] in new_names:  # a file keeps the commit it was first published in
+        # a file keeps the commit it was first published in; a corrected manifest points to its new version
+        if f["name"] in new_names or f["name"] in replaced:
             entry["files"][f["name"]] = {
                 "commit": info.oid, "bytes": f["bytes"], "sha256": f["sha256"],
                 "url": f"https://huggingface.co/{repo_id}/resolve/{info.oid}/{f['name']}",
@@ -233,6 +245,9 @@ def main() -> int:
     ap.add_argument("--private", action="store_true", help="create new repositories as private (switch to public on the Hub after review)")
     ap.add_argument("--verify", action="store_true", help="check the published files listed in publish/published.json")
     ap.add_argument("--full", action="store_true", help="with --verify: also download and hash every file")
+    ap.add_argument("--replace-manifests", action="store_true",
+                    help="with --upload: also replace published .json manifests whose content changed "
+                         "(model files and class lists are never replaced)")
     ap.add_argument("--write-cards", type=Path, metavar="DIR",
                     help="dry run: also write each rendered card to DIR/<repo>/README.md for review")
     args = ap.parse_args()
@@ -274,7 +289,8 @@ def main() -> int:
                 out.write_text(card, encoding="utf-8")
                 print(f"  card written to {out}")
         else:
-            upload(api, config["owner"], config["collection"], name, cfg, files, card, args.private, published)
+            upload(api, config["owner"], config["collection"], name, cfg, files, card, args.private, published,
+                   args.replace_manifests)
     return 0
 
 

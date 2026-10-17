@@ -50,7 +50,7 @@ older name of `--source-dir`; folders laid out by the InsectAI Model Zoo, with t
 ```bash
 python export_insectdct_cls.py --source-dir /path/to/HierarchicalClassifierV7 \
     --code-dir /path/to/insectDCT --backbone cnb \
-    --check-images ~/InsectDetectApp/test_videos/crops_bumblebees_720p_square
+    --check-images /path/to/check_crops
 ```
 
 `--backbone cnb | eff2s | res` (ConvNeXt-Base, EfficientNetV2-S, ResNet50),
@@ -72,8 +72,7 @@ python export_insectdct_cls.py --source-dir /path/to/HierarchicalClassifierV7 \
    app refuses a wrong pairing. A corrected taxonomy table only needs a new class list
    (rerun the script; the phone file is reused) and *Re-score with this pack* on the phone.
    **GPU fixes.** Two of the plain conversions were refused by the Xiaomi's GPU. The script
-   rewrites the two spots with the same arithmetic (the scores stay identical, difference 0.0
-   in PyTorch on all 34 check crops); the same kind of rewrite made BioCLIP run on phone GPUs
+   rewrites the two spots with the same arithmetic (the scores stay identical in PyTorch); the same kind of rewrite made BioCLIP run on phone GPUs
    (`four_dim_attention`, round 242):
    - *ConvNeXt, last two layers:* the average over the 7 x 7 grid came out of the converter
      with a GATHER_ND step, which phone GPUs cannot run, so the GPU refused the whole file.
@@ -87,28 +86,28 @@ python export_insectdct_cls.py --source-dir /path/to/HierarchicalClassifierV7 \
    with the phone file in its place. Same crop preparation, same per-class thresholds; only
    the network differs. Next to that, two candidate rules for FaunaPulse (section 5) on the
    phone file's scores. Two files of the same network should agree; this is not an accuracy
-   test.
+   test. The summary goes to `<stem>.check.json`, kept local (not in the published manifest).
 
 The taxonomy table (section 4) was drafted with
 `--draft-taxa /path/to/txt_emb_bioclip-2.5-vith14.json` (the TreeOfLife names list of BioCLIP 2.5,
 `embeddings/` of the Hugging Face dataset imageomics/TreeOfLife-200M) and then checked by eye.
 
-## 3. Results (round 265, 2026-10-01)
+## 3. Phone files and speed (round 265, 2026-10-01)
 
-Check pictures: the 34 crops of `~/InsectDetectApp/test_videos/crops_bumblebees_720p_square`
-(a YouTube clip; fit for "do the files agree" and timing, not for accuracy).
+| Network | Phone file (fp16) |
+|---|---|
+| ConvNeXt-Base (`cnb`) | 171 MiB |
+| EfficientNetV2-S (`eff2s`) | 42 MiB |
+| ResNet50 (`res`) | 51 MiB |
 
-| Network | Phone file (fp16) | insectDCT's own answer, phone file vs original | FaunaPulse rule (section 5), phone file vs original | Largest score difference |
-|---|---|---|---|---|
-| ConvNeXt-Base (`cnb`) | 171 MiB | 34 of 34 identical | 34 of 34 same taxon | 0.008 |
-| EfficientNetV2-S (`eff2s`) | 42 MiB | 34 of 34 identical | 34 of 34 same taxon | 0.03 |
-| ResNet50 (`res`) | 51 MiB | 34 of 34 identical | 34 of 34 same taxon | 0.05 |
+None of the three has been tested at scale for accuracy, in FaunaPulse or elsewhere; check a
+file against the original on your own crops with `--check-images`.
 
 On the Xiaomi test phone (Xiaomi 11T Pro, Snapdragon 888, plugged in), with the app's
 `integration_test/bioclip_gpu_check_test.dart --dart-define=MODEL=insectdct-cls` (files copied
 into the app's `files/identification/models/`; model time per crop after a warm-up, 6 crops;
-the GPU is kept only when its result on a fixed test picture matches the CPU's, cosine 0.995
-or more):
+the GPU is kept only when its result on a fixed synthetic test picture matches the CPU's,
+cosine 0.995 or more):
 
 | Network | Phone GPU | Phone CPU (2 threads) | GPU vs CPU agreement |
 |---|---|---|---|
@@ -123,22 +122,14 @@ GPU even on the 3.9 GB Samsung test phone (ConvNeXt needs about 0.8 GB to set up
 - *ConvNeXt on the GPU:* after the GATHER_ND fix the file compiles on the GPU, but the GPU's
   scores have nothing to do with the CPU's (cosine 0.034 on the test picture), so the app's
   GPU check sends it to the CPU, as designed. The cause is not found. Not 16-bit overflow in
-  its layer norms: on 12 check crops, values there reach about 200 (squared differences up
+  its layer norms: on test crops, values there reach about 200 (squared differences up
   to 42,000, below the 16-bit limit of 65,504), and dividing every layer norm's input by 32
   (exact, same scores) changed nothing on the phone. Finding it would take a layer-by-layer
   comparison on the phone. EfficientNetV2-S and ResNet50 run on the GPU with the same 104
   classes, about 35 times faster than ConvNeXt on the CPU, but they are different networks
   with their own answers (next point).
-- The three networks often disagree with each other on this clip, mostly on unclear crops
-  (several show plant parts or a blurred flower, not a clear insect). Which network names
-  this project's pollinators best can only be decided on labelled crops (for example the
-  owner's expert-labelled Zenodo crops), not here.
-- With the "mean of 3 levels" rule (section 5), insectDCT's ConvNeXt file named the same
-  taxon as insectDCT's own rule on 30 of the 31 crops that insectDCT's rule named (the 31st,
-  *Bombus terrestris*, stopped at the genus *Bombus*), and gave an order or class (e.g.
-  Hymenoptera, Insecta) on the 3 crops where insectDCT's rule said "Unsure". Using the
-  level-3 head alone gave higher confidences (1.00 instead of 0.95 for *Bombus*) and an order
-  where the mean rule stopped at class.
+- Which network names this project's pollinators best can only be decided on labelled
+  crops (for example the owner's expert-labelled Zenodo crops).
 
 ### Which network (round 266)
 
@@ -160,10 +151,8 @@ ConvNextBase". Both run equally fast on the Xiaomi's GPU, so EfficientNetV2-S is
 recommended file; ConvNeXt-Base remains the most accurate choice where 0.7 s per crop on the
 CPU is acceptable (overnight runs).
 
-In the app (round 266, Xiaomi, `bioclip_gpu_check_test.dart --dart-define=MODEL=insectdct-cls-v7_eff2s
---dart-define=SESSION=bumblebee-2`): the session's one track ID (3 crops) came out as *Bombus*
-(genus) at 95 % on the GPU and on the CPU, own class `Bombus` 84 %; GPU and CPU scores agree
-to cosine 0.9999; 0.02 s per crop on the GPU, 0.15 s on the CPU.
+In the app (round 266, Xiaomi, `bioclip_gpu_check_test.dart --dart-define=MODEL=insectdct-cls-v7_eff2s`):
+0.02 s per crop on the GPU, 0.15 s on the CPU.
 
 ## 4. Taxonomy table: `taxa/insectdct-cls-v7.csv`
 

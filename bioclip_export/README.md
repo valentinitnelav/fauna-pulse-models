@@ -58,8 +58,7 @@ attention layer passes the data through 5-dimensional tensors, which the phone's
 cannot run: files exported before round 242 therefore always fall back to the CPU (the
 phone's log says `RESHAPE ... has bad input dims size`; only 63 of 1488 steps could go to
 the GPU). With the 4d export all 1392 steps run on the GPU. The weights and the maths are
-the same: against PyTorch, both exports gave cosine 1.0000 and the same top family and
-species on 38 frames. On the Xiaomi test phone one crop took 0.27 s on the GPU instead of
+the same. On the Xiaomi test phone one crop took 0.27 s on the GPU instead of
 2.6 s on the CPU. `--attention torch` makes the old kind of file (for comparison only).
 The manifest records which kind a file is (`"attention": "4d"`).
 
@@ -91,16 +90,15 @@ export calls it) and works on any float32 `.tflite`, so collaborators can use it
 their own classifiers or embedders. For YOLO detectors, use Ultralytics' own export
 instead ([`docs/MODEL_CONVERSION.md`](../docs/MODEL_CONVERSION.md)). Its comments explain each kind in more detail.
 
-| Kind | Size (BioCLIP 2) | Top family as PyTorch (30 frames) | Faster where |
-|---|---|---|---|
-| fp32 | 1216 MB | (reference) | nowhere (the baseline) |
-| **fp16** (default) | 609 MB | 30 of 30, cosine 1.0000 | phone GPU (its native 16-bit maths); on a CPU the weights are widened back to 32 bits, so same speed |
-| int8-weights | 309 MB | 29 of 30, cosine 0.9995 | nowhere: weights widened to floats on loading; only the file is smaller |
-| int8 (dynamic range) | 309 MB | 24 of 30, cosine 0.9969 | CPU (8-bit maths); the gain depends on the chip |
+| Kind | Size (BioCLIP 2) | Faster where |
+|---|---|---|
+| fp32 | 1216 MB | nowhere (the baseline) |
+| **fp16** (default) | 609 MB | phone GPU (its native 16-bit maths); on a CPU the weights are widened back to 32 bits, so same speed |
+| int8-weights | 309 MB | nowhere: weights widened to floats on loading; only the file is smaller |
+| int8 (dynamic range) | 309 MB | CPU (8-bit maths); the gain depends on the chip |
 
-Measured in round 250 with `verify_parity.py` on 30 frames of a bee filmed off a laptop
-screen. Every int8 miss was a frame where PyTorch itself was unsure (top family below
-50 %). On a laptop CPU (Intel i5-8350U, 4 threads) all four took 1.0 to 2.0 s per crop:
+Fewer bits round more: fp16 stays closest to the original, int8 (8-bit maths) changes the
+outputs the most; check a quantised file with `verify_parity.py` on your own crops. On a laptop CPU (Intel i5-8350U, 4 threads) all four took 1.0 to 2.0 s per crop:
 int8 was at most about 20 % faster, which is less than the laptop's own run-to-run
 spread. On the Xiaomi test phone (Snapdragon 888) fp16 took 0.27 s per crop on the GPU
 and 2.6 s on the CPU. int8 on a phone CPU has not been measured yet.
@@ -134,17 +132,15 @@ python verify_parity.py --tflite out/bioclip25/bioclip-2.5_224_fp16.tflite --wei
 Measured on the 15 GB laptop (2026-10-01): export 4 minutes, 10.7 GB RAM at the peak (it
 used swap); the float32 intermediate is 2.5 GB, above the 2 GB limit of a plain `.tflite`,
 which the converter and the quantiser handle by themselves; the fp16 file is 1,266 MB with
-all 193 large layers in fp16 and all 32 attention layers GPU-friendly. Parity on 34
-bumblebee crops: cosine 1.0000, top family 34 of 34, top species 34 of 34. Packs built:
+all 193 large layers in fp16 and all 32 attention layers GPU-friendly. Packs built:
 `bioclip-2.5_pollinator-orders-europe_v1` (34,704 names, 74 MB) and
 `bioclip-2.5_flower-visitors-32fam_v1` (37,461 names, 80 MB); the 2.5 TreeOfLife table has
 794,878 names (BioCLIP 2's: 867,455), so the same filters keep slightly different lists.
 On the phone: the app's [`docs/IDENTIFICATION.md`](https://github.com/valentinitnelav/fauna-pulse/blob/main/docs/IDENTIFICATION.md), *BioCLIP 2.5* (CPU only on the 7.4 GB test phone,
 5.3 to 5.6 s per crop).
 
-int8 was tried too (`--precision int8`, 639 MB): cosine 0.996, top family 32 of 34 (one
-miss on a crop PyTorch was sure about), top species 30 of 34, and on the phone's CPU it
-was slower than fp16 (9.2 s against 5.6 s per crop). fp16 stays the choice.
+int8 was tried too (`--precision int8`, 639 MB): it changed the outputs more than fp16, and on
+the phone's CPU it was slower than fp16 (9.2 s against 5.6 s per crop). fp16 stays the choice.
 
 ## 3. Build a label pack (about 5 minutes plus the download)
 
@@ -223,8 +219,7 @@ python verify_parity.py --tflite out/bioclip-2_224_fp16.tflite --images /path/to
 
 Compares the phone model with the original PyTorch model on your images: cosine
 similarity of the embeddings and top-1 agreement at family and species level with the
-pack. Expected `PARITY OK` with mean cosine >= 0.99 (measured: 1.0000 for fp16 and
-fp32) and family agreement >= 95 % (measured: 100 %). The family is taken the way the
+pack. Expected `PARITY OK` with mean cosine >= 0.99 and family agreement >= 95 %. The family is taken the way the
 app reports it (a family's species probabilities added up); the line also says how
 many of the images PyTorch itself is sure about agree, which tells a quantised file's
 near-ties apart from real errors (section 2b). Any folder of insect photos or crops

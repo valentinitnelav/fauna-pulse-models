@@ -29,9 +29,9 @@ flat-bug authors.
 > **This detector is for demo purposes for the FaunaPulse app.**
 > I did not train this model, and its authors did not make it for FaunaPulse.
 > It is converted to `tflite` and published here so that FaunaPulse can be tried
-> with a ready-made detector. How well it works in the app is not known,
-> especially in live use on natural backgrounds with insects flying to and visiting flowers.
-> The model was not trained for that kind of deployment.
+> with a ready-made detector. It has not yet been tested at scale in the app, so how well
+> it works there is not known yet, especially in live use on natural backgrounds with insects
+> flying to and visiting flowers. The model was not trained for that kind of deployment.
 > See also [Limitations](#limitations).
 
 ## Files
@@ -42,7 +42,7 @@ flat-bug authors.
   flat-bug S (small), about 3.5 times larger. On a test phone it took about 1.8 times as long on
   the GPU and 2.6 times as long on the CPU (see [Checks](#checks)).
 - `.json`: the export manifest of each file: source weights and their SHA-256, the Ultralytics
-  version saved in the source checkpoint (8.3.15), and the agreement check below. Its
+  version saved in the source checkpoint (8.3.15) and file sizes. Its
   `script` field, `tool/detector_export/export_detector.py`, is where the export script lived
   at the time (in the FaunaPulse app repository); it is now `detector_export/export_detector.py`
   of fauna-pulse-models.
@@ -76,8 +76,8 @@ flat-bug authors.
 - **Network**: one class, `insect` (any terrestrial arthropod). flat-bug finds arthropods; it
   does not identify them.
 - **Changes**: the segmentation (outline) branch is removed, so each file is a plain box
-  detector; the box and class layers are untouched (removing the branch changed no box in the
-  check). Weights stored as fp16, input 640 x 640. Nothing was retrained.
+  detector; the box and class layers are untouched. Weights stored as fp16, input 640 x 640.
+  Nothing was retrained.
 - **Input**: one RGB image `[1, 3, 640, 640]` (NCHW), float32, values 0..1.
 - **Output**: the standard Ultralytics YOLO detection tensor `[1, 5, 8400]` (4 box values and 1
   class score per candidate) without NMS (the app does NMS).
@@ -89,11 +89,11 @@ flat-bug authors.
 
 ## Checks
 
-- **Agreement with PyTorch** (same model, not an accuracy test), on 30 frames of a video clip
-  of bumblebees:
-  - N: all 28 PyTorch boxes found again, mean IoU 0.9996, confidences within 0.006.
-  - S: all 18 PyTorch boxes found again, mean IoU 0.9999, confidences within 0.002.
-- **Phone** (Xiaomi 11T Pro, Snapdragon 888, model time only): N 19 ms per picture on the GPU,
+- **Accuracy**: no large-scale test of these files in FaunaPulse has been carried out yet. Converting a
+  model to `.tflite` and storing its weights with fewer bits (here fp16) can change its
+  outputs, so no claim is made here about how accurately they find insects when deployed in
+  FaunaPulse (see [Limitations](#limitations)).
+- **Phone speed** (Xiaomi 11T Pro, Snapdragon 888, model time only): N 19 ms per picture on the GPU,
   0.65 s on the CPU (2 threads); S 34 ms on the GPU, 1.7 s on the CPU.
 
 ## Use in FaunaPulse
@@ -109,10 +109,8 @@ With any version you can also download a file here and import it by hand (Import
 (CPU only, Ultralytics 8.4.170, 1 October 2026):
 
 ```bash
-python export_detector.py --weights flat_bug_N.pt --name flatbug-n --imgsz 640 \
-    --check-images /path/to/check_pictures --out out
-python export_detector.py --weights flat_bug_S.pt --name flatbug-s --imgsz 640 \
-    --check-images /path/to/check_pictures --out out
+python export_detector.py --weights flat_bug_N.pt --name flatbug-n --imgsz 640 --out out
+python export_detector.py --weights flat_bug_S.pt --name flatbug-s --imgsz 640 --out out
 ```
 
 ## Limitations
@@ -122,13 +120,17 @@ python export_detector.py --weights flat_bug_S.pt --name flatbug-s --imgsz 640 \
   into 1024 x 1024 px tiles. Its authors call this the model's central domain; only one of the
   training datasets shows insects on natural backgrounds (citizen-science photos, as described
   in the preprint, https://doi.org/10.1101/2025.04.08.647223). Insects on flowers and foliage
-  are outside that domain, so expect missed insects and false boxes there.
+  are outside that domain, so missed insects and false boxes may be more frequent there.
 - These files run the network once on a 640 x 640 picture, without flat-bug's multi-scale
-  tiling, so the accuracy reported in the paper does not carry over.
+  tiling, so the accuracy reported in the paper cannot be assumed for them.
 - N is the smallest flat-bug model; the preprint reports that the smallest model loses the
   most on the hardest datasets.
-- The agreement check shows that the conversion matches the original, not how well it finds
-  insects in your setting. Choose between models and sizes on your own footage.
+- These files have not yet been tested at scale in FaunaPulse, so how well they work there is
+  not known yet. The app can run them, but the results depend on many factors: image quality
+  (focus, motion blur, light, resolution, video compression), how large the insects appear in
+  the picture (distance, zoom, the area of interest), the background, the phone and its camera,
+  and the app's settings (for example the confidence threshold and the input size). Choose
+  between models and sizes on your own footage.
 
 ## Licence
 
@@ -140,8 +142,10 @@ are actually open source" (https://github.com/darsa-group/flat-bug/pull/120).
 flat-bug was trained with [Ultralytics YOLO](https://github.com/ultralytics/ultralytics),
 starting from Ultralytics' pretrained YOLOv8-seg models, and these files were exported with
 Ultralytics. Ultralytics offers its software and models under AGPL-3.0 or a paid Enterprise
-License. I found no source that settles whether that reaches these weights, so check before any
-commercial use. The training dataset is CC BY 4.0.
+License and states that "all Ultralytics YOLO trained models fall under the AGPL-3.0 License by
+default" (https://www.ultralytics.com/license). So these files are also covered by AGPL-3.0:
+use them under its terms, or with an Ultralytics Enterprise License (for example for
+closed-source commercial use). The training dataset is CC BY 4.0.
 
 ## Citation
 
@@ -179,5 +183,6 @@ Also relevant:
 
 ## Notes
 
-- Files in this repository are never replaced: the app pins each download to a commit and
-  checks its SHA-256. New weights get a new file name.
+- Model files in this repository are never replaced: the app pins each download to a
+  commit and checks its SHA-256. New weights get a new file name.
+- The `.json` manifests, which the app does not download, may be corrected.
