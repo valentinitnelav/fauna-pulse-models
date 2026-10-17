@@ -4,8 +4,9 @@ PC-side tools that turn detection and identification models into LiteRT files (`
 for [FaunaPulse](https://github.com/valentinitnelav/fauna-pulse), an Android app that detects
 and logs flower visitors (and other animals) on the phone itself. This repository holds the
 conversion and quantisation code and the model cards. The converted files themselves are
-published on Hugging Face ([Valen-Peregrine](https://huggingface.co/Valen-Peregrine)), where
-the app's "Download & import models" screen fetches them.
+published on Hugging Face
+([Valen-Peregrine/FaunaPulse](https://huggingface.co/collections/Valen-Peregrine/faunapulse-6ad22f04766aed6641688544)),
+where the app's "Download & import models" screen fetches them.
 
 ## Layout
 
@@ -134,3 +135,17 @@ The conversions are unofficial: not provided or endorsed by the original authors
 The three tool folders and `docs/MODEL_CONVERSION.md` were moved here from the app
 repository `fauna-pulse` at commit `c4c367d` (2026-10-15), where their history remains
 (`tool/bioclip_export`, `tool/classifier_export`, `tool/detector_export`, rounds 208 to 284).
+
+## Citation
+
+If you use this repository in your research, please cite it using the metadata in [`CITATION.cff`](CITATION.cff).
+GitHub renders a ready-made "Cite this repository" button from that file (top-right of the repository page).
+
+Example:
+
+> Ștefan, V. (2026). Tools to convert and quantise detection and identification models for the FaunaPulse app [Software]. Zenodo. https://doi.org/10.5281/zenodo... Source code: https://github.com/valentinitnelav/fauna-pulse-models
+
+Every release is archived on Zenodo. The concept DOI always resolves to the newest version.
+Each release also carries its own version DOI, listed on its Zenodo page and in `CITATION.cff`.
+
+If you need to cite the FaunaPulse app, then check it's own page at https://github.com/valentinitnelav/fauna-pulse

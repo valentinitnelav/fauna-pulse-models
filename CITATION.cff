@@ -1,0 +1,80 @@
+cff-version: 1.2.0
+message: >-
+  If you use this software, please cite it using the metadata below. This citation covers
+  the conversion tools only, not the models. If you use one of the converted models
+  published on Hugging Face, please also cite its original authors, as given on its model
+  card: https://huggingface.co/collections/Valen-Peregrine/faunapulse-6ad22f04766aed6641688544
+title: "Tools to convert and quantise detection and identification models for the FaunaPulse app"
+abstract: >-
+  Python tools, run on a computer, that convert animal detection and identification models
+  into LiteRT (.tflite) files for FaunaPulse, an Android app that detects, tracks and
+  identifies animals on the phone itself. The tools convert Ultralytics YOLO detectors
+  (segmentation models such as flat-bug become box detectors), the insectDCT hierarchical
+  classifier and the image encoders of BioCLIP 1, 2 and 2.5. They quantise the files to make
+  them smaller (fp16, 8-bit weights, or, for detectors, full INT8, which needs calibration
+  images) and compare a converted file's outputs with those of the original PyTorch model.
+  They also build label packs: lists of taxon names, taken from the BioCLIP authors'
+  TreeOfLife-200M list, that BioCLIP can choose from on the phone. An upload script
+  publishes the converted files on Hugging Face, each with a model card. The tools
+  are designed for any supported model, including detectors that users train themselves.
+  The models published so far were trained by others: each model card names their original authors and
+  how to cite them. The conversions are unofficial, not provided or endorsed by the original
+  authors. This repository holds the code and the texts of the model cards, not the model
+  files, which are on Hugging Face.
+type: software
+license: AGPL-3.0-only
+repository-code: "https://github.com/valentinitnelav/fauna-pulse-models"
+repository-artifact: "https://huggingface.co/collections/Valen-Peregrine/faunapulse-6ad22f04766aed6641688544"
+version: "0.1.0"
+date-released: "2026-10-17"
+keywords:
+  - FaunaPulse
+  - on-device AI
+  - edge AI
+  - mobile sensing
+  - smartphone
+  - camera trap
+  - LiteRT
+  - TensorFlow Lite
+  - model conversion
+  - quantisation
+  - object detection
+  - insect detection
+  - taxonomic identification
+  - BioCLIP
+  - biodiversity monitoring
+  - pollinator monitoring
+
+authors:
+  - family-names: "Ștefan"
+    given-names: "Valentin"
+    affiliation: "Helmholtz Centre for Environmental Research - UFZ; German Centre for Integrative Biodiversity Research Halle-Jena-Leipzig – iDiv e. V., Leipzig, Germany"
+    orcid: "https://orcid.org/0000-0002-4757-8008"
+
+# doi: 10.5281/zenodo.CONCEPT_ID
+# identifiers:
+#   - type: doi
+#     value: "10.5281/zenodo.CONCEPT_ID"
+#     description: "Concept DOI: all versions of fauna-pulse-models (resolves to the newest release)"
+#   - type: doi
+#     value: "10.5281/zenodo.VERSION_ID"
+#     description: "Version DOI: fauna-pulse-models v0.1.0"
+
+# Model authors and citations live on the model cards only (one place to keep correct;
+# Zenodo does not read references anyway).
+references:
+  - type: software
+    title: "FaunaPulse: a smartphone application for on-device detection, tracking and identification of animals"
+    authors:
+      - family-names: "Ștefan"
+        given-names: "Valentin"
+        orcid: "https://orcid.org/0000-0002-4757-8008"
+      - family-names: "Sittinger"
+        given-names: "Maximilian"
+        orcid: "https://orcid.org/0000-0002-4096-8556"
+      - family-names: "Knight"
+        given-names: "Tiffany"
+        orcid: "https://orcid.org/0000-0003-0318-1567"
+    doi: 10.5281/zenodo.22309221
+    repository-code: "https://github.com/valentinitnelav/fauna-pulse"
+    license: AGPL-3.0-only
