@@ -1,4 +1,10 @@
-# AI models for the FaunaPulse app
+# Model quantisation tools for the FaunaPulse app
+
+<p align="center">
+  <a href="https://doi.org/10.5281/zenodo.23436564"><img src="https://zenodo.org/badge/DOI/10.5281/zenodo.23436564.svg" alt="DOI"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-AGPL%20v3-blue.svg" alt="License: AGPL v3"></a>
+</p>
+
 
 PC-side tools that turn detection and identification models into LiteRT files (`.tflite`)
 for [FaunaPulse](https://github.com/valentinitnelav/fauna-pulse), an Android app that detects
@@ -138,14 +144,16 @@ repository `fauna-pulse` at commit `c4c367d` (2026-10-15), where their history r
 
 ## Citation
 
+<a href="https://doi.org/10.5281/zenodo.23436564"><img src="https://zenodo.org/badge/DOI/10.5281/zenodo.23436564.svg" alt="DOI"></a>
+
 If you use this repository in your research, please cite it using the metadata in [`CITATION.cff`](CITATION.cff).
 GitHub renders a ready-made "Cite this repository" button from that file (top-right of the repository page).
 
 Example:
 
-> Ștefan, V. (2026). Tools to convert and quantise detection and identification models for the FaunaPulse app [Software]. Zenodo. https://doi.org/10.5281/zenodo... Source code: https://github.com/valentinitnelav/fauna-pulse-models
+> Ștefan, V. (2026). Tools to convert and quantise detection and identification models for the FaunaPulse app [Software]. Zenodo. https://doi.org/10.5281/zenodo.23436563. Source code: https://github.com/valentinitnelav/fauna-pulse-models
 
-Every release is archived on Zenodo. The concept DOI always resolves to the newest version.
+Every release is archived on Zenodo. The concept DOI (https://doi.org/10.5281/zenodo.23436563) always resolves to the newest version.
 Each release also carries its own version DOI, listed on its Zenodo page and in `CITATION.cff`.
 
-If you need to cite the FaunaPulse app, then check it's own page at https://github.com/valentinitnelav/fauna-pulse
+If you need to cite the FaunaPulse app, then check it's own page at https://github.com/valentinitnelav/fauna-pulse (section [Citation](https://github.com/valentinitnelav/fauna-pulse#citation)).

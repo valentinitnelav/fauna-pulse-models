@@ -51,14 +51,14 @@ authors:
     affiliation: "Helmholtz Centre for Environmental Research - UFZ; German Centre for Integrative Biodiversity Research Halle-Jena-Leipzig – iDiv e. V., Leipzig, Germany"
     orcid: "https://orcid.org/0000-0002-4757-8008"
 
-# doi: 10.5281/zenodo.CONCEPT_ID
-# identifiers:
-#   - type: doi
-#     value: "10.5281/zenodo.CONCEPT_ID"
-#     description: "Concept DOI: all versions of fauna-pulse-models (resolves to the newest release)"
-#   - type: doi
-#     value: "10.5281/zenodo.VERSION_ID"
-#     description: "Version DOI: fauna-pulse-models v0.1.0"
+doi: 10.5281/zenodo.23436563
+identifiers:
+  - type: doi
+    value: "10.5281/zenodo.23436563"
+    description: "Concept DOI: all versions of fauna-pulse-models (resolves to the newest release)"
+  - type: doi
+    value: "10.5281/zenodo.23436564"
+    description: "Version DOI: fauna-pulse-models v0.1.0"
 
 # Model authors and citations live on the model cards only (one place to keep correct;
 # Zenodo does not read references anyway).
