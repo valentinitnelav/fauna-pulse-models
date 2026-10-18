@@ -135,9 +135,7 @@ list and packs unchanged; `--verify` passed for all 25 files. HF commits: `publi
 Later uploads: one repo per step, `--upload --repo X --private`, owner checks, then public;
 with `--private` a new collection is created private too. The app took the published names and
 pinned links in its round 314 (`update_catalogue.py --urls`, all 13 catalogue links match
-`published.json`). Left for an app session: `$APP/tool/model_downloads/README.md` still says the
-flat-bug and insectDCT cards give the check against the original; follow the card rules above
-in the app docs too.
+`published.json`).
 
 The MegaDetector file is also a GitHub release asset of the app (`v0.8.0-alpha.1`); that asset
 stays online forever. The owner's older HF repo `flower_visitor_order_detector` is unrelated.
