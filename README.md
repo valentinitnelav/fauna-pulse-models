@@ -132,8 +132,7 @@ Some rules exist on both sides. Change them together:
 
 The code in this repository is AGPL-3.0 (see `LICENSE`); it comes from the FaunaPulse app.
 Each converted model keeps the licence of its original model (AGPL-3.0, GPL-3.0 or MIT),
-named on its model card and in the app's
-[`docs/THIRD_PARTY_MODELS.md`](https://github.com/valentinitnelav/fauna-pulse/blob/main/docs/THIRD_PARTY_MODELS.md).
+named on its model card (source in [`hf_cards/`](hf_cards/)).
 The conversions are unofficial: not provided or endorsed by the original authors.
 
 ## Provenance

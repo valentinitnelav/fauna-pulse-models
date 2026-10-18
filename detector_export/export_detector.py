@@ -37,8 +37,8 @@ Usage (environment: see README.md in this folder):
 Output: <out>/<name>_<imgsz>_<quantize>.tflite (+ .json; + .check.json with --check-images),
 e.g. flatbug-s_1024_fp16.tflite.
 Import the file in FaunaPulse: home screen Menu -> Download & import models -> Import model files...
-No size limit is planned for detectors (larger files just run slower); app versions that still
-have the old cap reject detector files above 30 MiB.
+The app accepts detector files up to 2 GiB (larger files just run slower); app versions
+before 0.9.0-beta.1 reject detector files above 30 MiB.
 """
 
 from __future__ import annotations

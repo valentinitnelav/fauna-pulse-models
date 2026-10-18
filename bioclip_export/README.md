@@ -367,4 +367,5 @@ If you use these models, even if they were adapted for smartphone usage with Fau
 please note the citation suggestions of the BioCLIP2 model card on Hugging Face at
 https://huggingface.co/imageomics/bioclip-2#citation
 
-See also the app's [`docs/THIRD_PARTY_MODELS.md`](https://github.com/valentinitnelav/fauna-pulse/blob/main/docs/THIRD_PARTY_MODELS.md).
+See also the model cards [`hf_cards/bioclip-2-tflite`](../hf_cards/bioclip-2-tflite/README.md)
+and [`hf_cards/bioclip-2.5-tflite`](../hf_cards/bioclip-2.5-tflite/README.md).

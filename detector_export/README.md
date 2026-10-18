@@ -71,7 +71,7 @@ Round 264 (2026-10-01), the authors' weights (see Licences). Phone speed: Xiaomi
 
 | File | Size | Phone GPU | Phone CPU (2 threads) |
 |---|---|---|---|
-| `ArthroNat_flatbug_yolo11n_int8_640` (today's live model, for comparison) | 2.8 MiB | 20 ms | 293 ms |
+| `ArthroNat_flatbug_yolo11n_int8_640` (for comparison) | 2.8 MiB | 20 ms | 293 ms |
 | `flatbug-n_640_fp16` | 5.4 MiB | 19 ms | 653 ms |
 | `flatbug-n_640_w8a32` | 2.9 MiB | 17 ms | 278 ms |
 | `flatbug-n_1024_fp16` | 5.5 MiB | 37 ms | 1.9 s |

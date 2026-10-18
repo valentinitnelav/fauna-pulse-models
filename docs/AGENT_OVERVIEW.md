@@ -172,12 +172,12 @@ stays online forever. The owner's older HF repo `flower_visitor_order_detector` 
 - Downloader `$APP/lib/fauna_pulse/models/file_download.dart`: HTTPS-only redirect chain, final
   HTTP 200, SHA-256 checked when given, no auth headers (HF repos must be public and not gated).
   Use `https://huggingface.co/<owner>/<repo>/resolve/<commit>/<file>`, never `/blob/`.
-- Size caps: none for detectors (owner, 2026-10-16: detectors are downloaded from HF or
-  imported, not shipped in the APK, and run live or afterwards, so a large file is a speed
-  choice). The app still rejects detector `.tflite` files above 30 MiB
-  (`kMaxTfliteModelBytes`, `$APP/lib/fauna_pulse/models/model_file_security.dart`) until an
-  app session removes that cap. Identification model or `.fpack`: 2 GiB.
-- Licences and citations of every model: `$APP/docs/THIRD_PARTY_MODELS.md`.
+- Size limit: 2 GiB for every model file and name list, detectors included
+  (`kMaxModelFileBytes`, `$APP/lib/fauna_pulse/models/model_file_security.dart`). Model files
+  are downloaded or imported, never shipped in the APK, so a large detector only costs speed.
+  App versions before 0.9.0-beta.1 reject detector files above 30 MiB.
+- Licences and citations: each model's card in `hf_cards/` (the only source). Models the app
+  knows but does not offer (ArthroNat n) keep licence and source in `$APP/assets/model_downloads.json`.
 
 ## Keep in sync with the app
 
