@@ -22,8 +22,8 @@
 *.csv
 !**/taxa/*.csv
 
-# Local Claude Code settings (machine-specific paths)
-.claude/settings.local.json
+# Claude Code's own settings and hooks: personal tooling for this laptop's layout.
+.claude/
 
 # Local files, parked ideas, etc.
 parked/

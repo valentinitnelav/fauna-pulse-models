@@ -4,19 +4,25 @@
 Why: a wrong resize, colour order or quantisation would silently lower accuracy on
 the phone. This compares embeddings of real crops from both paths and reports the
 cosine similarity (1.0 = identical direction). With a label pack it also reports
-how often the two agree on the top family and species.
+how often the two give the same answer at order, family, genus and species, taken the way
+the app reports them (top-down: the best family inside the chosen order, and so on; the
+probabilities of a taxon's names added up), and the largest change of the shown percentage.
 
 Usage:
     python verify_parity.py --tflite out/bioclip-2_224_fp16.tflite --images ./crops [--pack out/x.fpack] [--limit 200]
+    # crops of whole track IDs (--crops-csv: one row per crop with crop_id = file <crop_id>.png
+    # in --images, kind = insect/background, seq_id = track ID, crop_px, new_filename = frame):
+    # one random crop per track ID and one random square per insect-free frame, so long tracks
+    # do not fill the sample
+    python verify_parity.py --tflite ... --images DIR/crops --crops-csv DIR/crops.csv --pack ...
 
 Acceptance (the bar set when BioCLIP was first brought to the phone): mean cosine >= 0.99
 and >= 95 % family agreement.
 
-Reading the numbers for a quantised file (quantise_tflite.py): the family is taken the
-way the app reports it (the probabilities of a family's species added up), and the
-agreement is also shown for the images where PyTorch itself is sure (top family at 50 %
-or more). Disagreements only on unsure images are near-ties that small rounding flips;
-disagreements on sure images mean the file is not fit for use.
+Reading the numbers for a quantised file (quantise_tflite.py): the agreement is also shown
+for the images where PyTorch itself is sure (50 % or more at that rank). Disagreements only
+on unsure images are near-ties that small rounding flips; disagreements on sure images mean
+the file is not fit for use.
 """
 
 from __future__ import annotations
@@ -82,6 +88,25 @@ def tflite_embed(tflite_path: Path, images: list[np.ndarray]) -> tuple[np.ndarra
     return np.stack(out), float(np.median(ms))
 
 
+def one_per_track(crops_csv: Path, images: Path, seed: int, below_px: int | None = None) -> tuple[list[Path], list[str]]:
+    """One random crop per track ID (seq_id) and one random square per insect-free frame;
+    with below_px only crops smaller than that (tracks without one left out, no squares)."""
+    import pandas as pd
+
+    from app_rules import APP_MIN_PX
+
+    c = pd.read_csv(crops_csv, low_memory=False)
+    ins = c[c.kind == "insect"]
+    if below_px is not None:
+        ins, c = ins[ins.crop_px < below_px], c[c.kind == "insect"]
+    pick = pd.concat([ins.groupby("seq_id").sample(1, random_state=seed),
+                      c[c.kind == "background"].groupby("new_filename").sample(1, random_state=seed)])
+    groups = np.where(pick.kind == "background", "backgrounds",
+                      np.where(pick.crop_px >= APP_MIN_PX, f"insects, {APP_MIN_PX} px or more",
+                               f"insects, under {APP_MIN_PX} px"))
+    return [images / f"{cid}.png" for cid in pick.crop_id], list(groups)
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--tflite", type=Path, required=True)
@@ -89,8 +114,13 @@ def main() -> int:
     ap.add_argument("--model", default=None, help="model key (default: read from the .json manifest next to the tflite)")
     ap.add_argument("--weights", type=Path, default=None,
                     help="checkpoint file already on disk (default: the Hugging Face download)")
-    ap.add_argument("--pack", type=Path, default=None, help="label pack to compare top-1 family/species agreement")
+    ap.add_argument("--pack", type=Path, nargs="+", default=[], help="label pack(s) to compare the answers per rank")
     ap.add_argument("--limit", type=int, default=200)
+    ap.add_argument("--crops-csv", type=Path, default=None,
+                    help="one row per crop (crop_id, kind, seq_id, crop_px, new_filename): one crop per track ID from --images (no --limit)")
+    ap.add_argument("--seed", type=int, default=20261020)
+    ap.add_argument("--below-px", type=int, default=None,
+                    help="with --crops-csv: one crop smaller than this per track that has one (tiny crops are rare)")
     args = ap.parse_args()
 
     manifest_path = args.tflite.with_suffix(".json")
@@ -98,7 +128,11 @@ def main() -> int:
     model_key = args.model or manifest.get("model_id", "bioclip-2")
     size = int(manifest.get("input_size", 224))
 
-    paths = sorted(p for p in args.images.rglob("*") if p.suffix.lower() in {".jpg", ".jpeg", ".png"})[: args.limit]
+    if args.crops_csv is not None:
+        paths, groups = one_per_track(args.crops_csv, args.images, args.seed, args.below_px)
+    else:
+        paths = sorted(p for p in args.images.rglob("*") if p.suffix.lower() in {".jpg", ".jpeg", ".png"})[: args.limit]
+        groups = ["all images"] * len(paths)
     if not paths:
         print("no images found", file=sys.stderr)
         return 2
@@ -110,25 +144,30 @@ def main() -> int:
     cos = np.sum(ref * got, axis=1)
     print(f"cosine similarity: mean {cos.mean():.4f}  min {cos.min():.4f}  (tflite median {med_ms:.0f} ms/crop on this PC)")
     ok = cos.mean() >= 0.99
-    if args.pack is not None:
-        hdr, mat = read_fpack(args.pack)
+    groups = np.array(groups)
+    for pack in args.pack:
+        from app_rules import EVAL, Taxonomy, softmax_rows
+
+        hdr, mat = read_fpack(pack)
         scale = float(hdr.get("logit_scale", 100.0))
-        family_of = np.unique([label[4] for label in hdr["labels"]], return_inverse=True)[1]
-
-        def family_probs(v):
-            # Softmax over the pack's names with the model's scale, then summed per family.
-            z = scale * (mat @ v)
-            p = np.exp(z - z.max())
-            return np.bincount(family_of, weights=p / p.sum())
-
-        ref_fam = [family_probs(v) for v in ref]
-        same = np.array([a.argmax() == family_probs(b).argmax() for a, b in zip(ref_fam, got)])
-        sure = np.array([p.max() >= 0.5 for p in ref_fam])
-        spe = np.mean([np.argmax(mat @ a) == np.argmax(mat @ b) for a, b in zip(ref, got)])
-        print(f"top family agrees with PyTorch on {same.sum()} of {len(ref)} images ({same.mean():.1%}); "
-              f"where PyTorch is sure: {same[sure].sum()} of {sure.sum()}; top species {spe:.1%}  "
-              f"(pack {hdr['pack_id']}, scale {scale:.1f})")
-        ok = ok and same.mean() >= 0.95
+        tax = Taxonomy(hdr["labels"])
+        # Softmax over the pack's names with the model's scale, then the app's top-down path
+        # (Taxonomy.ladder_batch gives the same answers as the app's Dart code).
+        k_ref, m_ref = tax.ladder_batch(softmax_rows(scale * (ref @ mat.T)))
+        k_got, m_got = tax.ladder_batch(softmax_rows(scale * (got @ mat.T)))
+        print(f"same answer as PyTorch per rank (pack {hdr['pack_id']}, scale {scale:.1f}); in brackets where "
+              "PyTorch is sure (50 % or more), then the largest change of the shown percentage:")
+        for g in sorted(set(groups)):
+            sel = groups == g
+            cells = []
+            for k, name in EVAL.items():
+                same = k_ref[sel, k] == k_got[sel, k]
+                sure = np.nan_to_num(m_ref[sel, k]) >= 0.5
+                d = np.abs(m_ref[sel, k] - m_got[sel, k])
+                shift = np.nanmax(d) * 100 if np.isfinite(d).any() else 0.0
+                cells.append(f"{name} {same.sum()}/{sel.sum()} ({same[sure].sum()}/{sure.sum()}, {shift:.2f} points)")
+            print(f"  {g}: " + "; ".join(cells))
+        ok = ok and np.mean(k_ref[:, 4] == k_got[:, 4]) >= 0.95
     print("PARITY OK" if ok else "PARITY FAILED (see thresholds in the docstring)")
     return 0 if ok else 1
 

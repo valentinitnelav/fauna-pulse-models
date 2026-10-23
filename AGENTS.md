@@ -19,6 +19,8 @@ This repository has a sibling, the app [FaunaPulse](https://github.com/valentini
 (usually cloned at `~/InsectDetectApp/fauna-pulse`). The app reads the files made here; the
 "keep in sync" table in `docs/AGENT_OVERVIEW.md` lists every rule shared by both repositories.
 The app repository has its own `AGENTS.md` with its own rules: follow them when editing there.
+The owner's private calibration code base (`~/fauna-pulse-calibration`) imports a few modules of
+`bioclip_export/` in place; `docs/AGENT_OVERVIEW.md` lists them, so change them only together.
 
 
 ## Project goal

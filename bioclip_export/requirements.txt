@@ -14,6 +14,9 @@ open_clip_torch>=2.26
 huggingface_hub>=0.23
 numpy>=1.26
 pillow
+# verify_parity.py: the per-rank check (app_rules.py needs scipy) and --crops-csv (pandas).
+pandas
+scipy
 # Converter (PyTorch -> LiteRT/TFLite), formerly ai-edge-torch. 0.9+ needs no
 # TensorFlow; it pulls ai-edge-quantizer (fp16/int8 weight casting) and
 # ai-edge-litert (runs the .tflite on the PC for verify_parity.py).

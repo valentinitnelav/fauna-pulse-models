@@ -193,6 +193,17 @@ taxon list is the same one-liner.
 | `bioclip-2.5_pollinator-orders-europe_v1` | as the Europe pack above, for BioCLIP 2.5 (round 264) | 34,704 | 74 MB | yes (with the BioCLIP 2.5 model) |
 | `bioclip-2.5_flower-visitors-32fam_v1` | the 32 families, for BioCLIP 2.5 (round 264) | 37,461 | 80 MB | yes (with the BioCLIP 2.5 model) |
 
+**Name clean-up (since 2026-10-20, `clean_taxonomy` in `build_label_pack.py`):** a few
+TreeOfLife names come in another format: kingdom "Metazoa" instead of "Animalia" (a separate
+branch the app's top-down answer never reaches), a lineage shifted by one rank ("Pterygota" in
+the genus slot), or authors, years and subgenera in the species slot. The builder now repairs
+them and drops the few it cannot (no epithet left) and exact duplicates; the counts go into the
+pack header (`source.name_cleaning`). The v1 packs above were built without it; rows affected in
+the published ones ("Metazoa" / species slot not a plain epithet): BioCLIP 2 Europe 36 / 111,
+32 families 85 / 418 (among them bee flies, hoverflies and bees), mammals and birds 41 / 613;
+BioCLIP 2.5 Europe 0 / 0, 32 families 81 / 105 (codes and bare years such as "1820").
+`--no-name-cleaning` reproduces them.
+
 Every pack ends with six "none of these" rows; `--sink-set arthropod` (default) uses
 flower-scene prompts, `--sink-set mammal` camera-trap prompts, `--no-sink` none.
 
@@ -218,12 +229,16 @@ python verify_parity.py --tflite out/bioclip-2_224_fp16.tflite --images /path/to
 ```
 
 Compares the phone model with the original PyTorch model on your images: cosine
-similarity of the embeddings and top-1 agreement at family and species level with the
-pack. Expected `PARITY OK` with mean cosine >= 0.99 and family agreement >= 95 %. The family is taken the way the
-app reports it (a family's species probabilities added up); the line also says how
-many of the images PyTorch itself is sure about agree, which tells a quantised file's
-near-ties apart from real errors (section 2b). Any folder of insect photos or crops
-works (jpg/png, searched recursively).
+similarity of the embeddings and the same answer at order, family, genus and species with
+each pack given (`--pack` takes several). Expected `PARITY OK` with mean cosine >= 0.99 and
+family agreement >= 95 %. Each rank is taken the way the app reports it (top-down, a taxon's
+probabilities added up); the lines also say how many of the images PyTorch itself is sure
+about agree, which tells a quantised file's near-ties apart from real errors (section 2b),
+and the largest change of the shown percentage. Any folder of insect photos or crops works
+(jpg/png, searched recursively). For crops of whole track IDs, `--crops-csv crops.csv` (one row
+per crop: `crop_id`, `kind`, `seq_id`, `crop_px`, `new_filename`) takes one random crop per track
+ID and one square per insect-free frame, so long tracks do not fill the sample. The ranks and
+the top-down answer come from `app_rules.py`, the Python copy of the app's rules.
 
 ## 5. Copy the files to the phone and import them
 
@@ -315,6 +330,7 @@ References:
 | `fpack.py` | the pack container format (also writes the app's test fixture) |
 | `build_region_species_list.py` | GBIF occurrence facets + TreeOfLife-to-GBIF mapping -> regional species CSV |
 | `verify_parity.py` | PyTorch vs `.tflite` comparison on real images |
+| `app_rules.py` | Python copy of the app's identification defaults and top-down answer (`verify_parity.py`, calibration scripts) |
 | `inspect_tflite.py` | ops, constant sizes and how each layer's weights are stored (fp16, int8, float32) |
 | `requirements.txt` | packages (version ranges; exact verified versions: `../requirements-lock.txt`) |
 | `out/` | outputs (git-ignored) |

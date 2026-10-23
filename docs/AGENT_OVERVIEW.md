@@ -27,11 +27,12 @@ import path and breaks `from fpack import ...` and the sibling imports.
 | `classifier_export/export_insectdct_cls.py` | insectDCT V7 `.pth` -> `.tflite` + `.json` + class-list `.fpack`; checks vs insectDCT's own code (local `.check.json`); `--draft-taxa` rewrites tracked `taxa/insectdct-cls-v7.csv` | `--source-dir` (authors' V7 zip, unpacked) + `--code-dir` (insectDCT's `common/`, GPL code; `--zoo-dir` = old alias) -> `out/` | imports `../bioclip_export` (fpack, export_image_tower, quantise_tflite) |
 | `bioclip_export/export_image_tower.py` | BioCLIP 1/2/2.5 image tower -> `.tflite` (GPU-friendly 4-d attention, normalisation + L2 built in) + `.json` | HF download or `--weights` -> `out/<model>_<px>_<prec>.tflite` | ~7 GB RAM (11 GB for 2.5), internet |
 | `bioclip_export/quantise_tflite.py` | fp32 `.tflite` -> fp16 / int8 (dynamic range) / int8 weights; patches an ai-edge-quantizer 0.9 bug | writes next to input | no calibration images |
-| `bioclip_export/build_label_pack.py` | TreeOfLife embeddings, filtered, + "none of these" sink rows -> label pack `.fpack` | HF dataset (2.7 GB) or `--embeddings-dir` -> `out/<pack_id>.fpack` | torch (text tower), internet |
+| `bioclip_export/build_label_pack.py` | TreeOfLife embeddings, filtered, names cleaned (`clean_taxonomy`; v1 packs predate it), + "none of these" sink rows -> label pack `.fpack` | HF dataset (2.7 GB) or `--embeddings-dir` -> `out/<pack_id>.fpack` | torch (text tower), internet |
 | `bioclip_export/build_region_species_list.py` | regional species list from GBIF | GBIF API -> CSV + `.json` | internet, stdlib only |
-| `bioclip_export/verify_parity.py` | PyTorch vs `.tflite` embeddings: cosine, top family/species | `--tflite --images [--pack]` | |
+| `bioclip_export/verify_parity.py` | PyTorch vs `.tflite` embeddings: cosine, same answer per rank | `--tflite --images [--pack ...] [--crops-csv]` | |
 | `bioclip_export/inspect_tflite.py` | ops and weight storage of a `.tflite` (positional arg, no `--help`) | prints | |
 | `bioclip_export/reproduce_track_conf.py` | recomputes the app's per-track pooling off the phone | session `identification/embeddings_*` + pack | own copy of the fpack reader |
+| `bioclip_export/app_rules.py` | the app's identification defaults and top-down answer (Python copy), imported by `verify_parity.py` and the calibration benchmark (separate repository) | | numpy, scipy |
 | `bioclip_export/fpack.py` | `.fpack` format: `write_fpack`, `write_class_list`, `read_fpack`, `class_probabilities`; `__main__` writes the app's test fixtures (2 positional paths; no argparse: `--help` would create a file) | | numpy |
 | `publish/publish_hf.py` | dry run (default; `--write-cards DIR` writes the rendered cards, metadata checked by the Hub) / `--upload --repo <one>` / `--verify [--full]`; config `publish/hf_repos.json`, cards `hf_cards/<repo>/README.md` (`{{FILES_TABLE}}`, `{{CODE_COMMIT}}` filled at upload), result `publish/published.json` | `--catalogue $APP/assets/model_downloads.json` | huggingface_hub, `hf auth login`; refuses unpushed code commit, catalogue mismatch, replacing a file (except a corrected `.json` with `--replace-manifests`) |
 | `legacy/*.py` | first YOLO exports (Jun-Aug 2026), superseded by `detector_export`; not the exact recipe of the MDV6 file (they pass options its Ultralytics 8.3.235 lacks) | | |
@@ -186,7 +187,16 @@ stays online forever. The owner's older HF repo `flower_visitor_order_detector` 
 | output names of all export scripts | naming rule, `tool/model_downloads/README.md` | `update_catalogue.py --names` |
 | model input/output layout (NCHW 0..1; embedder output `[1,n]`; classifier heads concatenated, `dim` = their sum; detector `[1,4+c,N]`; Ultralytics metadata re-appended to fp16 files) | `packages/ultralytics_yolo` (Kotlin), `Embedder.kt`, `model_file_kind.dart` | phone checks: `integration_test/*_check_test.dart` |
 | pooling rule copy in `reproduce_track_conf.py` | `track_fusion.dart` | by hand |
+| `bioclip_export/app_rules.py`: defaults (48 px, 10 crops, drop factor 10) and top-down answer | `lib/fauna_pulse/identification/identification_assets.dart`, `track_fusion.dart` | by hand |
 | app behaviour named on the cards, kept broad on purpose (owner, 2026-10-16): cls card "How FaunaPulse uses the scores" (no formula, points to the app docs); detector cards "the app does NMS", 640 px input, square area of interest (v8 card); every card's "Use in FaunaPulse" (menu path, "versions after v0.8.0-alpha.1") | the matching app code and screens | by hand; editing a card on the Hub is a new commit and never breaks the pinned file links |
+
+## Used in place by the calibration code
+
+The owner's private calibration code base (`~/fauna-pulse-calibration`, same layout on the
+workstation; `classify/models_repo.py` puts `bioclip_export/` on its import path) imports
+`fpack.read_fpack`, `export_image_tower` (`MODELS`, `load_open_clip`, `CLIP_MEAN`, `CLIP_STD`)
+and `app_rules` (`RANKS`, `EVAL`, `Taxonomy`, `softmax_rows`, `APP_MIN_PX`, `MAX_CROPS`, `DROP`).
+Renaming or changing these breaks it: change both code bases together.
 
 Fixture regeneration: `cd bioclip_export && python fpack.py "$APP/test/fauna_pulse/fixtures/tiny_pack.fpack" "$APP/test/fauna_pulse/fixtures/tiny_classes.fpack"`.
 Today `tiny_pack.fpack` regenerates byte-identical; the committed `tiny_classes.fpack` predates

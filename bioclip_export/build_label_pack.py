@@ -29,6 +29,7 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import re
 import sys
 from datetime import date
 from pathlib import Path
@@ -122,6 +123,32 @@ def row_taxonomy(entry) -> list[str]:
     return sci + [("" if common is None else str(common))]
 
 
+def clean_taxonomy(tax: list[str], real_genera: set[str]) -> list[str] | None:
+    """Repairs the few TreeOfLife names that come in another format, as found in the v1 packs
+    (2026-10-20): kingdom 'Metazoa' instead of 'Animalia' (a separate kingdom branch the app's
+    top-down answer never reaches), a lineage shifted by one rank (a higher taxon such as
+    'Pterygota' in the genus slot and the whole name in the species slot), and authors, years
+    or a subgenus in brackets in the species slot. When the genus slot holds a real genus, it
+    is kept and a second genus in the species slot is read as an old combination (e.g.
+    Cantharis | 'Telephorus dichrous'). Returns None when no species epithet is left ('1820').
+    Rows already in the normal form are returned unchanged."""
+    t = list(tax)
+    if t[0] == "Metazoa":
+        t[0] = "Animalia"
+    if not t[6] or re.fullmatch(r"[a-z][a-z-]*", t[6]):
+        return t
+    words = re.sub(r"\([^)]*\)", " ", t[6]).replace(",", " ").split()
+    if words and words[0][:1].isupper():  # a whole binomial in the species slot
+        if t[5] not in real_genera:
+            t[5] = words[0]
+        words = words[1:]
+    epithet = next((w for w in words if re.fullmatch(r"[a-z][a-z-]+", w)), None)
+    if epithet is None:
+        return None
+    t[6] = epithet
+    return t
+
+
 def sink_embeddings(model_key: str, prompts: list[str], weights: Path | None = None) -> np.ndarray:
     """Embed the negative prompts with the model's text tower (unit vectors)."""
     import torch
@@ -158,6 +185,8 @@ def main() -> int:
                          "imageomics/TreeOfLife-200M) instead of the Hugging Face download")
     ap.add_argument("--weights", type=Path, default=None,
                     help="model checkpoint file on disk, for the text tower of the sink rows")
+    ap.add_argument("--no-name-cleaning", action="store_true",
+                    help="keep TreeOfLife names exactly as published (as the v1 packs did; see clean_taxonomy)")
     ap.add_argument("--out", type=Path, default=Path("out"))
     args = ap.parse_args()
 
@@ -179,10 +208,23 @@ def main() -> int:
             keep_species = {row[col].strip() for row in reader if row.get(col)}
         print(f"species list: {len(keep_species)} names from {args.species_csv}")
 
+    taxa = [row_taxonomy(names[i]) for i in range(min(n, len(names)))]
+    # A genus is "real" when some Animalia row names it with a plain epithet.
+    real_genera = {t[5] for t in taxa if t[0] == "Animalia" and t[5] and re.fullmatch(r"[a-z][a-z-]*", t[6])}
+    cleaning = {"metazoa": 0, "species_slot": 0, "genus_slot": 0, "dropped_no_epithet": 0, "dropped_duplicate": 0}
+    seen: set[tuple[str, ...]] = set()
     labels: list[list[str]] = []
     idx: list[int] = []
-    for i in range(min(n, len(names))):
-        tax = row_taxonomy(names[i])
+    for i, tax in enumerate(taxa):
+        if not args.no_name_cleaning:
+            fixed = clean_taxonomy(tax, real_genera)
+            if fixed is None:
+                cleaning["dropped_no_epithet"] += 1
+                continue
+            cleaning["metazoa"] += tax[0] != fixed[0]
+            cleaning["species_slot"] += tax[6] != fixed[6]
+            cleaning["genus_slot"] += tax[5] != fixed[5]
+            tax = fixed
         if keep_classes and tax[2] not in keep_classes:
             continue
         if keep_orders and tax[3] not in keep_orders:
@@ -191,12 +233,18 @@ def main() -> int:
             continue
         if keep_species is not None and f"{tax[5]} {tax[6]}".strip() not in keep_species:
             continue
+        if not args.no_name_cleaning:
+            if tuple(tax[:7]) in seen:  # a second row would give that species two shares
+                cleaning["dropped_duplicate"] += 1
+                continue
+            seen.add(tuple(tax[:7]))
         labels.append(tax)
         idx.append(i)
     if not idx:
         print("No rows matched the filters.", file=sys.stderr)
         return 2
-    print(f"kept {len(idx)} species rows")
+    print(f"kept {len(idx)} species rows" + ("" if args.no_name_cleaning else
+          f"; name cleaning over all TreeOfLife rows: {cleaning}"))
 
     idx_arr = np.asarray(idx)
     mat = (emb[:, idx_arr].T if transposed else emb[idx_arr, :]).astype(np.float32)
@@ -242,6 +290,7 @@ def main() -> int:
             "classes": sorted(keep_classes), "orders": sorted(keep_orders),
             "families": sorted(keep_families),
             "species_csv": args.species_csv.name if args.species_csv else None,
+            "name_cleaning": None if args.no_name_cleaning else cleaning,
         },
         "built_with": {"script": "build_label_pack.py", "date": date.today().isoformat()},
         "license": "TreeOfLife embeddings CC0-1.0; sink rows generated with the MIT BioCLIP text tower",
