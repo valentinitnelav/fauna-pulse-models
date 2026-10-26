@@ -97,12 +97,13 @@ All source files were downloaded again from the authors' own links and SHA-256-c
 | `flatbug-tflite` | `flatbug-n_640_fp16.tflite` (+ `.json`), `flatbug-s_640_fp16.tflite` (+ `.json`; new, gets a catalogue file when the links go in) | same / none | MIT | public, `0ab3ca4` |
 | `insectdct-v8-tflite` | `insectdct-v8s_640_fp16.tflite` (+ `.json`) | `insectdct-v8-s_640_fp16.tflite` | GPL-3.0 | public, `f5ac1bb` |
 | `insectdct-cls-v7-tflite` | `insectdct-cls-v7-eff2s_224_fp16.tflite`, `.fpack` (+ `.json`) | `insectdct-cls-v7_eff2s_fp16.*` | GPL-3.0 | public, `8ded6d9` |
-| `bioclip-2-tflite` | `bioclip-2_224_fp16.tflite` (+ `.json`), `bioclip-2_pollinator-orders-europe_v1.fpack`, `bioclip-2_flower-visitors-32fam_v1.fpack`, `bioclip-2_mammals-birds-world_v1.fpack` | `bioclip-2_image_fp16_4d.tflite`, `bioclip2_*_v1.fpack` | MIT (packs CC0-1.0, common names GBIF CC BY 4.0) | public, `cbf9b26` |
-| `bioclip-2.5-tflite` | `bioclip-2.5_224_fp16.tflite` (+ `.json`), `bioclip-2.5_pollinator-orders-europe_v1.fpack`, `bioclip-2.5_flower-visitors-32fam_v1.fpack` | `bioclip-25_image_fp16.tflite`, `bioclip25_*_v1.fpack` | MIT | public, `dd1f5b7` |
+| `bioclip-2-tflite` | `bioclip-2_224_fp16.tflite` (+ `.json`), `bioclip-2_pollinator-orders-europe_v1.fpack`, `bioclip-2_flower-visitors-32fam_v1.fpack`, `bioclip-2_mammals-birds-world_v1.fpack`; v2: `bioclip-2_pollinator-orders-europe_v2.fpack`, `bioclip-2_mammals-birds-world_v2.fpack` | `bioclip-2_image_fp16_4d.tflite`, `bioclip2_*_v1.fpack`; v2 none yet | MIT (packs CC0-1.0, common names GBIF CC BY 4.0) | public, `cbf9b26`; v2 `6a2961e` |
+| `bioclip-2.5-tflite` | `bioclip-2.5_224_fp16.tflite` (+ `.json`), `bioclip-2.5_pollinator-orders-europe_v1.fpack`, `bioclip-2.5_flower-visitors-32fam_v1.fpack`; v2: `bioclip-2.5_pollinator-orders-europe_v2.fpack` | `bioclip-25_image_fp16.tflite`, `bioclip25_*_v1.fpack`; v2 none yet | MIT | public, `dd1f5b7`; v2 `2f54024` |
 
-Label packs v2 (built and checked 2026-10-26, in `publish/hf_repos.json`, not uploaded yet;
-local files on the workstation under `bioclip_export/out/packs_v2/`): Europe for BioCLIP 2 and
-2.5, mammals and birds. The 32-family packs are an unmaintained demo (no v2); their v1 files stay.
+Label packs v2 (built, checked and independently reviewed 2026-10-26, uploaded the same day;
+local files `bioclip_export/out/packs_v2/` on the SSD; `--verify` passed for all 28 files):
+Europe for BioCLIP 2 and 2.5, mammals and birds. The app's catalogue does not offer them yet
+(an app round). The 32-family packs are an unmaintained demo (no v2); their v1 files stay.
 
 Facts that are easy to get wrong (verified 2026-10-15, sources on the cards):
 - Sources = the authors' own links only (owner's rule, 2026-10-16): flat-bug from the ERDA store
