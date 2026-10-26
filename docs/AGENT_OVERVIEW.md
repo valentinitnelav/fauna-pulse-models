@@ -35,7 +35,7 @@ import path and breaks `from fpack import ...` and the sibling imports.
 | `bioclip_export/app_rules.py` | the app's identification defaults and top-down answer (Python copy), imported by `verify_parity.py` and the calibration benchmark (separate repository) | | numpy, scipy |
 | `bioclip_export/fpack.py` | `.fpack` format: `write_fpack`, `write_class_list`, `read_fpack`, `class_probabilities`; `__main__` writes the app's test fixtures (2 positional paths; no argparse: `--help` would create a file) | | numpy |
 | `publish/publish_hf.py` | dry run (default; `--write-cards DIR` writes the rendered cards, metadata checked by the Hub) / `--upload --repo <one>` / `--verify [--full]`; config `publish/hf_repos.json`, cards `hf_cards/<repo>/README.md` (`{{FILES_TABLE}}`, `{{CODE_COMMIT}}` filled at upload), result `publish/published.json` | `--catalogue $APP/assets/model_downloads.json` | huggingface_hub, `hf auth login`; refuses unpushed code commit, catalogue mismatch, replacing a file (except a corrected `.json` with `--replace-manifests`) |
-| `legacy/*.py` | first YOLO exports (Jun-Aug 2026), superseded by `detector_export`; not the exact recipe of the MDV6 file (they pass options its Ultralytics 8.3.235 lacks) | | |
+| `legacy/*.py` (removed 2026-10-26) | first YOLO exports (Jun-Aug 2026), superseded by `detector_export`; kept at commit 736ed0f, which the MDV6 card links to (pinned, not `{{CODE_COMMIT}}`); not the exact recipe of the MDV6 file | | |
 
 Measured results (phone timings, fp16 vs w8a32 vs int8) are in each tool's README.
 

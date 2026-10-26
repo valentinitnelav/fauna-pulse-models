@@ -71,9 +71,9 @@ below. This file is not provided or endorsed by Microsoft or the MegaDetector au
   (Ultralytics 8.3.235, 7 August 2026, as recorded in the file's own metadata). In that
   Ultralytics version this gives 8-bit weights with 32-bit float activations (dynamic-range
   quantisation, "w8a32"), not full INT8: Ultralytics loads calibration pictures for its other
-  INT8 files, but they do not change this one. The exact command was not logged. The early export scripts of that time are kept in
-  [fauna-pulse-models/legacy](https://github.com/valentinitnelav/fauna-pulse-models/tree/{{CODE_COMMIT}}/legacy)
-  for reference, but in their kept form they pass options that Ultralytics 8.3.235 does not
+  INT8 files, but they do not change this one. The exact command was not logged. The early export scripts of that time are kept for reference in
+  [fauna-pulse-models/legacy](https://github.com/valentinitnelav/fauna-pulse-models/tree/736ed0f89d0b9e77bb1e212047fef722e33eb780/legacy)
+  (an earlier commit; no longer in the current repository), but in their kept form they pass options that Ultralytics 8.3.235 does not
   accept, so they are not the exact recipe of this file.
 - **Input**: one RGB image `[1, 256, 256, 3]` (NHWC), float32, values 0..1.
 - **Output**: one float32 tensor `[1, 300, 6]`: up to 300 boxes, each with 4 box coordinates, a

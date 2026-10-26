@@ -22,7 +22,6 @@ where the app's "Download & import models" screen fetches them.
 | [`detector_export/`](detector_export/README.md) | YOLO detectors (`.pt`) to phone files: fp16 / w8a32 / fp32 / full INT8, several input sizes, segmentation models (flat-bug) turned into box detectors, agreement check against PyTorch |
 | [`classifier_export/`](classifier_export/README.md) | Classifiers (insectDCT hierarchical classifier V7) to a phone file plus its class list (`.fpack`) |
 | [`bioclip_export/`](bioclip_export/README.md) | BioCLIP 1 / 2 / 2.5 image tower to `.tflite`, label packs (`.fpack`) from the TreeOfLife embeddings, quantiser for any float32 `.tflite`, parity checks. Also defines the `.fpack` format (`fpack.py`) |
-| [`legacy/`](legacy/README.md) | The first YOLO export scripts (June to August 2026), superseded by `detector_export/` |
 | [`docs/MODEL_CONVERSION.md`](docs/MODEL_CONVERSION.md) | Converting by hand (Ultralytics commands, INT8 calibration, other models) |
 | `hf_cards/` | Model card of each Hugging Face repository (sources; placeholders filled at upload) |
 | `publish/` | `publish_hf.py` (upload and verify), `hf_repos.json` (which file goes where), `published.json` (pinned links, written by the script) |
