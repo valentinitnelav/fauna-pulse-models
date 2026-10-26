@@ -1,4 +1,4 @@
-# Model quantisation tools for the FaunaPulse app
+# AI-model quantisation tools for the FaunaPulse app
 
 <p align="center">
   <a href="https://doi.org/10.5281/zenodo.23436564"><img src="https://zenodo.org/badge/DOI/10.5281/zenodo.23436564.svg" alt="DOI"></a>
@@ -6,12 +6,12 @@
   <a href="https://huggingface.co/collections/Valen-Peregrine/faunapulse-6ad22f04766aed6641688544"><img src="https://img.shields.io/badge/Hugging%20Face-models-blue?logo=huggingface" alt="Models on Hugging Face"></a>
 </p>
 
-
 PC-side tools that turn detection and identification models into LiteRT files (`.tflite`)
-for [FaunaPulse](https://github.com/valentinitnelav/fauna-pulse), an Android app that detects
-and logs flower visitors (and other animals) on the phone itself. This repository holds the
-conversion and quantisation code and the model cards. The converted files themselves are
-published on Hugging Face
+for [FaunaPulse](https://github.com/valentinitnelav/fauna-pulse), an Android app that detects,
+tracks and identifies flower visitors (and other animals) on the phone itself.
+This repository holds the conversion and quantisation code and the model cards.
+
+The converted model files themselves are published on Hugging Face
 ([Valen-Peregrine/FaunaPulse](https://huggingface.co/collections/Valen-Peregrine/faunapulse-6ad22f04766aed6641688544)),
 where the app's "Download & import models" screen fetches them.
 
@@ -67,22 +67,26 @@ The tools work for any model of a supported kind, not only for the ones publishe
 
 - **A detector you trained** (Ultralytics YOLO, detection or segmentation `.pt`):
   `detector_export/export_detector.py` writes the phone file and, with `--check-images` (a folder
-  of your own pictures), checks that it finds the same boxes as your `.pt`. Import it in the app: Menu, **Download & import models**, **Import model
+  of your own pictures), checks that it finds the same boxes as your `.pt`.
+  Import it in the app: Menu, **Download & import models**, **Import model
   files…**. Training is not part of this repository: it needs your own
-  labelled pictures and usually a GPU.
-- **A name list for BioCLIP** (the names the Identify screen can answer with), for example the
-  pollinators of one country or the species of a park: `bioclip_export/build_label_pack.py`
+  labelled pictures and usually a GPU. For example, see the tutorial prepared by
+  my colleague Maximilian Sittinger: [Insect Detect ML](https://github.com/maxsitt/insect-detect-ml).
+- **A name list for BioCLIP** (the names FaunaPulse can answer with, "*label packs*"), for example the
+  pollinators of one country: `bioclip_export/build_label_pack.py`
   keeps the taxa you choose (classes, orders, families, optionally a species list such as a
   GBIF list from `build_region_species_list.py`) from the BioCLIP authors' name list
-  (TreeOfLife-200M), so only names in that list can go into a pack. No training and no GPU
-  needed.
-- **A classifier with its own fixed classes**: `classifier_export/` converts insectDCT's
-  classifier. Another network needs its own export script with the same input and output
+  (TreeOfLife-200M), so only names in that list can go into a name list (label pack).
+  No training and no GPU needed to prepare such a name list.
+- **A custom classifier with its own fixed classes**: `classifier_export/` converts *insectDCT*'s
+  classifier (and tested only with insectDCT so far). Another type of network, like insectDCT,
+  needs its own export script with the same input and output
   layout (described in [`classifier_export/README.md`](classifier_export/README.md)) and a
   class list written with `fpack.write_class_list`.
 
-The detectors published here were trained by others for other settings (camera traps, flat
-surfaces, collection pictures), not for FaunaPulse: see the note on each model card.
+**Important note:**
+> The detectors published here were trained by others for other settings (camera traps, flat
+> surfaces, collection pictures), not for FaunaPulse: see the note on each model card.
 
 ## File names
 
@@ -131,7 +135,7 @@ Some rules exist on both sides. Change them together:
 
 ## Licences
 
-The code in this repository is AGPL-3.0 (see `LICENSE`); it comes from the FaunaPulse app.
+The code in this repository is AGPL-3.0 (see `LICENSE`) - it inherits from the FaunaPulse app.
 Each converted model keeps the licence of its original model (AGPL-3.0, GPL-3.0 or MIT),
 named on its model card (source in [`hf_cards/`](hf_cards/)).
 The conversions are unofficial: not provided or endorsed by the original authors.
@@ -140,7 +144,7 @@ The conversions are unofficial: not provided or endorsed by the original authors
 
 The three tool folders and `docs/MODEL_CONVERSION.md` were moved here from the app
 repository `fauna-pulse` at commit `c4c367d` (2026-10-15), where their history remains
-(`tool/bioclip_export`, `tool/classifier_export`, `tool/detector_export`, rounds 208 to 284).
+(`tool/bioclip_export`, `tool/classifier_export`, `tool/detector_export`, commit rounds 208 to 284).
 
 ## Citation
 

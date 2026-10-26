@@ -13,7 +13,8 @@ This file provides guidance to AI coding agents (Claude Code, codex, etc.) when 
    there, history is git; keep it under ~50k characters). When the reason for a choice is not
    obvious, give it in one short clause next to the fact, or in a code comment.
 3. No decision logs, journals or notes about the maintainer's thinking in tracked files: this
-   repository and the app's are public. This trickles down from the general rule of avoiding to share private information by accident.
+   repository and the app's are public. Reports and plans that are not public yet go in
+   `private/` (git-ignored). This trickles down from the general rule of avoiding to share private information by accident.
 
 This repository has a sibling, the app [FaunaPulse](https://github.com/valentinitnelav/fauna-pulse/)
 (usually cloned at `~/InsectDetectApp/fauna-pulse`). The app reads the files made here; the

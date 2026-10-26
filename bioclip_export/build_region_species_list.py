@@ -8,28 +8,39 @@ passing it to pybioclip's `--subset` / `apply_filter` ("Geo-Restricted Taxon Lis
 Predictions", https://imageomics.github.io/pybioclip/geo-restricted-taxa/, Imageomics).
 The implementation approach followed here (own code, no lines copied) is the one in
 Maximilian Sittinger's insect-detect-post, `src/insectdetect_post/build_region_filter.py`
-(AGPL-3.0): the GBIF occurrence facet is queried through the API (taxon keys with at
-least --min-occurrences records in the region, his default 3) instead of a manual GBIF
-download, and TreeOfLife species are mapped to GBIF backbone keys with the table he
-publishes as a release asset (tol_gbif_taxon_keys_Arthropoda.csv, from his
-filters/resolve_tol_gbif_species.py; downloaded here on first use, not redistributed).
-Differences here: regions may be GBIF continents (EUROPE, ASIA, AFRICA, NORTH_AMERICA,
-SOUTH_AMERICA, OCEANIA, ANTARCTICA) or a union of ISO country codes, and the query is
-restricted per order instead of per phylum.
+(AGPL-3.0), so that a region gives the same species there and in FaunaPulse:
+- one GBIF occurrence request per region for the whole phylum Arthropoda, with occurrences
+  interpreted in the Catalogue of Life Extended Release (COL XR, GBIF's taxonomy since it
+  replaced the GBIF Backbone), counted per accepted species ('speciesKey' facet, so records
+  under a synonym or a subspecies count for their accepted species), keeping species with at
+  least --min-occurrences records (his default 3) in that region;
+- TreeOfLife species are mapped to COL XR species keys with the table he publishes as a
+  release asset (bioclip_gbif_species_mapping_Arthropoda.csv, v1.1.0: made from the same
+  TreeOfLife names file as our packs, matched against COL26.6 XR; downloaded on first use,
+  checked by SHA-256, not redistributed). TreeOfLife rows without a COL species key never pass
+  a region list: about 3 % of the plain rows, nearly all rows with codes or authors in the
+  species slot, and about half of the rows with two genera or kingdom 'Metazoa' (2026-10-25).
+Differences here: regions may be GBIF continents or a union of ISO country codes (as there),
+and the rows are narrowed to --orders instead of classes.
+
+Since 2026-10-25. The v1 packs used his earlier mapping (v1.0.0, GBIF Backbone keys) and a
+'taxonKey' facet per order; their species lists stay with them, so they are not rebuilt by this
+script.
 
 Citations: pybioclip / BioCLIP (Imageomics, MIT): https://github.com/Imageomics/pybioclip;
 Stevens et al. (2024) BioCLIP, CVPR; Gu et al. (2025) BioCLIP 2, NeurIPS.
 Sittinger, M. (2026). Software for post-processing of data captured with the Insect
 Detect camera trap (v1.0.0). Zenodo. https://doi.org/10.5281/zenodo.21822140
 (https://github.com/maxsitt/insect-detect-post). GBIF occurrence data: GBIF.org,
-https://www.gbif.org (the query date is written to the .json next to the CSV).
+https://www.gbif.org (the query date is written to the .json next to the CSV). Catalogue of
+Life: the release named in the .json (COL26.6 XR: https://doi.org/10.48580/dgy8b).
 
 Examples:
     python build_region_species_list.py --continent EUROPE --orders Diptera,Hymenoptera,Coleoptera,Lepidoptera --out out/species_europe_pollinator_orders.csv
     python build_region_species_list.py --countries DE,AT,CH,CZ,PL --orders Diptera,Hymenoptera --out out/species_central_europe_flies_bees.csv
 
 Then:
-    python build_label_pack.py --model bioclip-2 --species-csv out/species_europe_pollinator_orders.csv --pack-id bioclip-2_pollinator-orders-europe_v1 --out ./out
+    python build_label_pack.py --model bioclip-2 --species-csv out/species_europe_pollinator_orders.csv --pack-id bioclip-2_pollinator-orders-europe_v2 --out ./out
 
 Only arthropods are covered by the mapping; other groups need their own key mapping.
 """
@@ -38,6 +49,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import hashlib
 import json
 import sys
 import time
@@ -47,13 +59,20 @@ import urllib.request
 from datetime import date
 from pathlib import Path
 
-MAPPING_URL = "https://github.com/maxsitt/insect-detect-post/releases/download/v1.0.0/tol_gbif_taxon_keys_Arthropoda.csv"
+RELEASE = "https://github.com/maxsitt/insect-detect-post/releases/download/v1.1.0/"
+# file name -> SHA-256, as registered in his filters/filter_assets.json (v1.1.0)
+MAPPING_FILES = {
+    "bioclip_gbif_species_mapping_Arthropoda.csv": "e09a04c9dbc61cc914ee12fbe03b666c67123d0fcdd59573eabc9bf5335dbe12",
+    "bioclip_gbif_species_mapping_Arthropoda.json": "5a130f0622138184dc93264e1a91cf03fb9f398c0c568f6d35f248e972166771",
+}
 GBIF_API = "https://api.gbif.org/v1"
+COL_XR = "7ddf754f-d193-4cc9-b351-99906754a03b"  # GBIF checklistKey of COL XR
+ARTHROPODA_COL_KEY = "RT"  # COL XR key of the phylum, restricts the facet server-side
 FACET_LIMIT = 1_200_000
 RETRIES = 4
 
 
-def _get_json(url: str, timeout: int = 180) -> dict:
+def _get_json(url: str, timeout: int = 300) -> dict:
     last = None
     for attempt in range(RETRIES):
         try:
@@ -65,36 +84,32 @@ def _get_json(url: str, timeout: int = 180) -> dict:
             last = e
         except Exception as e:  # network hiccups, 5xx
             last = e
-        time.sleep(5 * (attempt + 1))
+        time.sleep(10 * (attempt + 1))
     raise RuntimeError(f"GBIF request failed after {RETRIES} attempts: {last}")
 
 
-def order_key(name: str) -> int:
-    """GBIF backbone key of an order name (e.g. Diptera -> 811)."""
-    r = _get_json(f"{GBIF_API}/species/match?" + urllib.parse.urlencode({"name": name, "rank": "ORDER", "strict": "true"}))
-    if r.get("matchType") == "NONE" or "usageKey" not in r:
-        raise ValueError(f"GBIF does not know an order named {name!r}")
-    return int(r["usageKey"])
-
-
-def taxon_counts(region: dict, order_k: int, min_occ: int) -> dict[int, int]:
-    """All GBIF taxon keys (any rank) with >= min_occ records of this order in the region."""
-    params = {**region, "taxonKey": order_k, "limit": 0, "facet": "taxonKey",
-              "facetMincount": min_occ, "facetLimit": FACET_LIMIT}
+def species_counts(region: dict, min_occ: int) -> dict[str, int]:
+    """COL XR species key -> number of GBIF arthropod records in the region (>= min_occ)."""
+    params = {**region, "checklistKey": COL_XR, "phylumKey": ARTHROPODA_COL_KEY, "limit": 0,
+              "facet": "speciesKey", "facetMincount": min_occ, "speciesKey.facetLimit": FACET_LIMIT}
     r = _get_json(f"{GBIF_API}/occurrence/search?" + urllib.parse.urlencode(params))
     counts = r["facets"][0]["counts"] if r.get("facets") else []
     if len(counts) >= FACET_LIMIT:
         raise RuntimeError("GBIF facet truncated; raise FACET_LIMIT")
-    return {int(c["name"]): int(c["count"]) for c in counts}
+    return {str(c["name"]): int(c["count"]) for c in counts}
 
 
-def load_mapping(path: Path) -> list[dict]:
+def mapping_file(folder: Path, name: str) -> Path:
+    """The mapping file, downloaded on first use; refused if its SHA-256 differs from v1.1.0."""
+    path = folder / name
     if not path.exists():
-        print(f"Downloading the TreeOfLife-to-GBIF mapping (41 MB) to {path} ...")
-        path.parent.mkdir(parents=True, exist_ok=True)
-        urllib.request.urlretrieve(MAPPING_URL, path)
-    with open(path, newline="", encoding="utf-8") as f:
-        return list(csv.DictReader(f))
+        print(f"Downloading {name} to {folder} ...")
+        folder.mkdir(parents=True, exist_ok=True)
+        urllib.request.urlretrieve(RELEASE + name, path)
+    digest = hashlib.sha256(path.read_bytes()).hexdigest()
+    if digest != MAPPING_FILES[name]:
+        raise SystemExit(f"{path}: SHA-256 {digest} is not the one of release v1.1.0; delete the file to download it again")
+    return path
 
 
 def main() -> int:
@@ -103,43 +118,50 @@ def main() -> int:
     g.add_argument("--continent", help="GBIF continent, e.g. EUROPE")
     g.add_argument("--countries", help="comma list of ISO 3166-1 alpha-2 codes, e.g. DE,AT,CH")
     ap.add_argument("--orders", required=True, help="comma list of order names")
-    ap.add_argument("--min-occurrences", type=int, default=3, help="GBIF records needed in the region (default 3)")
-    ap.add_argument("--mapping", type=Path, default=Path("out/tol_gbif_taxon_keys_Arthropoda.csv"))
+    ap.add_argument("--min-occurrences", type=int, default=3, help="GBIF records needed in a region (default 3)")
+    ap.add_argument("--mapping-dir", type=Path, default=Path("out"), help="where the mapping files are kept")
     ap.add_argument("--out", type=Path, required=True)
     args = ap.parse_args()
 
     regions = ([{"continent": args.continent.upper()}] if args.continent
                else [{"country": c.strip().upper()} for c in args.countries.split(",") if c.strip()])
     orders = [o.strip() for o in args.orders.split(",") if o.strip()]
-    mapping = load_mapping(args.mapping)
-    print(f"mapping: {len(mapping)} TreeOfLife arthropod species with a GBIF key")
+    csv_path = mapping_file(args.mapping_dir, "bioclip_gbif_species_mapping_Arthropoda.csv")
+    provenance = json.loads(mapping_file(args.mapping_dir, "bioclip_gbif_species_mapping_Arthropoda.json").read_text())
+    with open(csv_path, newline="", encoding="utf-8") as f:
+        mapping = [m for m in csv.DictReader(f) if m["bioclip_order"] in set(orders) and m["gbif_species_key"]]
+    print(f"mapping: {len(mapping)} TreeOfLife species of {orders} with a COL species key")
 
-    keys_in_region: dict[int, int] = {}
-    for o in orders:
-        k = order_key(o)
-        for region in regions:
-            t0 = time.time()
-            counts = taxon_counts(region, k, args.min_occurrences)
-            for key, n in counts.items():
-                keys_in_region[key] = keys_in_region.get(key, 0) + n
-            print(f"  {o} ({k}) in {region}: {len(counts)} taxon keys ({time.time() - t0:.0f} s)")
+    # Each region on its own needs >= min_occurrences records (as in insect-detect-post); counts are summed.
+    in_region: dict[str, int] = {}
+    for region in regions:
+        t0 = time.time()
+        counts = species_counts(region, args.min_occurrences)
+        for key, n in counts.items():
+            in_region[key] = in_region.get(key, 0) + n
+        print(f"  {region}: {len(counts)} arthropod species ({time.time() - t0:.0f} s)")
 
-    wanted_orders = set(orders)
-    rows = [m for m in mapping
-            if m["order"] in wanted_orders and m.get("gbif_taxon_key")
-            and int(m["gbif_taxon_key"]) in keys_in_region]
-    rows.sort(key=lambda m: (m["order"], m["family"], m["species"]))
+    rows = sorted((m for m in mapping if m["gbif_species_key"] in in_region),
+                  key=lambda m: (m["bioclip_order"], m["bioclip_family"], m["bioclip_species"]))
     args.out.parent.mkdir(parents=True, exist_ok=True)
     with open(args.out, "w", newline="", encoding="utf-8") as f:
         w = csv.writer(f)
-        w.writerow(["species", "genus", "family", "order", "class", "gbif_taxon_key", "gbif_occurrences_in_region"])
+        # 'species' = the TreeOfLife "genus + species slot" string that build_label_pack.py matches;
+        # gbif_species = the accepted COL name, for reference only (the pack keeps the TreeOfLife names).
+        w.writerow(["species", "genus", "family", "order", "class", "gbif_species", "gbif_species_key",
+                    "gbif_status", "gbif_occurrences_in_region"])
         for m in rows:
-            w.writerow([m["species"], m["genus"], m["family"], m["order"], m["class"], m["gbif_taxon_key"],
-                        keys_in_region[int(m["gbif_taxon_key"])]])
+            w.writerow([m["bioclip_species"], m["bioclip_genus"], m["bioclip_family"], m["bioclip_order"],
+                        m["bioclip_class"], m["gbif_species"], m["gbif_species_key"], m["gbif_status"],
+                        in_region[m["gbif_species_key"]]])
     meta = {"regions": regions, "orders": orders, "min_occurrences": args.min_occurrences,
-            "species": len(rows), "mapping": str(args.mapping), "date": date.today().isoformat()}
+            "species": len(rows), "gbif_checklist_key": COL_XR,
+            "mapping": {"url": RELEASE + csv_path.name, "sha256": MAPPING_FILES[csv_path.name],
+                        "col_release": provenance.get("col_release"),
+                        "tol_species_list": provenance.get("tol_species_list")},
+            "date": date.today().isoformat()}
     args.out.with_suffix(".json").write_text(json.dumps(meta, indent=2))
-    per_order = {o: sum(1 for m in rows if m["order"] == o) for o in orders}
+    per_order = {o: sum(1 for m in rows if m["bioclip_order"] == o) for o in orders}
     print(f"wrote {args.out}: {len(rows)} species {per_order}")
     return 0
 

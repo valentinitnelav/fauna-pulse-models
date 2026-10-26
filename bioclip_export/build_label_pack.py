@@ -22,12 +22,18 @@ Examples:
 
 Sink rows need the text tower (torch + open_clip). Pass --no-sink to skip them (not
 recommended for real use: every crop then gets an insect name, even a leaf).
+
+Names stay as TreeOfLife publishes them. The few rows not in the plain form (kingdom
+'Metazoa', two genera in one row, authors or codes in the species slot) are used by the app
+only down to family or genus and listed in the header (--name-rules higher-rank, the
+default; see NAME_RULES). --name-rules none uses every row as published (the v1 packs).
 """
 
 from __future__ import annotations
 
 import argparse
 import csv
+import hashlib
 import json
 import re
 import sys
@@ -97,9 +103,10 @@ def load_tol(model_key: str, cache_dir: Path | None, embeddings_dir: Path | None
         npy_path = hf_hub_download(filename=npy_name, **kw)
         json_path = hf_hub_download(filename=json_name, **kw)
     emb = np.load(npy_path, mmap_mode="r")  # [dim, N] in pybioclip's layout
-    with open(json_path, encoding="utf-8") as f:
-        names = json.load(f)
-    return emb, names
+    raw = Path(json_path).read_bytes()
+    # The SHA-256 of the names file goes into the pack, so a user can cite exactly which
+    # TreeOfLife names it holds (the file name stays the same across dataset revisions).
+    return emb, json.loads(raw), hashlib.sha256(raw).hexdigest()
 
 
 def row_taxonomy(entry) -> list[str]:
@@ -123,29 +130,51 @@ def row_taxonomy(entry) -> list[str]:
     return sci + [("" if common is None else str(common))]
 
 
-def clean_taxonomy(tax: list[str], real_genera: set[str]) -> list[str] | None:
-    """Repairs the few TreeOfLife names that come in another format, as found in the v1 packs
-    (2026-10-20): kingdom 'Metazoa' instead of 'Animalia' (a separate kingdom branch the app's
-    top-down answer never reaches), a lineage shifted by one rank (a higher taxon such as
-    'Pterygota' in the genus slot and the whole name in the species slot), and authors, years
-    or a subgenus in brackets in the species slot. When the genus slot holds a real genus, it
-    is kept and a second genus in the species slot is read as an old combination (e.g.
-    Cantharis | 'Telephorus dichrous'). Returns None when no species epithet is left ('1820').
-    Rows already in the normal form are returned unchanged."""
+# --name-rules higher-rank: a TreeOfLife row that is not in the plain form is used by the app only
+# down to the rank where it is still plain. No name is corrected, built or moved and no row is
+# dropped, so the pack keeps the upstream names; a taxonomic fix would be our own opinion between
+# competing backbones (an audit of 2026-10-23 found that rebuilding "genus + epithet" from such rows
+# made names that GBIF lists as synonyms or does not know). The only renaming is kingdom
+# 'Metazoa' -> 'Animalia': the TreeOfLife-200M card calls 'Metazoa' an unresolved kingdom
+# ("Metazoa instead of Animalia"), and NCBI Taxonomy lists Animalia as a synonym of Metazoa
+# (taxid 33208). Without it those rows form a separate kingdom branch that the app's top-down
+# answer never reaches, so their probability would count for no family at all.
+NAME_RULES = {
+    "metazoa": (4, "kingdom 'Metazoa' (unresolved in TreeOfLife-200M): read as Animalia, used down to family"),
+    "two_genera": (4, "the species slot starts with another genus than the genus slot: used down to family"),
+    "species_not_plain": (5, "the species slot is not one plain epithet (authors, years, codes, "
+                             "placeholders such as 'spec'): used down to genus"),
+}
+PLAIN_EPITHET = re.compile(r"[a-z][a-z-]*")
+# Abbreviations for "unidentified species" that pass as one lowercase word ('Bombus spec').
+PLACEHOLDER_EPITHETS = {"sp", "spp", "spec", "nr", "cf", "aff"}
+
+
+def name_rule(tax: list[str]) -> str | None:
+    """The NAME_RULES key for a TreeOfLife row that is not in the plain form, else None."""
+    if tax[0] == "Metazoa":
+        return "metazoa"
+    species = tax[6]
+    if not species:
+        return None  # already ends above species
+    words = re.sub(r"\([^)]*\)", " ", species).replace(",", " ").split()
+    if words and re.fullmatch(r"[A-Z][a-z]+", words[0]) and words[0] != tax[5]:
+        return "two_genera"  # e.g. Kirinia | 'Esperarge eversmanni': which genus is right is not ours to decide
+    if not PLAIN_EPITHET.fullmatch(species) or species in PLACEHOLDER_EPITHETS:
+        return "species_not_plain"
+    return None
+
+
+def apply_name_rule(tax: list[str], rule: str) -> list[str]:
+    """The row's labels for the app: slots below the rule's deepest rank are left empty (the app
+    counts such a row only down to its last named rank), and so is the common name, which
+    belongs to the species. The original row goes into the header (main)."""
+    deepest = NAME_RULES[rule][0]
     t = list(tax)
-    if t[0] == "Metazoa":
+    if rule == "metazoa":
         t[0] = "Animalia"
-    if not t[6] or re.fullmatch(r"[a-z][a-z-]*", t[6]):
-        return t
-    words = re.sub(r"\([^)]*\)", " ", t[6]).replace(",", " ").split()
-    if words and words[0][:1].isupper():  # a whole binomial in the species slot
-        if t[5] not in real_genera:
-            t[5] = words[0]
-        words = words[1:]
-    epithet = next((w for w in words if re.fullmatch(r"[a-z][a-z-]+", w)), None)
-    if epithet is None:
-        return None
-    t[6] = epithet
+    for k in range(deepest + 1, 8):
+        t[k] = ""
     return t
 
 
@@ -185,12 +214,14 @@ def main() -> int:
                          "imageomics/TreeOfLife-200M) instead of the Hugging Face download")
     ap.add_argument("--weights", type=Path, default=None,
                     help="model checkpoint file on disk, for the text tower of the sink rows")
-    ap.add_argument("--no-name-cleaning", action="store_true",
-                    help="keep TreeOfLife names exactly as published (as the v1 packs did; see clean_taxonomy)")
+    ap.add_argument("--name-rules", choices=["higher-rank", "none"], default="higher-rank",
+                    help="higher-rank (default): rows whose names are not in the plain form are used only down to "
+                         "genus or family, each listed in the header (see NAME_RULES); none: every row used as "
+                         "published (the v1 packs)")
     ap.add_argument("--out", type=Path, default=Path("out"))
     args = ap.parse_args()
 
-    emb, names = load_tol(args.model, args.cache_dir, args.embeddings_dir)
+    emb, names, names_sha256 = load_tol(args.model, args.cache_dir, args.embeddings_dir)
     dim, n = emb.shape if emb.shape[0] < emb.shape[1] else (emb.shape[1], emb.shape[0])
     transposed = emb.shape[0] == dim and emb.shape[0] < emb.shape[1]
     print(f"TreeOfLife embeddings: {n} rows, dim {dim} (layout {'[dim, N]' if transposed else '[N, dim]'})")
@@ -208,23 +239,12 @@ def main() -> int:
             keep_species = {row[col].strip() for row in reader if row.get(col)}
         print(f"species list: {len(keep_species)} names from {args.species_csv}")
 
-    taxa = [row_taxonomy(names[i]) for i in range(min(n, len(names)))]
-    # A genus is "real" when some Animalia row names it with a plain epithet.
-    real_genera = {t[5] for t in taxa if t[0] == "Animalia" and t[5] and re.fullmatch(r"[a-z][a-z-]*", t[6])}
-    cleaning = {"metazoa": 0, "species_slot": 0, "genus_slot": 0, "dropped_no_epithet": 0, "dropped_duplicate": 0}
-    seen: set[tuple[str, ...]] = set()
+    # The filters read the names as published, so --name-rules never changes which rows a pack holds.
     labels: list[list[str]] = []
     idx: list[int] = []
-    for i, tax in enumerate(taxa):
-        if not args.no_name_cleaning:
-            fixed = clean_taxonomy(tax, real_genera)
-            if fixed is None:
-                cleaning["dropped_no_epithet"] += 1
-                continue
-            cleaning["metazoa"] += tax[0] != fixed[0]
-            cleaning["species_slot"] += tax[6] != fixed[6]
-            cleaning["genus_slot"] += tax[5] != fixed[5]
-            tax = fixed
+    rule_rows: list[dict] = []
+    for i in range(min(n, len(names))):
+        tax = row_taxonomy(names[i])
         if keep_classes and tax[2] not in keep_classes:
             continue
         if keep_orders and tax[3] not in keep_orders:
@@ -233,18 +253,18 @@ def main() -> int:
             continue
         if keep_species is not None and f"{tax[5]} {tax[6]}".strip() not in keep_species:
             continue
-        if not args.no_name_cleaning:
-            if tuple(tax[:7]) in seen:  # a second row would give that species two shares
-                cleaning["dropped_duplicate"] += 1
-                continue
-            seen.add(tuple(tax[:7]))
+        rule = name_rule(tax) if args.name_rules == "higher-rank" else None
+        if rule:
+            rule_rows.append({"pack_row": len(labels), "tol_row": i, "rule": rule, "published": tax})
+            tax = apply_name_rule(tax, rule)
         labels.append(tax)
         idx.append(i)
     if not idx:
         print("No rows matched the filters.", file=sys.stderr)
         return 2
-    print(f"kept {len(idx)} species rows" + ("" if args.no_name_cleaning else
-          f"; name cleaning over all TreeOfLife rows: {cleaning}"))
+    rule_counts = {k: sum(r["rule"] == k for r in rule_rows) for k in NAME_RULES}
+    print(f"kept {len(idx)} species rows; name rules '{args.name_rules}'"
+          + (f": {rule_counts}" if args.name_rules != "none" else ""))
 
     idx_arr = np.asarray(idx)
     mat = (emb[:, idx_arr].T if transposed else emb[idx_arr, :]).astype(np.float32)
@@ -287,10 +307,18 @@ def main() -> int:
         "source": {
             "embeddings_repo": EMBEDDINGS[args.model][0],
             "embeddings_file": EMBEDDINGS[args.model][1],
+            "names_file_sha256": names_sha256,
             "classes": sorted(keep_classes), "orders": sorted(keep_orders),
             "families": sorted(keep_families),
             "species_csv": args.species_csv.name if args.species_csv else None,
-            "name_cleaning": None if args.no_name_cleaning else cleaning,
+        },
+        # Which rows the app uses only down to a higher rank, with the names as published
+        # (tol_row = row of the TreeOfLife names file), so every change can be checked and undone.
+        "name_rules": {
+            "set": args.name_rules,
+            "rules": {} if args.name_rules == "none" else {k: v[1] for k, v in NAME_RULES.items()},
+            "counts": {} if args.name_rules == "none" else rule_counts,
+            "rows": rule_rows,
         },
         "built_with": {"script": "build_label_pack.py", "date": date.today().isoformat()},
         "license": "TreeOfLife embeddings CC0-1.0; sink rows generated with the MIT BioCLIP text tower",

@@ -167,19 +167,26 @@ insectDCT (no name vectors; `fpack.write_class_list`, see [`classifier_export/RE
 `build_region_species_list.py` writes the species of chosen orders that GBIF has at
 least 3 records for in a region (a GBIF continent or a set of countries). Restricting
 the candidates to a regional GBIF species list is what BioCLIP's documentation
-recommends ("Geo-Restricted Taxon List Predictions"); the API-based way of getting that
-list and the TreeOfLife-to-GBIF key mapping (downloaded on first use) follow Maximilian
-Sittinger's `insect-detect-post`. One GBIF request per order and region, about 10 to
-60 s each, no account needed:
+recommends ("Geo-Restricted Taxon List Predictions"). The way of getting that list follows
+Maximilian Sittinger's `insect-detect-post`, so a region gives the same species there:
+records are counted per accepted species of the Catalogue of Life Extended Release (the
+taxonomy GBIF uses since it replaced the GBIF Backbone), and TreeOfLife names are mapped to
+those species with his mapping table (release v1.1.0, made from the same TreeOfLife names
+file and COL26.6 XR; downloaded on first use and checked by SHA-256). The CSV also gives the
+accepted COL name of each species for reference; the pack keeps the TreeOfLife names. One
+GBIF request per region, a few seconds each, no account needed:
 
 ```bash
-python build_region_species_list.py --continent EUROPE   --orders Diptera,Hymenoptera,Coleoptera,Lepidoptera --out out/species_europe_pollinator_orders.csv
-python build_label_pack.py --model bioclip-2 --classes Insecta   --species-csv out/species_europe_pollinator_orders.csv --pack-id bioclip-2_pollinator-orders-europe_v1 --out ./out
+python build_region_species_list.py --continent EUROPE   --orders Diptera,Hymenoptera,Coleoptera,Lepidoptera --out out/species_europe_4orders_col.csv
+python build_label_pack.py --model bioclip-2 --classes Insecta   --species-csv out/species_europe_4orders_col.csv --pack-id bioclip-2_pollinator-orders-europe_v2 --out ./out
 ```
 
-Countries instead of a continent: `--countries DE,AT,CH,CZ,PL` (union). Any CSV with a
-`species` column of "Genus epithet" names works as `--species-csv`, so a user-supplied
-taxon list is the same one-liner.
+Countries instead of a continent: `--countries DE,AT,CH,CZ,PL` (union; each country on its
+own needs the 3 records). Any CSV with a `species` column of "Genus epithet" names works as
+`--species-csv`, so a user-supplied taxon list is the same one-liner. The v1 packs below used
+the earlier mapping (v1.0.0, GBIF Backbone keys, one request per order); the script no longer
+rebuilds their species lists (written to `out/` when those packs were built; file names in
+each pack header, `source.species_csv`).
 
 ### 3c. Packs built so far (2026-09-20)
 
@@ -193,16 +200,31 @@ taxon list is the same one-liner.
 | `bioclip-2.5_pollinator-orders-europe_v1` | as the Europe pack above, for BioCLIP 2.5 (round 264) | 34,704 | 74 MB | yes (with the BioCLIP 2.5 model) |
 | `bioclip-2.5_flower-visitors-32fam_v1` | the 32 families, for BioCLIP 2.5 (round 264) | 37,461 | 80 MB | yes (with the BioCLIP 2.5 model) |
 
-**Name clean-up (since 2026-10-20, `clean_taxonomy` in `build_label_pack.py`):** a few
-TreeOfLife names come in another format: kingdom "Metazoa" instead of "Animalia" (a separate
-branch the app's top-down answer never reaches), a lineage shifted by one rank ("Pterygota" in
-the genus slot), or authors, years and subgenera in the species slot. The builder now repairs
-them and drops the few it cannot (no epithet left) and exact duplicates; the counts go into the
-pack header (`source.name_cleaning`). The v1 packs above were built without it; rows affected in
-the published ones ("Metazoa" / species slot not a plain epithet): BioCLIP 2 Europe 36 / 111,
-32 families 85 / 418 (among them bee flies, hoverflies and bees), mammals and birds 41 / 613;
-BioCLIP 2.5 Europe 0 / 0, 32 families 81 / 105 (codes and bare years such as "1820").
-`--no-name-cleaning` reproduces them.
+**Names (`--name-rules`, since 2026-10-25):** packs keep the TreeOfLife names as published;
+no name is corrected, built or moved and no row is dropped (the filters also read the names as
+published, so the rules never change which rows a pack holds). The few rows that are not in the
+plain form are used by the app only down to a higher rank (`--name-rules higher-rank`, the
+default; `NAME_RULES` in `build_label_pack.py`):
+
+| Row | Example (TreeOfLife row) | The app uses it down to |
+|---|---|---|
+| kingdom "Metazoa", which the TreeOfLife-200M card calls unresolved ("Metazoa instead of Animalia"; NCBI Taxonomy lists Animalia as a synonym of Metazoa) | 515898: Nymphalidae, Pterygota, "Charaxes bernardus Fabricius, 1793" | family, kingdom read as Animalia |
+| the species slot starts with another genus than the genus slot | 243250: Kirinia, "Esperarge eversmanni" | family |
+| the species slot is not one plain epithet (authors, years, codes, placeholders such as "spec") | 149186: Bombus, "spec"; 112236: Toxomerus, "CR-11" | genus |
+
+Without the first rule those rows form a separate kingdom branch that the app's top-down
+answer never reaches. The app needs no change: a row with empty slots counts only down to its
+last named rank. Each such row is listed in the header (`name_rules.rows`: pack row, TreeOfLife
+row, rule, names as published), and `source.names_file_sha256` identifies the names file.
+`--name-rules none` uses every row as published, as the v1 packs above do. Rows the rules would
+touch in them (Metazoa / two genera / species slot): BioCLIP 2 Europe 36 / 74 / 1, 32 families
+85 / 309 / 40, mammals and birds 41 / 571 / 1; BioCLIP 2.5 Europe none, 32 families 81 / 0 / 32.
+
+To cite the names of a pack built with the rules: "TreeOfLife-200M (Imageomics,
+https://doi.org/10.57967/hf/8980), names file `<embeddings_file>` with SHA-256
+`<names_file_sha256>`, names used as published; following the dataset card, kingdom Metazoa
+read as Animalia; rows not in the plain form used only down to genus or family, as listed in the
+pack header."
 
 Every pack ends with six "none of these" rows; `--sink-set arthropod` (default) uses
 flower-scene prompts, `--sink-set mammal` camera-trap prompts, `--no-sink` none.
