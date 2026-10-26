@@ -15,11 +15,15 @@ Maximilian Sittinger's insect-detect-post, `src/insectdetect_post/build_region_f
   under a synonym or a subspecies count for their accepted species), keeping species with at
   least --min-occurrences records (his default 3) in that region;
 - TreeOfLife species are mapped to COL XR species keys with the table he publishes as a
-  release asset (bioclip_gbif_species_mapping_Arthropoda.csv, v1.1.0: made from the same
-  TreeOfLife names file as our packs, matched against COL26.6 XR; downloaded on first use,
+  release asset (bioclip_gbif_species_mapping_Arthropoda.csv, v1.1.0: made from the BioCLIP 2
+  names file txt_emb_species.json, matched against COL26.6 XR; downloaded on first use,
   checked by SHA-256, not redistributed). TreeOfLife rows without a COL species key never pass
   a region list: about 3 % of the plain rows, nearly all rows with codes or authors in the
   species slot, and about half of the rows with two genera or kingdom 'Metazoa' (2026-10-25).
+  The list holds BioCLIP 2 strings, so a BioCLIP 2.5 pack built from it keeps only the names
+  that the 2.5 file writes the same way (the 2026-10-26 Europe list: 586 of 34,974 not, some
+  only spelled differently, e.g. 'Hirticollis Hirticomus quadriguttatus' vs 'Hirticollis
+  quadriguttatus'). A mapping of the 2.5 file would be needed to close that gap.
 Differences here: regions may be GBIF continents or a union of ISO country codes (as there),
 and the rows are narrowed to --orders instead of classes.
 
@@ -30,8 +34,8 @@ script.
 Citations: pybioclip / BioCLIP (Imageomics, MIT): https://github.com/Imageomics/pybioclip;
 Stevens et al. (2024) BioCLIP, CVPR; Gu et al. (2025) BioCLIP 2, NeurIPS.
 Sittinger, M. (2026). Software for post-processing of data captured with the Insect
-Detect camera trap (v1.0.0). Zenodo. https://doi.org/10.5281/zenodo.21822140
-(https://github.com/maxsitt/insect-detect-post). GBIF occurrence data: GBIF.org,
+Detect camera trap (v1.1.0). Zenodo. https://doi.org/10.5281/zenodo.23404778 (all versions:
+https://doi.org/10.5281/zenodo.21822140; https://github.com/maxsitt/insect-detect-post). GBIF occurrence data: GBIF.org,
 https://www.gbif.org (the query date is written to the .json next to the CSV). Catalogue of
 Life: the release named in the .json (COL26.6 XR: https://doi.org/10.48580/dgy8b).
 
@@ -93,7 +97,11 @@ def species_counts(region: dict, min_occ: int) -> dict[str, int]:
     params = {**region, "checklistKey": COL_XR, "phylumKey": ARTHROPODA_COL_KEY, "limit": 0,
               "facet": "speciesKey", "facetMincount": min_occ, "speciesKey.facetLimit": FACET_LIMIT}
     r = _get_json(f"{GBIF_API}/occurrence/search?" + urllib.parse.urlencode(params))
-    counts = r["facets"][0]["counts"] if r.get("facets") else []
+    # No facet or no species means a wrong region or a GBIF change, not an empty region: stop
+    # rather than write a short list that would silently make a small pack.
+    if not r.get("facets") or not r["facets"][0].get("counts"):
+        raise RuntimeError(f"GBIF returned no species for {region} ({r.get('count')} records)")
+    counts = r["facets"][0]["counts"]
     if len(counts) >= FACET_LIMIT:
         raise RuntimeError("GBIF facet truncated; raise FACET_LIMIT")
     return {str(c["name"]): int(c["count"]) for c in counts}

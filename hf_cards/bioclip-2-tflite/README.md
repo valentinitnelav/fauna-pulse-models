@@ -57,17 +57,52 @@ Imageomics Institute.
   for FaunaPulse, embedded with the BioCLIP 2 text tower (arthropod packs: flower, leaf, shadow,
   debris, blurry, spider web; mammals and birds pack: camera-trap scenes such as bare ground,
   vegetation, a person or a vehicle).
-  - `bioclip-2_pollinator-orders-europe_v1.fpack`: flies, bees and wasps, beetles, butterflies
+  - `bioclip-2_pollinator-orders-europe_v2.fpack`: flies, bees and wasps, beetles, butterflies
     and moths (Diptera, Hymenoptera, Coleoptera, Lepidoptera) with at least 3 GBIF records in
-    Europe (35,264 names; GBIF queried 20 September 2026).
-  - `bioclip-2_flower-visitors-32fam_v1.fpack`: 32 families of common flower visitors,
-    worldwide, including 3 spider families (38,570 names).
-  - `bioclip-2_mammals-birds-world_v1.fpack`: mammals and birds of the world (17,130 names).
-  - Inside each pack, its `pack_id` keeps the name it was built with (for example
-    `bioclip2_pollinator_orders_europe_v1`); the file names follow the FaunaPulse naming rule.
+    Europe, counted per accepted species of the Catalogue of Life (34,978 names; GBIF queried
+    26 October 2026).
+  - `bioclip-2_mammals-birds-world_v2.fpack`: mammals and birds of the world (17,130 names).
+  - The v2 packs use the names as described in [Names](#names). The v1 packs (same selections;
+    the v1 Europe list was made on 20 September 2026 with 35,264 names and an earlier version of
+    the same method) use every row as published. They stay here unchanged because installed
+    apps pin them.
+  - `bioclip-2_flower-visitors-32fam_v1.fpack` (38,570 names) is a **demo, not maintained**: it
+    shows that a pack can be built from a list of taxa given by the user. It holds every species,
+    worldwide, of 32 hand-picked families. It is not a justified selection of flower visitors:
+    of its insects in the four main orders only 14% have 3 or more GBIF records in Europe, and it
+    leaves out flower visitors such as the bee family Melittidae, longhorn beetles and most
+    moths. For Europe, use the Europe pack.
+  - Inside each v1 pack, its `pack_id` keeps the name it was built with (for example
+    `bioclip2_pollinator_orders_europe_v1`); a v2 pack's `pack_id` is its file name. The file
+    names follow the FaunaPulse naming rule.
 - `.json`: the export manifest. Its `"file"` field gives the name before upload
   (`bioclip-2_image_fp16.tflite`); same SHA-256.
 - `LICENSE`: the MIT licence of BioCLIP 2, copied from the authors' code repository.
+
+## Names
+
+The names and their taxonomy are those of TreeOfLife-200M, as the BioCLIP 2 authors publish
+them: no name is corrected, added or removed. A few rows are not in the plain form "genus,
+epithet". In the v2 packs the app uses such a row only down to the rank where it is still plain:
+
+| Row | Example (row of `txt_emb_species.json`) | Used down to |
+|---|---|---|
+| kingdom "Metazoa", which the dataset card lists among the unresolved kingdoms ("`Metazoa` instead of `Animalia`"); read as Animalia (NCBI Taxonomy lists Animalia as a synonym of Metazoa) | 515547: Curculionidae, Cionus, "thapsus (Fabricius, J.C., 1792)" | family |
+| the species field starts with another genus than the genus field | 53564: Coccinellidae, Ceratomegilla, "Semiadalia rufocincta" | family |
+| the species field is not one plain epithet (authors, years, codes, subspecies, placeholders such as "spec") | 347389: Parulidae, Basileuterus, "tristriatus sanlucasensis" | genus |
+
+Rows per pack (Metazoa / two genera / species field): Europe 37 / 72 / 0, mammals and birds
+41 / 571 / 1. Each pack lists these rows in its header (`name_rules.rows`: the row of the source
+file and its names as published), so every change can be checked and undone;
+`source.names_file_sha256` names the source file. The rules look only at the form of a row, so a
+plain row keeps whatever placement the source gives it, and a row with an empty order or family
+(343 rows of the mammals and birds pack) counts only down to the rank above the gap.
+
+To cite the names of a v2 pack: "TreeOfLife-200M (https://doi.org/10.57967/hf/8980), names file
+`embeddings/txt_emb_species.json` (SHA-256 4648928b...), names used as published. The dataset
+card lists kingdom Metazoa as unresolved; it is read as Animalia (NCBI Taxonomy lists Animalia as
+a synonym). Rows not in the plain form are used only down to genus or family, as listed in the
+pack header."
 
 ## Original work
 
@@ -95,7 +130,9 @@ Imageomics Institute.
   BioCLIP 2 was trained).
 - **Europe list**: species counts from GBIF.org occurrence data, built with the method and the
   TreeOfLife-to-GBIF key table of Maximilian Sittinger's `insect-detect-post` (re-implemented; the table
-  is not redistributed).
+  is not redistributed). v2: records counted per accepted species of the Catalogue of Life
+  (release 2026-06-19 XR, as GBIF interprets them), with the table of `insect-detect-post` v1.1.0,
+  made from the same names file. v1: the earlier table (GBIF Backbone keys).
 
 ## What it is
 
@@ -130,9 +167,10 @@ list), `verify_parity.py` for the PyTorch vs `.tflite` comparison.
   [BioCLIP 2 model card](https://huggingface.co/imageomics/bioclip-2#bias-risks-and-limitations)).
 - The phone can only answer with names that are in the chosen label pack. The "none of these"
   rows are a FaunaPulse addition that BioCLIP 2 was not designed with.
-- Names and taxonomy are as published in TreeOfLife-200M, quirks included: in these packs some
-  rows have kingdom "Metazoa" instead of "Animalia" (36 to 85 per pack), and some have a
-  species field that holds another name (a synonym), a code or a year (111 to 613 per pack).
+- Names and taxonomy are as published in TreeOfLife-200M, so a name may be outdated or a
+  synonym. The v1 packs also use the rows described in [Names](#names) as published (for
+  example the species answer "Bombus spec" in the 32-family demo pack); the v2 packs use them
+  only down to genus or family.
 - This file has not yet been tested at scale in FaunaPulse, so how accurate it is there is not
   known yet. The app can run it, but the results depend on many factors: the quality of each
   crop (focus, motion blur, light, resolution, video compression), how large and how complete
@@ -180,7 +218,11 @@ For the label packs:
   https://doi.org/10.15468/39omei (the common names, as included in TreeOfLife-200M)
 - Europe list method: Sittinger, M. (2026). Software for post-processing of data captured with
   the Insect Detect camera trap [Software]. Zenodo.
-  https://doi.org/10.5281/zenodo.21822140
+  https://doi.org/10.5281/zenodo.21822140 (all versions; v2 lists: v1.1.0,
+  https://doi.org/10.5281/zenodo.23404778)
+- Bánki, O., Roskov, Y., Döring, M., et al. (2026). Catalogue of Life (Version 2026-06-19 XR).
+  Catalogue of Life Foundation. https://doi.org/10.48580/dgy8b (the species counting of the v2
+  Europe list)
 
 ## Notes
 

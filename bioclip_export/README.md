@@ -144,10 +144,14 @@ the phone's CPU it was slower than fp16 (9.2 s against 5.6 s per crop). fp16 sta
 
 ## 3. Build a label pack (about 5 minutes plus the download)
 
-The first pack for a phone test: 32 families of common flower visitors of temperate
-Europe (bees, wasps, hoverflies and other flies, ladybirds and other beetles,
-butterflies, bugs, lacewings, scorpionflies, crab, orb and jumping spiders), 38,570
-species, 60 MiB:
+A pack from a taxon list given by the user, here the first pack for a phone test: every
+species, worldwide, of 32 hand-picked families of flower visitors (bees, wasps, hoverflies
+and other flies, ladybirds and other beetles, butterflies, bugs, lacewings, scorpionflies,
+crab, orb and jumping spiders), 38,570 species, 60 MiB. It is a demo of the option, not a
+justified selection: of its insects in the four main orders only 14 % have 3 or more GBIF
+records in Europe, and it leaves out flower visitors such as the bee family Melittidae,
+longhorn beetles and most moths. It is not maintained (no v2); for Europe use the regional
+pack of 3b.
 
 ```bash
 python build_label_pack.py --model bioclip-2 --pack-id bioclip-2_flower-visitors-32fam_v1 --out ./out \
@@ -171,10 +175,12 @@ recommends ("Geo-Restricted Taxon List Predictions"). The way of getting that li
 Maximilian Sittinger's `insect-detect-post`, so a region gives the same species there:
 records are counted per accepted species of the Catalogue of Life Extended Release (the
 taxonomy GBIF uses since it replaced the GBIF Backbone), and TreeOfLife names are mapped to
-those species with his mapping table (release v1.1.0, made from the same TreeOfLife names
-file and COL26.6 XR; downloaded on first use and checked by SHA-256). The CSV also gives the
-accepted COL name of each species for reference; the pack keeps the TreeOfLife names. One
-GBIF request per region, a few seconds each, no account needed:
+those species with his mapping table (release v1.1.0, made from the BioCLIP 2 names file and
+COL26.6 XR; downloaded on first use and checked by SHA-256). The CSV also gives the
+accepted COL name of each species for reference; the pack keeps the TreeOfLife names. The list
+holds BioCLIP 2 strings, so a BioCLIP 2.5 pack keeps only the names its own file writes the same
+way (Europe, 26 October 2026: 586 of 34,974 names have no BioCLIP 2.5 row, some only spelled
+differently). One GBIF request per region, a few seconds each, no account needed:
 
 ```bash
 python build_region_species_list.py --continent EUROPE   --orders Diptera,Hymenoptera,Coleoptera,Lepidoptera --out out/species_europe_4orders_col.csv
@@ -188,17 +194,22 @@ the earlier mapping (v1.0.0, GBIF Backbone keys, one request per order); the scr
 rebuilds their species lists (written to `out/` when those packs were built; file names in
 each pack header, `source.species_csv`).
 
-### 3c. Packs built so far (2026-09-20)
+### 3c. Packs built so far
+
+v2 (2026-10-26, `--name-rules higher-rank`, Europe list made the insect-detect-post way):
+`bioclip-2_pollinator-orders-europe_v2` (34,978 names), `bioclip-2_mammals-birds-world_v2`
+(17,130), `bioclip-2.5_pollinator-orders-europe_v2` (34,392). v1 (2026-09-20 to 10-02, every row
+as published):
 
 | Pack id | Selection | Names | Size | Runs in the app today |
 |---|---|---|---|---|
-| `bioclip-2_flower-visitors-32fam_v1` | 32 flower-visitor families, worldwide | 38,570 | 60 MB | yes |
+| `bioclip-2_flower-visitors-32fam_v1` | 32 flower-visitor families, worldwide (demo, not maintained) | 38,570 | 60 MB | yes |
 | `bioclip-2_pollinator-orders-europe_v1` | Diptera, Hymenoptera, Coleoptera, Lepidoptera with GBIF records in Europe | 35,264 | 57 MB | yes |
 | `bioclip-2_mammalia-world_v1` | class Mammalia, worldwide, camera-trap sink prompts (`--sink-set mammal`) | 5,999 | 9.4 MB | yes (for MegaDetector "animal" boxes) |
 | `bioclip-2_mammals-birds-world_v1` | classes Mammalia and Aves, worldwide, camera-trap sink prompts (round 278; offered for "Mammals and birds" on the home screen) | 17,130 | 28 MB | yes |
 | `bioclip-2_pollinator-orders-world_v1` | the four orders, worldwide | 204,620 | 318 MB | not yet (needs the native scorer of a later app round) |
 | `bioclip-2.5_pollinator-orders-europe_v1` | as the Europe pack above, for BioCLIP 2.5 (round 264) | 34,704 | 74 MB | yes (with the BioCLIP 2.5 model) |
-| `bioclip-2.5_flower-visitors-32fam_v1` | the 32 families, for BioCLIP 2.5 (round 264) | 37,461 | 80 MB | yes (with the BioCLIP 2.5 model) |
+| `bioclip-2.5_flower-visitors-32fam_v1` | the 32 families, for BioCLIP 2.5 (round 264; demo, not maintained) | 37,461 | 80 MB | yes (with the BioCLIP 2.5 model) |
 
 **Names (`--name-rules`, since 2026-10-25):** packs keep the TreeOfLife names as published;
 no name is corrected, built or moved and no row is dropped (the filters also read the names as
@@ -208,23 +219,35 @@ default; `NAME_RULES` in `build_label_pack.py`):
 
 | Row | Example (TreeOfLife row) | The app uses it down to |
 |---|---|---|
-| kingdom "Metazoa", which the TreeOfLife-200M card calls unresolved ("Metazoa instead of Animalia"; NCBI Taxonomy lists Animalia as a synonym of Metazoa) | 515898: Nymphalidae, Pterygota, "Charaxes bernardus Fabricius, 1793" | family, kingdom read as Animalia |
+| kingdom "Metazoa", which the TreeOfLife-200M card lists as unresolved ("Metazoa instead of Animalia"; NCBI Taxonomy lists Animalia as a synonym of Metazoa) | 515898: Nymphalidae, Pterygota, "Charaxes bernardus Fabricius, 1793" | family, kingdom read as Animalia |
 | the species slot starts with another genus than the genus slot | 243250: Kirinia, "Esperarge eversmanni" | family |
-| the species slot is not one plain epithet (authors, years, codes, placeholders such as "spec") | 149186: Bombus, "spec"; 112236: Toxomerus, "CR-11" | genus |
+| the species slot is not one plain epithet (authors, years, codes, placeholders such as "spec", "indet", "group") | 149186: Bombus, "spec"; 112236: Toxomerus, "CR-11" | genus |
 
 Without the first rule those rows form a separate kingdom branch that the app's top-down
-answer never reaches. The app needs no change: a row with empty slots counts only down to its
-last named rank. Each such row is listed in the header (`name_rules.rows`: pack row, TreeOfLife
-row, rule, names as published), and `source.names_file_sha256` identifies the names file.
-`--name-rules none` uses every row as published, as the v1 packs above do. Rows the rules would
-touch in them (Metazoa / two genera / species slot): BioCLIP 2 Europe 36 / 74 / 1, 32 families
-85 / 309 / 40, mammals and birds 41 / 571 / 1; BioCLIP 2.5 Europe none, 32 families 81 / 0 / 32.
+answer never reaches. The app needs no change: it counts a row only down to the rank above its
+first empty slot. Each such row is listed in the header (`name_rules.rows`: pack row, TreeOfLife
+row, rule, names as published); `source.names_file_sha256` identifies the names file and
+`source.species_csv_sha256` the species list. `--name-rules none` uses every row as published,
+as the v1 packs above do. Rows the rules touch (Metazoa / two genera / species slot): v2 packs:
+BioCLIP 2 Europe 37 / 72 / 0, mammals and birds 41 / 571 / 1, BioCLIP 2.5 Europe none; in the v1
+packs: BioCLIP 2 Europe 36 / 74 / 1, 32 families 85 / 309 / 40, BioCLIP 2.5 32 families
+81 / 0 / 32.
+
+What the rules do not catch, because they look only at the form of a row: a plain row with a
+wrong placement (e.g. three *Notiophilus* ground beetles that also have a row in the weevil
+family Brachyceridae), rows with a gap above the genus (343 bird and mammal rows with no order
+or no family, which the app then counts only down to class or order), and plain rows of the
+BioCLIP 2.5 file that join the genus slot of a BioCLIP 2 two-genera row with its epithet (e.g.
+2.5 "Ceratomegilla rufocincta" where the BioCLIP 2 file has Ceratomegilla, "Semiadalia
+rufocincta"). A spelling variant of the same genus also counts as two genera (Cheilosia,
+"Chilosia picata"), so such a row stops at family.
 
 To cite the names of a pack built with the rules: "TreeOfLife-200M (Imageomics,
-https://doi.org/10.57967/hf/8980), names file `<embeddings_file>` with SHA-256
-`<names_file_sha256>`, names used as published; following the dataset card, kingdom Metazoa
-read as Animalia; rows not in the plain form used only down to genus or family, as listed in the
-pack header."
+https://doi.org/10.57967/hf/8980), names file `embeddings/txt_emb_species.json` (BioCLIP 2;
+`txt_emb_bioclip-2.5-vith14.json` for BioCLIP 2.5) with SHA-256 `<names_file_sha256>`, names used
+as published. The dataset card lists kingdom Metazoa as unresolved; it is read as Animalia (NCBI
+Taxonomy lists Animalia as a synonym). Rows not in the plain form are used only down to genus or
+family, as listed in the pack header."
 
 Every pack ends with six "none of these" rows; `--sink-set arthropod` (default) uses
 flower-scene prompts, `--sink-set mammal` camera-trap prompts, `--no-sink` none.

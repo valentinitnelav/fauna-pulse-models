@@ -143,11 +143,12 @@ NAME_RULES = {
     "metazoa": (4, "kingdom 'Metazoa' (unresolved in TreeOfLife-200M): read as Animalia, used down to family"),
     "two_genera": (4, "the species slot starts with another genus than the genus slot: used down to family"),
     "species_not_plain": (5, "the species slot is not one plain epithet (authors, years, codes, "
-                             "placeholders such as 'spec'): used down to genus"),
+                             "placeholders such as 'spec' or 'indet'): used down to genus"),
 }
 PLAIN_EPITHET = re.compile(r"[a-z][a-z-]*")
-# Abbreviations for "unidentified species" that pass as one lowercase word ('Bombus spec').
-PLACEHOLDER_EPITHETS = {"sp", "spp", "spec", "nr", "cf", "aff"}
+# Words for "species not identified" that pass as one lowercase word ('Bombus spec',
+# 'Camponotus indet', 'Cladotanytarsus group'; 'gen' = genus).
+PLACEHOLDER_EPITHETS = {"sp", "spp", "spec", "nr", "cf", "aff", "indet", "gen", "group", "complex"}
 
 
 def name_rule(tax: list[str]) -> str | None:
@@ -167,7 +168,7 @@ def name_rule(tax: list[str]) -> str | None:
 
 def apply_name_rule(tax: list[str], rule: str) -> list[str]:
     """The row's labels for the app: slots below the rule's deepest rank are left empty (the app
-    counts such a row only down to its last named rank), and so is the common name, which
+    counts a row only down to the rank above its first empty slot), and so is the common name, which
     belongs to the species. The original row goes into the header (main)."""
     deepest = NAME_RULES[rule][0]
     t = list(tax)
@@ -231,8 +232,9 @@ def main() -> int:
     keep_classes = {c.strip() for c in args.classes.split(",") if c.strip()}
     keep_orders = {o.strip() for o in args.orders.split(",") if o.strip()}
     keep_families = {f.strip() for f in args.families.split(",") if f.strip()}
-    keep_species = None
+    keep_species = species_sha256 = None
     if args.species_csv is not None:
+        species_sha256 = hashlib.sha256(args.species_csv.read_bytes()).hexdigest()
         with open(args.species_csv, newline="", encoding="utf-8") as f:
             reader = csv.DictReader(f)
             col = "species" if "species" in reader.fieldnames else reader.fieldnames[0]
@@ -311,6 +313,7 @@ def main() -> int:
             "classes": sorted(keep_classes), "orders": sorted(keep_orders),
             "families": sorted(keep_families),
             "species_csv": args.species_csv.name if args.species_csv else None,
+            "species_csv_sha256": species_sha256,
         },
         # Which rows the app uses only down to a higher rank, with the names as published
         # (tol_row = row of the TreeOfLife names file), so every change can be checked and undone.

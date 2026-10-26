@@ -46,6 +46,8 @@
         {"name": "bioclip-2_pollinator-orders-europe_v1.fpack", "local": "bioclip_export/out/bioclip2_pollinator_orders_europe_v1.fpack", "role": "label pack"},
         {"name": "bioclip-2_flower-visitors-32fam_v1.fpack", "local": "bioclip_export/out/bioclip2_flower_visitors_32fam_v1.fpack", "role": "label pack"},
         {"name": "bioclip-2_mammals-birds-world_v1.fpack", "local": "bioclip_export/out/bioclip-2_mammals-birds-world_v1.fpack", "role": "label pack"},
+        {"name": "bioclip-2_pollinator-orders-europe_v2.fpack", "local": "bioclip_export/out/packs_v2/bioclip-2_pollinator-orders-europe_v2.fpack", "role": "label pack"},
+        {"name": "bioclip-2_mammals-birds-world_v2.fpack", "local": "bioclip_export/out/packs_v2/bioclip-2_mammals-birds-world_v2.fpack", "role": "label pack"},
         {"name": "bioclip-2_224_fp16.json", "local": "bioclip_export/out/gpu4d/bioclip-2_image_fp16.json", "role": "export manifest"},
         {"name": "LICENSE", "local": "hf_cards/bioclip-2-tflite/LICENSE", "role": "licence of the original model"}
       ]
@@ -56,6 +58,7 @@
         {"name": "bioclip-2.5_224_fp16.tflite", "local": "bioclip_export/out/bioclip25/bioclip-25_image_fp16.tflite", "input_px": 224, "precision": "fp16", "role": "image embedder"},
         {"name": "bioclip-2.5_pollinator-orders-europe_v1.fpack", "local": "bioclip_export/out/bioclip25/bioclip25_pollinator_orders_europe_v1.fpack", "role": "label pack"},
         {"name": "bioclip-2.5_flower-visitors-32fam_v1.fpack", "local": "bioclip_export/out/bioclip25/bioclip25_flower_visitors_32fam_v1.fpack", "role": "label pack"},
+        {"name": "bioclip-2.5_pollinator-orders-europe_v2.fpack", "local": "bioclip_export/out/packs_v2/bioclip-2.5_pollinator-orders-europe_v2.fpack", "role": "label pack"},
         {"name": "bioclip-2.5_224_fp16.json", "local": "bioclip_export/out/bioclip25/bioclip-25_image_fp16.json", "role": "export manifest"},
         {"name": "LICENSE", "local": "hf_cards/bioclip-2.5-tflite/LICENSE", "role": "licence of the original model"}
       ]
