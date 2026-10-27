@@ -9,9 +9,10 @@ PC side of the FaunaPulse Android app (app repo `valentinitnelav/fauna-pulse`, u
 `~/InsectDetectApp/fauna-pulse`, called `$APP` below). Converts detectors and identification
 models to LiteRT `.tflite` (+ `.fpack` name lists), publishes them on Hugging Face
 (`Valen-Peregrine`) with model cards; the app's bundled download catalogue points at them.
+Models tried on the phone and parked (SAM 3, MiniCPM-V): `docs/PARKED_MODELS.md`.
 
-The tools came from the app repo by plain copy (fauna-pulse@c4c367d, 2026-10-15); their older
-history stays there. Still in the app: `tool/video_eval` (scores the app's tracking output),
+The tools came from the app repo by plain copy (fauna-pulse@c4c367d, 2026-10-15); older history
+is there. Still in the app: `tool/video_eval` (scores the app's tracking output),
 `tool/perf_summary.dart` (imported by a CI test), `tool/model_downloads` (edits the bundled
 catalogue) and the `.fpack` test fixtures.
 

@@ -23,6 +23,14 @@ The app repository has its own `AGENTS.md` with its own rules: follow them when 
 The owner's private calibration code base (`~/fauna-pulse-calibration`) imports a few modules of
 `bioclip_export/` in place; `docs/AGENT_OVERVIEW.md` lists them, so change them only together.
 
+A task may touch both repositories at once (for example moving a document from one to the other).
+Then check `git status` in both first (another session may be working in the app), follow each
+repository's own rules for its own files (the app: a numbered round in `docs/AGENT_CHANGELOG.md`,
+`docs/AGENT_CHANGELOG_OVERVIEW.md` kept current, commit message starting with "Round <n>:"), fix
+the links in both, and suggest one commit message per repository. Link across with GitHub URLs,
+not local paths. Details about models, including models tried in the app and parked
+(`docs/PARKED_MODELS.md`), live here; the app's docs point here.
+
 
 ## Project goal
 

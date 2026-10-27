@@ -23,6 +23,7 @@ where the app's "Download & import models" screen fetches them.
 | [`classifier_export/`](classifier_export/README.md) | Classifiers (insectDCT hierarchical classifier V7) to a phone file plus its class list (`.fpack`) |
 | [`bioclip_export/`](bioclip_export/README.md) | BioCLIP 1 / 2 / 2.5 image tower to `.tflite`, label packs (`.fpack`) from the TreeOfLife embeddings, quantiser for any float32 `.tflite`, parity checks. Also defines the `.fpack` format (`fpack.py`) |
 | [`docs/MODEL_CONVERSION.md`](docs/MODEL_CONVERSION.md) | Converting by hand (Ultralytics commands, INT8 calibration, other models) |
+| [`docs/PARKED_MODELS.md`](docs/PARKED_MODELS.md) | Models tried in the app and parked (SAM 3, MiniCPM-V): what was tried, phone timings, why, and what to try if reopened |
 | `hf_cards/` | Model card of each Hugging Face repository (sources; placeholders filled at upload) |
 | `publish/` | `publish_hf.py` (upload and verify), `hf_repos.json` (which file goes where), `published.json` (pinned links, written by the script) |
 | `requirements-lock.txt` | Exact versions of the shared environment |
