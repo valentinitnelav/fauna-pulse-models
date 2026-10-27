@@ -18,9 +18,11 @@
 *.onnx
 *.npy
 
-# Tables are usually outputs; the hand-checked taxonomy tables are the exception
+# Tables are usually outputs; the hand-checked taxonomy tables and the neighbour table
+# (copied into label packs) are the exceptions
 *.csv
 !**/taxa/*.csv
+!bioclip_export/country_neighbours.csv
 
 # Claude Code's own settings and hooks: personal tooling for this laptop's layout.
 .claude/

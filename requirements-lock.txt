@@ -74,6 +74,7 @@ safetensors==0.8.0
 scipy==1.18.1
 sentencepiece==0.2.2
 setuptools==84.0.0
+shapely==2.2.0
 shellingham==1.5.4
 six==1.17.0
 sympy==1.14.0

@@ -92,16 +92,19 @@ def _get_json(url: str, timeout: int = 300) -> dict:
     raise RuntimeError(f"GBIF request failed after {RETRIES} attempts: {last}")
 
 
-def species_counts(region: dict, min_occ: int) -> dict[str, int]:
-    """COL XR species key -> number of GBIF arthropod records in the region (>= min_occ)."""
+def species_counts(region: dict, min_occ: int, allow_empty: bool = False) -> dict[str, int]:
+    """COL XR species key -> number of GBIF arthropod records in the region (>= min_occ).
+    allow_empty: a region with records but no species reaching min_occ gives {} (small
+    countries in build_country_lists.py) instead of an error."""
     params = {**region, "checklistKey": COL_XR, "phylumKey": ARTHROPODA_COL_KEY, "limit": 0,
               "facet": "speciesKey", "facetMincount": min_occ, "speciesKey.facetLimit": FACET_LIMIT}
     r = _get_json(f"{GBIF_API}/occurrence/search?" + urllib.parse.urlencode(params))
     # No facet or no species means a wrong region or a GBIF change, not an empty region: stop
-    # rather than write a short list that would silently make a small pack.
-    if not r.get("facets") or not r["facets"][0].get("counts"):
+    # rather than write a short list that would silently make a small pack. A missing facet
+    # list stays an error even with allow_empty.
+    if not r.get("facets") or (not r["facets"][0].get("counts") and not (allow_empty and r.get("count"))):
         raise RuntimeError(f"GBIF returned no species for {region} ({r.get('count')} records)")
-    counts = r["facets"][0]["counts"]
+    counts = r["facets"][0].get("counts") or []
     if len(counts) >= FACET_LIMIT:
         raise RuntimeError("GBIF facet truncated; raise FACET_LIMIT")
     return {str(c["name"]): int(c["count"]) for c in counts}

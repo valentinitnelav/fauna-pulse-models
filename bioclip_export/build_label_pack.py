@@ -23,6 +23,13 @@ Examples:
 Sink rows need the text tower (torch + open_clip). Pass --no-sink to skip them (not
 recommended for real use: every crop then gets an insect name, even a leaf).
 
+A species list from build_region_species_list.py also gives every row its GBIF species key and
+accepted name (header block "gbif", see fpack.py); with --country-lists (build_country_lists.py)
+the pack also records which rows GBIF lists in each country and each country's neighbours
+(block "regions"), so the app can narrow the names to the session's country:
+    python build_label_pack.py --model bioclip-2 --classes Insecta --species-csv out/packs_v2/species_europe_4orders_col.csv \
+        --country-lists out/packs_v3/countries_4orders_col.json --pack-id bioclip-2_pollinator-orders-europe_v3 --out out/packs_v3
+
 Names stay as TreeOfLife publishes them. The few rows not in the plain form (kingdom
 'Metazoa', two genera in one row, authors or codes in the species slot) are used by the app
 only down to family or genus and listed in the header (--name-rules higher-rank, the
@@ -42,7 +49,7 @@ from pathlib import Path
 
 import numpy as np
 
-from fpack import RANKS, sink_label, write_fpack
+from fpack import RANKS, rows_to_bits, sink_label, write_fpack
 
 EMBEDDINGS = {
     # model key -> (HF dataset repo, npy file, json file)
@@ -179,6 +186,78 @@ def apply_name_rule(tax: list[str], rule: str) -> list[str]:
     return t
 
 
+def read_species_csv(path: Path) -> tuple[set[str], dict[str, tuple[str, str | None]]]:
+    """The names of a species list ('species' column, else the first) and, for lists of
+    build_region_species_list.py, each name's GBIF species: {"Genus epithet": (COL key, accepted name)}."""
+    keep, gbif = set(), {}
+    with open(path, newline="", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        col = "species" if "species" in reader.fieldnames else reader.fieldnames[0]
+        for row in reader:
+            name = (row.get(col) or "").strip()
+            if not name:
+                continue
+            keep.add(name)
+            if (row.get("gbif_species_key") or "").strip():
+                gbif[name] = (row["gbif_species_key"].strip(), (row.get("gbif_species") or "").strip() or None)
+    print(f"species list: {len(keep)} names from {path}" + (f", {len(gbif)} with a GBIF species key" if gbif else ""))
+    return keep, gbif
+
+
+def gbif_block(row_names: list[str], gbif: dict, sink_rows: int, species_csv: Path) -> dict:
+    """The "gbif" header block (fpack.py): per pack row the COL species key and accepted name of its
+    TreeOfLife name, joined by that name as insect-detect-post does, so both programs give a
+    track the same key. Sink rows and names without a key get null."""
+    meta_path = species_csv.with_suffix(".json")
+    meta = json.loads(meta_path.read_text()) if meta_path.exists() else {}
+    pairs = [gbif.get(n, (None, None)) for n in row_names] + [(None, None)] * sink_rows
+    return {
+        "species_key": [k for k, _ in pairs],
+        "species": [s for _, s in pairs],
+        "source": {"species_csv": species_csv.name, "orders": meta.get("orders"),
+                   "gbif_checklist_key": meta.get("gbif_checklist_key"), "mapping": meta.get("mapping")},
+    }
+
+
+def regions_block(keys: list, row_names: list[str], lists_path: Path, neighbours_path: Path, gbif_source: dict) -> dict:
+    """The "regions" header block (fpack.py): per country the pack rows whose GBIF species has at
+    least min_occurrences records there (build_country_lists.py), as bits, and the neighbour table
+    (country_neighbours.py). Countries without any row of the pack are left out."""
+    lists = json.loads(lists_path.read_text())
+    # names_in_country counts the names of the lists' orders, and the keys must come from the same
+    # mapping table: both must be those of the species list.
+    if not gbif_source.get("orders") or not gbif_source.get("mapping"):
+        raise SystemExit(f"no .json next to {gbif_source['species_csv']}: cannot check that {lists_path.name} "
+                         "is for the same orders and mapping")
+    if sorted(lists["orders"]) != sorted(gbif_source["orders"]):
+        raise SystemExit(f"{lists_path} is for the orders {lists['orders']}, the species list for {gbif_source['orders']}")
+    if lists["mapping"]["sha256"] != gbif_source["mapping"]["sha256"]:
+        raise SystemExit(f"{lists_path} and {gbif_source['species_csv']} were made with different mapping tables")
+    n = len(keys)
+    countries = {}
+    for code, c in sorted(lists["countries"].items()):
+        present = c["keys"]
+        rows = [i for i, k in enumerate(keys) if k is not None and k in present]
+        if rows:
+            countries[code] = {"rows": rows_to_bits(rows, n), "names": len({row_names[i] for i in rows}),
+                               "names_in_country": c["names_in_country"]}
+    nb_meta = json.loads(neighbours_path.with_suffix(".json").read_text())
+    neighbours: dict[str, list[str]] = {}
+    with open(neighbours_path, newline="", encoding="utf-8") as f:
+        for r in csv.DictReader(f):
+            for a, b in ((r["country"], r["neighbour"]), (r["neighbour"], r["country"])):
+                if a in countries:
+                    neighbours.setdefault(a, []).append(b)
+    return {
+        "min_occurrences": lists["min_occurrences"],
+        "countries": countries,
+        "neighbours": {c: sorted(v) for c, v in sorted(neighbours.items())},
+        "neighbours_rule": nb_meta["rule"],
+        "source": {"gbif_query_date": lists["date"], "gbif_checklist_key": lists["gbif_checklist_key"],
+                   "orders": lists["orders"], "mapping": lists["mapping"], "neighbours": nb_meta["source"]},
+    }
+
+
 def sink_embeddings(model_key: str, prompts: list[str], weights: Path | None = None) -> np.ndarray:
     """Embed the negative prompts with the model's text tower (unit vectors)."""
     import torch
@@ -219,6 +298,11 @@ def main() -> int:
                     help="higher-rank (default): rows whose names are not in the plain form are used only down to "
                          "genus or family, each listed in the header (see NAME_RULES); none: every row used as "
                          "published (the v1 packs)")
+    ap.add_argument("--country-lists", type=Path, default=None,
+                    help="output of build_country_lists.py: writes the 'regions' block (which rows GBIF lists per "
+                         "country), so the app can narrow the pack to a country and its neighbours")
+    ap.add_argument("--neighbours", type=Path, default=Path(__file__).with_name("country_neighbours.csv"),
+                    help="neighbour table for --country-lists (default: country_neighbours.csv next to this script)")
     ap.add_argument("--out", type=Path, default=Path("out"))
     args = ap.parse_args()
 
@@ -233,16 +317,17 @@ def main() -> int:
     keep_orders = {o.strip() for o in args.orders.split(",") if o.strip()}
     keep_families = {f.strip() for f in args.families.split(",") if f.strip()}
     keep_species = species_sha256 = None
+    gbif: dict[str, tuple[str, str | None]] = {}
     if args.species_csv is not None:
         species_sha256 = hashlib.sha256(args.species_csv.read_bytes()).hexdigest()
-        with open(args.species_csv, newline="", encoding="utf-8") as f:
-            reader = csv.DictReader(f)
-            col = "species" if "species" in reader.fieldnames else reader.fieldnames[0]
-            keep_species = {row[col].strip() for row in reader if row.get(col)}
-        print(f"species list: {len(keep_species)} names from {args.species_csv}")
+        keep_species, gbif = read_species_csv(args.species_csv)
+    if args.country_lists and not gbif:
+        print("--country-lists needs a --species-csv with gbif_species_key (build_region_species_list.py)", file=sys.stderr)
+        return 2
 
     # The filters read the names as published, so --name-rules never changes which rows a pack holds.
     labels: list[list[str]] = []
+    row_names: list[str] = []
     idx: list[int] = []
     rule_rows: list[dict] = []
     for i in range(min(n, len(names))):
@@ -253,8 +338,10 @@ def main() -> int:
             continue
         if keep_families and tax[4] not in keep_families:
             continue
-        if keep_species is not None and f"{tax[5]} {tax[6]}".strip() not in keep_species:
+        name = f"{tax[5]} {tax[6]}".strip()
+        if keep_species is not None and name not in keep_species:
             continue
+        row_names.append(name)  # as published, before any name rule
         rule = name_rule(tax) if args.name_rules == "higher-rank" else None
         if rule:
             rule_rows.append({"pack_row": len(labels), "tol_row": i, "rule": rule, "published": tax})
@@ -326,6 +413,15 @@ def main() -> int:
         "built_with": {"script": "build_label_pack.py", "date": date.today().isoformat()},
         "license": "TreeOfLife embeddings CC0-1.0; sink rows generated with the MIT BioCLIP text tower",
     }
+    if gbif:
+        header["gbif"] = gbif_block(row_names, gbif, sink_rows, args.species_csv)
+        print(f"gbif: {sum(k is not None for k in header['gbif']['species_key'])} of {len(row_names)} species rows "
+              "have a GBIF species key")
+    if args.country_lists:
+        header["regions"] = regions_block(header["gbif"]["species_key"], row_names, args.country_lists,
+                                          args.neighbours, header["gbif"]["source"])
+        reg = header["regions"]
+        print(f"regions: {len(reg['countries'])} countries with rows, neighbours of {len(reg['neighbours'])}")
     args.out.mkdir(parents=True, exist_ok=True)
     out_path = args.out / f"{pack_id}.fpack"
     write_fpack(out_path, header, mat, dtype=args.dtype)

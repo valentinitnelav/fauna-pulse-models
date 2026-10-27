@@ -23,6 +23,8 @@ scipy
 litert-torch>=0.9.4
 ai-edge-litert>=2.2.0
 ai-edge-quantizer>=0.9.0
+# country_neighbours.py only (writes the tracked country_neighbours.csv; the packs just read it).
+shapely>=2.0
 # Optional: --onnx export and PC-side ONNX checks.
 onnx
 onnxruntime

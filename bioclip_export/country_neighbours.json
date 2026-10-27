@@ -1,0 +1,13 @@
+{
+  "rule": "shared land border, or at most 100 km apart over the sea by a connection that crosses no third country",
+  "max_km": 100.0,
+  "source": {
+    "data": "Natural Earth admin-0 map units 1:10m v5.1.2 (public domain)",
+    "url": "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/v5.1.2/geojson/ne_10m_admin_0_map_units.geojson",
+    "sha256": "57da82be755f4afccd8f3b14251bb2752f5df1395f47d2d86f817470c4a48862"
+  },
+  "unit_codes": "ISO 3166-1 alpha-2; units without one: the code of GBIF's reverse geocoder (2026-10-27)",
+  "countries": 250,
+  "pairs": 423,
+  "date": "2026-10-27"
+}

@@ -14,10 +14,26 @@ The Dart reader lives in the app repo (fauna-pulse): lib/fauna_pulse/identificat
 Both sides are covered by the app's test/fauna_pulse/label_pack_test.dart through the fixtures
 this module writes, so a format change here needs the Dart reader and the fixtures updated too.
 Only numpy is needed here, so the format can be tested without torch.
+
+Optional header blocks (since 2026-10-27, written by build_label_pack.py and add_pack_blocks.py;
+"version" stays 1 because the byte layout is unchanged). Readers that do not know them ignore
+them, so older app versions load such a pack as before:
+    "gbif"     GBIF species of every row, as lists with one entry per row (null for sink rows
+               and rows without one): "species_key" (Catalogue of Life Extended Release key,
+               a string, some digits only: never turn it into a number) and "species" (its
+               accepted name), plus "source" (the mapping file and COL release they come from).
+    "regions"  which rows GBIF lists per country: "countries" = {ISO 3166-1 alpha-2 code:
+               {"rows": rows_to_bits(...), "names": distinct names among the rows set (a name in
+               two families has two rows), "names_in_country": names of the pack's orders that
+               the country's list holds in total}}, "neighbours" = {code:
+               [codes]} with the rule in "neighbours_rule", "min_occurrences", "source".
+               Sink rows are never set. A row whose records are spread over several countries
+               with fewer than min_occurrences in each is in no country: only the whole pack has it.
 """
 
 from __future__ import annotations
 
+import base64
 import json
 import struct
 from pathlib import Path
@@ -26,6 +42,25 @@ import numpy as np
 
 MAGIC = b"FPK1"
 RANKS = ["kingdom", "phylum", "class", "order", "family", "genus", "species"]
+
+
+def write_raw(path: Path, header: dict, payload: bytes) -> None:
+    """Write [header] as the pack's JSON header, then [payload] unchanged (the matrix bytes)."""
+    hdr_bytes = json.dumps(header, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+    with open(path, "wb") as f:
+        f.write(MAGIC)
+        f.write(struct.pack("<I", len(hdr_bytes)))
+        f.write(hdr_bytes)
+        f.write(payload)
+
+
+def read_raw(path: Path) -> tuple[dict, bytes]:
+    """(header dict, matrix bytes untouched), for copying a pack's vectors bit for bit."""
+    data = Path(path).read_bytes()
+    if data[:4] != MAGIC:
+        raise ValueError(f"{path} is not an fpack file (bad magic)")
+    (hlen,) = struct.unpack("<I", data[4:8])
+    return json.loads(data[8:8 + hlen].decode("utf-8")), data[8 + hlen:]
 
 
 def write_fpack(path: Path, header: dict, matrix: np.ndarray, dtype: str = "f16") -> None:
@@ -52,12 +87,7 @@ def write_fpack(path: Path, header: dict, matrix: np.ndarray, dtype: str = "f16"
     labels = hdr.get("labels")
     if labels is None or len(labels) != mat.shape[0]:
         raise ValueError("header['labels'] must have one entry per matrix row")
-    hdr_bytes = json.dumps(hdr, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
-    with open(path, "wb") as f:
-        f.write(MAGIC)
-        f.write(struct.pack("<I", len(hdr_bytes)))
-        f.write(hdr_bytes)
-        f.write(payload)
+    write_raw(path, hdr, payload)
 
 
 def write_class_list(path: Path, header: dict) -> None:
@@ -80,11 +110,7 @@ def write_class_list(path: Path, header: dict) -> None:
     # reads the older "classes").
     hdr.update({"format": "fpack", "version": 1, "kind": "class_list", "rows": rows,
                 "dim": int(sum(sizes)), "dtype": "none"})
-    hdr_bytes = json.dumps(hdr, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
-    with open(path, "wb") as f:
-        f.write(MAGIC)
-        f.write(struct.pack("<I", len(hdr_bytes)))
-        f.write(hdr_bytes)
+    write_raw(path, hdr, b"")
 
 
 def class_probabilities(scores, head_sizes, head_index, heads=None) -> np.ndarray:
@@ -121,6 +147,22 @@ def read_fpack(path: Path) -> tuple[dict, np.ndarray]:
     return hdr, mat.reshape(rows, dim)
 
 
+def rows_to_bits(rows, n: int) -> str:
+    """Rows [rows] of a pack with [n] rows as base64 text of ceil(n / 8) bytes: bit i = row i,
+    least significant bit first (row 0 = bit 0 of byte 0, row 8 = bit 0 of byte 1)."""
+    mask = np.zeros(n, dtype=bool)
+    mask[np.asarray(list(rows), dtype=np.int64)] = True
+    return base64.b64encode(np.packbits(mask, bitorder="little").tobytes()).decode("ascii")
+
+
+def bits_to_rows(bits: str, n: int) -> np.ndarray:
+    """The reverse of rows_to_bits: a boolean array of length [n]."""
+    raw = np.frombuffer(base64.b64decode(bits), dtype=np.uint8)
+    if raw.size != (n + 7) // 8:
+        raise ValueError(f"bit string holds {raw.size} bytes, a pack of {n} rows needs {(n + 7) // 8}")
+    return np.unpackbits(raw, bitorder="little")[:n].astype(bool)
+
+
 def sink_label(name: str, prompt: str) -> list[str]:
     """Taxonomy row for a "none of these" candidate: kingdom 'none', the key in the
     species slot, the prompt as the common name."""
@@ -151,10 +193,34 @@ def _write_class_fixture(path: Path) -> None:
     })
 
 
+def _write_regions_fixture(path: Path, tiny: dict, mat: np.ndarray) -> None:
+    """tiny_pack with the "gbif" and "regions" blocks (2026-10-27) for the Dart tests: the five
+    species' real COL keys (insect-detect-post mapping v1.1.0), made-up country lists and
+    neighbours, and in "test_union" the species rows of a country with its neighbours, without
+    the sink row (the app offers the sink rows on top, always)."""
+    n = len(tiny["labels"])
+    lists = {"AT": [1, 3, 4], "DE": [0, 1, 2, 3], "MT": [2]}
+    blocks = {
+        "gbif": {"species_key": ["3B7X4", "6FY28", "FN46", "MFWK", "43P3V", None],
+                 "species": ["Eristalis tenax", "Episyrphus balteatus", "Apis mellifera", "Bombus terrestris",
+                             "Misumena vatia", None],
+                 "source": {"mapping": "bioclip_gbif_species_mapping_Arthropoda.csv v1.1.0"}},
+        "regions": {"min_occurrences": 3,
+                    "countries": {c: {"rows": rows_to_bits(r, n), "names": len(r), "names_in_country": len(r) + 1}
+                                  for c, r in lists.items()},
+                    "neighbours": {"AT": ["DE"], "DE": ["AT"]}, "neighbours_rule": "made-up test table",
+                    "source": {}},
+        "test_union": {"AT": [0, 1, 2, 3, 4], "DE": [0, 1, 2, 3, 4], "MT": [2]},
+    }
+    write_fpack(path, {**tiny, **blocks, "pack_id": "tiny-test-regions"}, mat, dtype="f16")
+
+
 if __name__ == "__main__":
     # Writes the tiny cross-language fixtures used by the Dart unit tests:
     # (APP = your clone of the app repo fauna-pulse, e.g. APP=~/InsectDetectApp/fauna-pulse)
     #   python fpack.py "$APP/test/fauna_pulse/fixtures/tiny_pack.fpack" "$APP/test/fauna_pulse/fixtures/tiny_classes.fpack"
+    # An optional third path also writes tiny_pack.fpack with the "gbif" and "regions" blocks
+    # (tiny_pack_regions.fpack, for the app round that reads them).
     import sys
 
     if len(sys.argv) > 2:
@@ -172,10 +238,14 @@ if __name__ == "__main__":
         sink_label("flower", "a photo of a flower."),
     ]
     mat = rng.standard_normal((len(labels), 4)).astype(np.float32)
-    write_fpack(out, {
+    tiny = {
         "pack_id": "tiny-test", "model_id": "test-model", "logit_scale": 100.0,
         "temperature": 1.0, "ranks": RANKS, "sink_rows": 1, "labels": labels,
-    }, mat, dtype="f16")
+    }
+    write_fpack(out, tiny, mat, dtype="f16")
     hdr, back = read_fpack(out)
     assert hdr["rows"] == 6 and hdr["dim"] == 4
     print("wrote", out, "rows", hdr["rows"], "dim", hdr["dim"], "first row", back[0])
+    if len(sys.argv) > 3:
+        _write_regions_fixture(Path(sys.argv[3]), tiny, mat)
+        print("wrote", sys.argv[3], "with blocks gbif and regions; test_union", read_fpack(Path(sys.argv[3]))[0]["test_union"])

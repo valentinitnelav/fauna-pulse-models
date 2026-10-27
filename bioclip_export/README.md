@@ -194,7 +194,61 @@ the earlier mapping (v1.0.0, GBIF Backbone keys, one request per order); the scr
 rebuilds their species lists (written to `out/` when those packs were built; file names in
 each pack header, `source.species_csv`).
 
+**GBIF keys and country lists (v3 packs, since 2026-10-27).** A species CSV of
+`build_region_species_list.py` also gives every pack row its GBIF species key and accepted
+name (header block `gbif`, one entry per row; the same mapping as insect-detect-post, so a
+track gets the same key in both programs and joins GBIF data, synonyms included). With
+`--country-lists` the pack also records which of its rows GBIF lists in each country (at least 3
+records there, as in insect-detect-post) and each country's neighbours (block `regions`), so
+the app can narrow the names to the session's country and its neighbours, or use the whole
+pack. Format of both blocks: `fpack.py`; older app versions ignore them.
+
+```bash
+python build_country_lists.py --species-csv out/packs_v2/species_europe_4orders_col.csv --out out/packs_v3/countries_4orders_col.json
+python add_pack_blocks.py out/packs_v2/bioclip-2_pollinator-orders-europe_v2.fpack --species-csv out/packs_v2/species_europe_4orders_col.csv \
+  --country-lists out/packs_v3/countries_4orders_col.json --pack-id bioclip-2_pollinator-orders-europe_v3 --out out/packs_v3
+python check_pack_blocks.py out/packs_v3/bioclip-2_pollinator-orders-europe_v3.fpack --same-as out/packs_v2/bioclip-2_pollinator-orders-europe_v2.fpack
+```
+
+`add_pack_blocks.py` copies an existing pack's rows and vectors byte for byte and adds the
+blocks (seconds, no torch). A new pack gets them from `build_label_pack.py --country-lists FILE`
+(same blocks); it is not used for v3 because it embeds the six "none of these" rows again, and
+their float16 values can differ in the last bit from one computer to another (3 of 6 rows, at
+most 3e-5, against v2). `build_country_lists.py` sends one GBIF request per country (250
+countries, about 2.5 minutes).
+
+Neighbours come from the tracked table `country_neighbours.csv` (423 pairs): a shared land
+border, or at most 100 km apart over the sea by a connection that crosses no third country
+(Germany and Sweden, Great Britain and France, Malta and Italy, Croatia and Italy over the Gulf
+of Trieste; not Germany and Italy, 46 km apart across Austria; Iceland has none). Computed from
+Natural Earth (map units 1:10m, v5.1.2, public domain) by `country_neighbours.py` (needs
+shapely; rerun only to change the rule). Natural Earth units without an ISO code (e.g. Northern
+Cyprus) take the code GBIF's reverse geocoder gives them. How much a country narrows the Europe
+list (v3): see 3c.
+
 ### 3c. Packs built so far
+
+v3 (2026-10-27, not uploaded yet): `bioclip-2_pollinator-orders-europe_v3`, the v2 Europe pack
+byte for byte (rows, names, vectors) plus the blocks `gbif` (every name has a key: 34,336
+distinct keys, synonyms share one) and `regions` (248 countries, GBIF queried 27 October 2026);
+59.5 MB (header 5.8 MB). 522 names have 3 records in Europe but in no single country: only the
+whole pack has them. Names per country (at least 3 records there) and with its neighbours:
+
+| Country | Alone (its GBIF list for the four orders) | With neighbours |
+|---|---|---|
+| Germany | 16,989 (16,991) | 28,458 (AT BE CH CZ DK FR LU NL PL SE) |
+| France | 17,791 (17,920) | 27,933 |
+| Great Britain | 14,952 (14,982) | 22,723 (BE FR GG IE IM) |
+| Romania | 3,895 (3,895) | 13,418 |
+| Cyprus | 1,025 (1,162) | 4,006 (TR) |
+| Malta | 337 (337) | 11,911 (IT) |
+
+The number in brackets is the country's whole list for the four orders: Cyprus shows that some
+of its species are not in a Europe pack (Asian species). The BioCLIP 2.5 and mammals-and-birds
+packs have no v3: the same command makes a BioCLIP 2.5 v3 from its v2 (its 586 missing Europe
+names stay missing; closing that gap needs a mapping of the 2.5 names file), and mammals and
+birds first need a key mapping (GBIF name matching of their 17,130 names; insect-detect-post maps
+only arthropods).
 
 v2 (2026-10-26, `--name-rules higher-rank`, Europe list made the insect-detect-post way):
 `bioclip-2_pollinator-orders-europe_v2` (34,978 names), `bioclip-2_mammals-birds-world_v2`
@@ -374,6 +428,10 @@ References:
 | `build_label_pack.py` | TreeOfLife embeddings + filters + sink rows -> `.fpack` |
 | `fpack.py` | the pack container format (also writes the app's test fixture) |
 | `build_region_species_list.py` | GBIF occurrence facets + TreeOfLife-to-GBIF mapping -> regional species CSV |
+| `build_country_lists.py` | one GBIF facet per country -> per-country species keys for `--country-lists` |
+| `add_pack_blocks.py` | an existing pack + its species list (+ country lists) -> the same pack with the `gbif` and `regions` blocks, vectors copied byte for byte |
+| `country_neighbours.py` | Natural Earth borders -> `country_neighbours.csv` + `.json` (tracked neighbour table) |
+| `check_pack_blocks.py` | checks of a pack's `gbif` and `regions` blocks, the app's header limits, and v3 against v2 |
 | `verify_parity.py` | PyTorch vs `.tflite` comparison on real images |
 | `app_rules.py` | Python copy of the app's identification defaults and top-down answer (`verify_parity.py`, calibration scripts) |
 | `inspect_tflite.py` | ops, constant sizes and how each layer's weights are stored (fp16, int8, float32) |
@@ -397,8 +455,10 @@ Two sources are credited for different things; please keep both when citing.
 **From Maximilian Sittinger's `insect-detect-post` (AGPL-3.0; Sittinger, M. 2026, Zenodo
 https://doi.org/10.5281/zenodo.21822140), re-implemented in our own code:**
 - the API-based way of building the regional list (GBIF occurrence facets, minimum 3
-  records) and his TreeOfLife-to-GBIF key mapping (`tol_gbif_taxon_keys_Arthropoda.csv`,
-  downloaded from his release, not redistributed);
+  records) and his TreeOfLife-to-GBIF key mapping (v1.1.0 `bioclip_gbif_species_mapping_Arthropoda.csv`;
+  the v1 packs used `tol_gbif_taxon_keys_Arthropoda.csv`; downloaded from his release, not
+  redistributed), also for the per-country lists and for the GBIF key of each pack row (his
+  `gbif_species`, `gbif_species_key` columns);
 - the per-track-ID CSV column names (`pred`, `pred_prob_weighted`, `pred_prob_mean`,
   `track_imgs`, `pred_imgs`, `bioclip_<rank>`) of his `_classified_final.csv`, so both
   tools' outputs can be analysed with the same scripts; the app's pooling rule itself
@@ -413,7 +473,9 @@ https://doi.org/10.5281/zenodo.21822140), re-implemented in our own code:**
 explicit background classes, as in the `none_*` classes of the Insect Detect
 classification dataset (Sittinger, Uhler & Pink 2023, https://doi.org/10.5281/zenodo.8325384).
 
-**Data:** GBIF occurrence facets and backbone taxonomy, https://www.gbif.org.
+**Data:** GBIF occurrence facets and backbone taxonomy, https://www.gbif.org; Catalogue of
+Life, the release named in each list's `.json` (COL26.6 XR: https://doi.org/10.48580/dgy8b);
+country borders for the neighbour table: Natural Earth (public domain), https://www.naturalearthdata.com.
 
 ## Licenses and citation
 

@@ -1,7 +1,7 @@
 # Agent overview (state only)
 
 What is true now, where it lives, and the reason where it is not obvious. Replace text when it
-changes; history is git. Keep under ~20k characters.
+changes; history is git. Keep under ~50k characters.
 
 ## Purpose
 
@@ -30,6 +30,9 @@ import path and breaks `from fpack import ...` and the sibling imports.
 | `bioclip_export/quantise_tflite.py` | fp32 `.tflite` -> fp16 / int8 (dynamic range) / int8 weights; patches an ai-edge-quantizer 0.9 bug | writes next to input | no calibration images |
 | `bioclip_export/build_label_pack.py` | TreeOfLife embeddings, filtered, names as published (rows not in the plain form used only to genus/family: `--name-rules`, listed in the header; v1 packs: `none`), + "none of these" sink rows -> label pack `.fpack` | HF dataset (2.7 GB) or `--embeddings-dir` -> `out/<pack_id>.fpack` | torch (text tower), internet |
 | `bioclip_export/build_region_species_list.py` | regional species list from GBIF (COL XR accepted species, mapping of insect-detect-post v1.1.0; v1 packs used v1.0.0) | GBIF API -> CSV + `.json` | internet, stdlib only |
+| `bioclip_export/build_country_lists.py` | per-country GBIF lists (>= 3 records) for `build_label_pack.py --country-lists` (header blocks: `fpack.py`) | GBIF API -> `.json` | internet |
+| `bioclip_export/country_neighbours.py` | neighbours (land border or <= 100 km of sea; Natural Earth) | -> tracked `country_neighbours.csv` | shapely |
+| `bioclip_export/add_pack_blocks.py`, `check_pack_blocks.py` | add the blocks to a pack (same vectors); check them, the app's header limits, `--same-as` | | |
 | `bioclip_export/verify_parity.py` | PyTorch vs `.tflite` embeddings: cosine, same answer per rank | `--tflite --images [--pack ...] [--crops-csv]` | |
 | `bioclip_export/inspect_tflite.py` | ops and weight storage of a `.tflite` (positional arg, no `--help`) | prints | |
 | `bioclip_export/reproduce_track_conf.py` | recomputes the app's per-track pooling off the phone | session `identification/embeddings_*` + pack | own copy of the fpack reader |
@@ -74,13 +77,10 @@ Face (table below) and the source models from their authors' links (model cards)
 
 ## Published on Hugging Face
 
-All six PUBLIC since 2026-10-16 (uploaded private first, checked by the owner, then switched;
-code commit `27c23bd`, HF commits in the table; public collection
-https://huggingface.co/collections/Valen-Peregrine/faunapulse-6ad22f04766aed6641688544). Every
-file was re-downloaded and SHA-256-checked while private; once public, `publish_hf.py --verify`
-(anonymous: size and SHA-256 at the pinned commit) passed for all 25 files, and one detector
-(flat-bug N) was downloaded through its pinned link like the app does (owner: no need to
-download the big BioCLIP files again). Pinned links: `publish/published.json`. Layout:
+All six PUBLIC since 2026-10-16 (code commit `27c23bd`, HF commits in the table; public collection
+https://huggingface.co/collections/Valen-Peregrine/faunapulse-6ad22f04766aed6641688544);
+`publish_hf.py --verify` (anonymous: size and SHA-256 at the pinned commit) passes for every
+file. Pinned links: `publish/published.json`. Layout:
 one public repo per model family under `Valen-Peregrine`, named after the app's model id
 without the size or backbone part, plus `-tflite`; sizes, input sizes and precisions are
 separate files in it (one card and licence per family; a repo per size would repeat cards that
@@ -101,8 +101,8 @@ All source files were downloaded again from the authors' own links and SHA-256-c
 | `bioclip-2-tflite` | `bioclip-2_224_fp16.tflite` (+ `.json`), `bioclip-2_pollinator-orders-europe_v1.fpack`, `bioclip-2_flower-visitors-32fam_v1.fpack`, `bioclip-2_mammals-birds-world_v1.fpack`; v2: `bioclip-2_pollinator-orders-europe_v2.fpack`, `bioclip-2_mammals-birds-world_v2.fpack` | `bioclip-2_image_fp16_4d.tflite`, `bioclip2_*_v1.fpack`; v2 none yet | MIT (packs CC0-1.0, common names GBIF CC BY 4.0) | public, `cbf9b26`; v2 `6a2961e` |
 | `bioclip-2.5-tflite` | `bioclip-2.5_224_fp16.tflite` (+ `.json`), `bioclip-2.5_pollinator-orders-europe_v1.fpack`, `bioclip-2.5_flower-visitors-32fam_v1.fpack`; v2: `bioclip-2.5_pollinator-orders-europe_v2.fpack` | `bioclip-25_image_fp16.tflite`, `bioclip25_*_v1.fpack`; v2 none yet | MIT | public, `dd1f5b7`; v2 `2f54024` |
 
-Label packs v2 (built, checked and independently reviewed 2026-10-26, uploaded the same day;
-local files `bioclip_export/out/packs_v2/` on the SSD; `--verify` passed for all 28 files):
+Label packs v2 (2026-10-26, independently reviewed; local files `bioclip_export/out/packs_v2/`
+on the SSD):
 Europe for BioCLIP 2 and 2.5, mammals and birds. The app's catalogue does not offer them yet
 (an app round). The 32-family packs are an unmaintained demo (no v2); their v1 files stay.
 
@@ -134,15 +134,13 @@ Facts that are easy to get wrong (verified 2026-10-15, sources on the cards):
   result; new `.fpack` SHA-256 `6d5ec961...`, which the catalogue takes when the links go in). Label packs
   pair by file name and size only.
 
-Card update 2026-10-17 (code commit `b4dc9c3`): all six cards re-uploaded; the manifests of
-flat-bug N and S, insectDCT v8 and the insectDCT classifier corrected with `--replace-manifests`
-(check results moved to local `.check.json` files next to them on the SSD). Model files, class
-list and packs unchanged; `--verify` passed for all 25 files. HF commits: `publish/published.json`.
+Uploads: one repo per step, `--upload --repo X --private`, owner checks, then public (with
+`--private` a new collection is created private too). HF commits: `publish/published.json`; the
+app's catalogue links match it (round 314).
 
-Later uploads: one repo per step, `--upload --repo X --private`, owner checks, then public;
-with `--private` a new collection is created private too. The app took the published names and
-pinned links in its round 314 (`update_catalogue.py --urls`, all 13 catalogue links match
-`published.json`).
+Label pack v3 (BioCLIP 2 Europe, 2026-10-27, NOT uploaded; `out/packs_v3/` on the SSD): v2 byte
+for byte plus blocks `gbif` (key per row) and `regions` (rows per country, neighbours). The app
+reads them in a later round.
 
 The MegaDetector file is also a GitHub release asset of the app (`v0.8.0-alpha.1`); that asset
 stays online forever. The owner's older HF repo `flower_visitor_order_detector` is unrelated.
@@ -188,7 +186,7 @@ stays online forever. The owner's older HF repo `flower_visitor_order_detector` 
 
 | Here | App ($APP) | Check |
 |---|---|---|
-| `.fpack` writer `bioclip_export/fpack.py` | reader `lib/fauna_pulse/identification/label_pack.dart` (header comment = format notes) | fixtures `test/fauna_pulse/fixtures/tiny_pack.fpack`, `tiny_classes.fpack`, tests `label_pack_test.dart`, `track_fusion_test.dart` |
+| `.fpack` writer `bioclip_export/fpack.py` (optional blocks `gbif`, `regions`: bit order in `rows_to_bits`) | reader `lib/fauna_pulse/identification/label_pack.dart` (header comment = format notes; ignores the blocks today) | fixtures `test/fauna_pulse/fixtures/tiny_pack.fpack`, `tiny_classes.fpack`, tests `label_pack_test.dart`, `track_fusion_test.dart` |
 | `fpack.class_probabilities` | `lib/fauna_pulse/identification/track_fusion.dart` (same formula) | `track_fusion_test.dart` uses `test_scores`/`test_probs` stored in the fixture |
 | output names of all export scripts | naming rule, `tool/model_downloads/README.md` | `update_catalogue.py --names` |
 | model input/output layout (NCHW 0..1; embedder output `[1,n]`; classifier heads concatenated, `dim` = their sum; detector `[1,4+c,N]`; Ultralytics metadata re-appended to fp16 files) | `packages/ultralytics_yolo` (Kotlin), `Embedder.kt`, `model_file_kind.dart` | phone checks: `integration_test/*_check_test.dart` |
