@@ -8,12 +8,13 @@ passing it to pybioclip's `--subset` / `apply_filter` ("Geo-Restricted Taxon Lis
 Predictions", https://imageomics.github.io/pybioclip/geo-restricted-taxa/, Imageomics).
 The implementation approach followed here (own code, no lines copied) is the one in
 Maximilian Sittinger's insect-detect-post, `src/insectdetect_post/build_region_filter.py`
-(AGPL-3.0), so that a region gives the same species there and in FaunaPulse:
+(AGPL-3.0):
 - one GBIF occurrence request per region for the whole phylum Arthropoda, with occurrences
   interpreted in the Catalogue of Life Extended Release (COL XR, GBIF's taxonomy since it
   replaced the GBIF Backbone), counted per accepted species ('speciesKey' facet, so records
   under a synonym or a subspecies count for their accepted species), keeping species with at
-  least --min-occurrences records (his default 3) in that region;
+  least --min-occurrences presence records (his default 3; fossil specimens do not count) in
+  that region;
 - TreeOfLife species are mapped to COL XR species keys with the table he publishes as a
   release asset (bioclip_gbif_species_mapping_Arthropoda.csv, v1.1.0: made from the BioCLIP 2
   names file txt_emb_species.json, matched against COL26.6 XR; downloaded on first use,
@@ -53,6 +54,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import functools
 import hashlib
 import json
 import sys
@@ -73,6 +75,10 @@ GBIF_API = "https://api.gbif.org/v1"
 COL_XR = "7ddf754f-d193-4cc9-b351-99906754a03b"  # GBIF checklistKey of COL XR
 ARTHROPODA_COL_KEY = "RT"  # COL XR key of the phylum, restricts the facet server-side
 FACET_LIMIT = 1_200_000
+# Only presence records count (since 2026-10-28); GBIF reads a record without a status as present.
+OCCURRENCE_STATUS = "PRESENT"
+# Fossil specimens do not count (since 2026-10-28): they put extinct and Ice Age species on a list.
+EXCLUDED_BASIS = ("FOSSIL_SPECIMEN",)
 RETRIES = 4
 
 
@@ -92,13 +98,28 @@ def _get_json(url: str, timeout: int = 300) -> dict:
     raise RuntimeError(f"GBIF request failed after {RETRIES} attempts: {last}")
 
 
+@functools.cache
+def basis_of_record() -> tuple[str, ...]:
+    """GBIF's basisOfRecord values without EXCLUDED_BASIS. GBIF's search has no "not" filter, so
+    the kept values are listed; they are read from GBIF on each run, so a value added later counts."""
+    values = _get_json(f"{GBIF_API}/enumeration/basic/BasisOfRecord")
+    if not set(EXCLUDED_BASIS) <= set(values):
+        raise SystemExit(f"GBIF's basisOfRecord values changed ({values}): check EXCLUDED_BASIS")
+    return tuple(v for v in values if v not in EXCLUDED_BASIS)
+
+
+def record_filter() -> dict:
+    """The record filters of every count, as GBIF search parameters (and in the output .json)."""
+    return {"occurrenceStatus": OCCURRENCE_STATUS, "basisOfRecord": list(basis_of_record())}
+
+
 def species_counts(region: dict, min_occ: int, allow_empty: bool = False) -> dict[str, int]:
-    """COL XR species key -> number of GBIF arthropod records in the region (>= min_occ).
-    allow_empty: a region with records but no species reaching min_occ gives {} (small
-    countries in build_country_lists.py) instead of an error."""
-    params = {**region, "checklistKey": COL_XR, "phylumKey": ARTHROPODA_COL_KEY, "limit": 0,
-              "facet": "speciesKey", "facetMincount": min_occ, "speciesKey.facetLimit": FACET_LIMIT}
-    r = _get_json(f"{GBIF_API}/occurrence/search?" + urllib.parse.urlencode(params))
+    """COL XR species key -> number of GBIF arthropod presence records in the region (>= min_occ),
+    fossil specimens left out. allow_empty: a region with records but no species reaching min_occ
+    gives {} (small countries in build_country_lists.py) instead of an error."""
+    params = {**region, "checklistKey": COL_XR, "phylumKey": ARTHROPODA_COL_KEY, **record_filter(),
+              "limit": 0, "facet": "speciesKey", "facetMincount": min_occ, "speciesKey.facetLimit": FACET_LIMIT}
+    r = _get_json(f"{GBIF_API}/occurrence/search?" + urllib.parse.urlencode(params, doseq=True))
     # No facet or no species means a wrong region or a GBIF change, not an empty region: stop
     # rather than write a short list that would silently make a small pack. A missing facet
     # list stays an error even with allow_empty.
@@ -108,6 +129,26 @@ def species_counts(region: dict, min_occ: int, allow_empty: bool = False) -> dic
     if len(counts) >= FACET_LIMIT:
         raise RuntimeError("GBIF facet truncated; raise FACET_LIMIT")
     return {str(c["name"]): int(c["count"]) for c in counts}
+
+
+def gbif_col_release(mapping_release: dict | None) -> dict:
+    """The COL release GBIF matches occurrences against today (as insect-detect-post's
+    fetch_col_release). GBIF moves its COL XR checklist key to each new release, so the key alone
+    does not say which release made a species key. Stops when it is not the mapping's release:
+    keys of another release would silently miss names of the mapping."""
+    meta = _get_json(f"{GBIF_API.replace('/v1', '/v2')}/species/match/metadata?checklistKey={COL_XR}")
+    clb_key = str(meta["mainIndex"]["clbDatasetKey"])
+    dataset = _get_json(f"https://api.checklistbank.org/dataset/{clb_key}")
+    release = {"checklist_key": COL_XR, "clb_dataset_key": clb_key,
+               "alias": meta["mainIndex"].get("datasetAlias") or dataset.get("alias"),
+               "issued": dataset.get("issued"), "doi": dataset.get("doi")}
+    expected = (mapping_release or {}).get("clb_dataset_key")
+    if expected is None:
+        raise SystemExit("the mapping's provenance file names no COL release: cannot check its species keys")
+    if clb_key != str(expected):
+        raise SystemExit(f"GBIF now uses {release['alias']} (ChecklistBank {clb_key}), the mapping "
+                         f"{(mapping_release or {}).get('alias')} ({expected}): its species keys may not match")
+    return release
 
 
 def mapping_file(folder: Path, name: str) -> Path:
@@ -142,6 +183,7 @@ def main() -> int:
     with open(csv_path, newline="", encoding="utf-8") as f:
         mapping = [m for m in csv.DictReader(f) if m["bioclip_order"] in set(orders) and m["gbif_species_key"]]
     print(f"mapping: {len(mapping)} TreeOfLife species of {orders} with a COL species key")
+    col_release = gbif_col_release(provenance.get("col_release"))
 
     # Each region on its own needs >= min_occurrences records (as in insect-detect-post); counts are summed.
     in_region: dict[str, int] = {}
@@ -166,11 +208,12 @@ def main() -> int:
                         m["bioclip_class"], m["gbif_species"], m["gbif_species_key"], m["gbif_status"],
                         in_region[m["gbif_species_key"]]])
     meta = {"regions": regions, "orders": orders, "min_occurrences": args.min_occurrences,
-            "species": len(rows), "gbif_checklist_key": COL_XR,
+            "species": len(rows), "occurrence_status": OCCURRENCE_STATUS,
+            "basis_of_record_excluded": list(EXCLUDED_BASIS), "gbif_checklist_key": COL_XR,
             "mapping": {"url": RELEASE + csv_path.name, "sha256": MAPPING_FILES[csv_path.name],
                         "col_release": provenance.get("col_release"),
                         "tol_species_list": provenance.get("tol_species_list")},
-            "date": date.today().isoformat()}
+            "gbif_col_release": col_release, "date": date.today().isoformat()}
     args.out.with_suffix(".json").write_text(json.dumps(meta, indent=2))
     per_order = {o: sum(1 for m in rows if m["bioclip_order"] == o) for o in orders}
     print(f"wrote {args.out}: {len(rows)} species {per_order}")

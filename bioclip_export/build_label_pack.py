@@ -26,9 +26,11 @@ recommended for real use: every crop then gets an insect name, even a leaf).
 A species list from build_region_species_list.py also gives every row its GBIF species key and
 accepted name (header block "gbif", see fpack.py); with --country-lists (build_country_lists.py)
 the pack also records which rows GBIF lists in each country and each country's neighbours
-(block "regions"), so the app can narrow the names to the session's country:
+(block "regions"), so the app can narrow the names to the session's country. For a pack that is
+already published, use add_pack_blocks.py instead: it keeps the vectors bit for bit (the v3
+Europe pack was made that way), while this script embeds the sink rows again. A test build:
     python build_label_pack.py --model bioclip-2 --classes Insecta --species-csv out/packs_v2/species_europe_4orders_col.csv \
-        --country-lists out/packs_v3/countries_4orders_col.json --pack-id bioclip-2_pollinator-orders-europe_v3 --out out/packs_v3
+        --country-lists out/packs_v3/countries_4orders_col.json --pack-id bioclip-2_pollinator-orders-europe_test --out out/scratch
 
 Names stay as TreeOfLife publishes them. The few rows not in the plain form (kingdom
 'Metazoa', two genera in one row, authors or codes in the species slot) are used by the app
@@ -204,12 +206,18 @@ def read_species_csv(path: Path) -> tuple[set[str], dict[str, tuple[str, str | N
     return keep, gbif
 
 
-def gbif_block(row_names: list[str], gbif: dict, sink_rows: int, species_csv: Path) -> dict:
+def gbif_block(row_names: list[str], gbif: dict, sink_rows: int, species_csv: Path, names_sha256: str) -> dict:
     """The "gbif" header block (fpack.py): per pack row the COL species key and accepted name of its
     TreeOfLife name, joined by that name as insect-detect-post does, so both programs give a
-    track the same key. Sink rows and names without a key get null."""
+    track the same key. Sink rows and names without a key get null. Rows with a name rule
+    (name_rules.rows) carry the key of their published name too: it places them in the country
+    lists, but the app answers them only at genus or family, so it is not a track's species."""
     meta_path = species_csv.with_suffix(".json")
     meta = json.loads(meta_path.read_text()) if meta_path.exists() else {}
+    tol = ((meta.get("mapping") or {}).get("tol_species_list") or {}).get("sha256")
+    if tol and tol != names_sha256:
+        raise SystemExit(f"the mapping behind {species_csv.name} was made from another TreeOfLife names file "
+                         f"({tol[:12]}...) than the pack ({names_sha256[:12]}...)")
     pairs = [gbif.get(n, (None, None)) for n in row_names] + [(None, None)] * sink_rows
     return {
         "species_key": [k for k, _ in pairs],
@@ -250,11 +258,16 @@ def regions_block(keys: list, row_names: list[str], lists_path: Path, neighbours
                     neighbours.setdefault(a, []).append(b)
     return {
         "min_occurrences": lists["min_occurrences"],
+        **({"occurrence_status": lists["occurrence_status"]} if lists.get("occurrence_status") else {}),
+        **({"basis_of_record_excluded": lists["basis_of_record_excluded"]}
+           if lists.get("basis_of_record_excluded") else {}),
         "countries": countries,
         "neighbours": {c: sorted(v) for c, v in sorted(neighbours.items())},
         "neighbours_rule": nb_meta["rule"],
         "source": {"gbif_query_date": lists["date"], "gbif_checklist_key": lists["gbif_checklist_key"],
-                   "orders": lists["orders"], "mapping": lists["mapping"], "neighbours": nb_meta["source"]},
+                   **({"gbif_col_release": lists["gbif_col_release"]} if lists.get("gbif_col_release") else {}),
+                   "orders": lists["orders"], "mapping": lists["mapping"], "neighbours": nb_meta["source"],
+                   **({"neighbours_by_hand": nb_meta["manual_pairs"]} if nb_meta.get("manual_pairs") else {})},
     }
 
 
@@ -414,7 +427,7 @@ def main() -> int:
         "license": "TreeOfLife embeddings CC0-1.0; sink rows generated with the MIT BioCLIP text tower",
     }
     if gbif:
-        header["gbif"] = gbif_block(row_names, gbif, sink_rows, args.species_csv)
+        header["gbif"] = gbif_block(row_names, gbif, sink_rows, args.species_csv, names_sha256)
         print(f"gbif: {sum(k is not None for k in header['gbif']['species_key'])} of {len(row_names)} species rows "
               "have a GBIF species key")
     if args.country_lists:
@@ -426,6 +439,14 @@ def main() -> int:
     out_path = args.out / f"{pack_id}.fpack"
     write_fpack(out_path, header, mat, dtype=args.dtype)
     print(f"Pack written: {out_path} ({out_path.stat().st_size / 1e6:.1f} MB, {len(labels)} rows incl. {sink_rows} sink rows)")
+    from check_pack_blocks import app_accepts_header, raw_parts
+
+    try:
+        app_accepts_header(raw_parts(out_path)[0])
+    except ValueError as e:
+        # Kept for PC use (e.g. a world pack), but never to be offered to the app.
+        print(f"WARNING: no released app version can open this pack: {e}")
+        return 1
     return 0
 
 

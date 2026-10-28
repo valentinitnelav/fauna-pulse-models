@@ -17,11 +17,15 @@ Only numpy is needed here, so the format can be tested without torch.
 
 Optional header blocks (since 2026-10-27, written by build_label_pack.py and add_pack_blocks.py;
 "version" stays 1 because the byte layout is unchanged). Readers that do not know them ignore
-them, so older app versions load such a pack as before:
+them, so older app versions load such a pack as before, as long as the whole header stays
+within the app's limits (16 MB; check_pack_blocks.app_accepts_header, run by both writers):
     "gbif"     GBIF species of every row, as lists with one entry per row (null for sink rows
                and rows without one): "species_key" (Catalogue of Life Extended Release key,
                a string, some digits only: never turn it into a number) and "species" (its
                accepted name), plus "source" (the mapping file and COL release they come from).
+               Rows listed in "name_rules" carry the key of their published name, for the
+               country lists; the app answers them only at genus or family, so it is not a
+               track's species there.
     "regions"  which rows GBIF lists per country: "countries" = {ISO 3166-1 alpha-2 code:
                {"rows": rows_to_bits(...), "names": distinct names among the rows set (a name in
                two families has two rows), "names_in_country": names of the pack's orders that
@@ -150,17 +154,24 @@ def read_fpack(path: Path) -> tuple[dict, np.ndarray]:
 def rows_to_bits(rows, n: int) -> str:
     """Rows [rows] of a pack with [n] rows as base64 text of ceil(n / 8) bytes: bit i = row i,
     least significant bit first (row 0 = bit 0 of byte 0, row 8 = bit 0 of byte 1)."""
+    idx = np.asarray(list(rows), dtype=np.int64)
+    if idx.size and (idx.min() < 0 or idx.max() >= n):
+        raise ValueError(f"row numbers must be 0 to {n - 1}")
     mask = np.zeros(n, dtype=bool)
-    mask[np.asarray(list(rows), dtype=np.int64)] = True
+    mask[idx] = True
     return base64.b64encode(np.packbits(mask, bitorder="little").tobytes()).decode("ascii")
 
 
 def bits_to_rows(bits: str, n: int) -> np.ndarray:
-    """The reverse of rows_to_bits: a boolean array of length [n]."""
-    raw = np.frombuffer(base64.b64decode(bits), dtype=np.uint8)
+    """The reverse of rows_to_bits: a boolean array of length [n]. Refuses text that is not
+    plain base64 and set bits after the last row."""
+    raw = np.frombuffer(base64.b64decode(bits, validate=True), dtype=np.uint8)
     if raw.size != (n + 7) // 8:
         raise ValueError(f"bit string holds {raw.size} bytes, a pack of {n} rows needs {(n + 7) // 8}")
-    return np.unpackbits(raw, bitorder="little")[:n].astype(bool)
+    all_bits = np.unpackbits(raw, bitorder="little")
+    if all_bits[n:].any():
+        raise ValueError("bits set after the last row")
+    return all_bits[:n].astype(bool)
 
 
 def sink_label(name: str, prompt: str) -> list[str]:

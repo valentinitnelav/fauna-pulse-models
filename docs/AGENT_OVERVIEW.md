@@ -30,7 +30,7 @@ import path and breaks `from fpack import ...` and the sibling imports.
 | `bioclip_export/quantise_tflite.py` | fp32 `.tflite` -> fp16 / int8 (dynamic range) / int8 weights; patches an ai-edge-quantizer 0.9 bug | writes next to input | no calibration images |
 | `bioclip_export/build_label_pack.py` | TreeOfLife embeddings, filtered, names as published (rows not in the plain form used only to genus/family: `--name-rules`, listed in the header; v1 packs: `none`), + "none of these" sink rows -> label pack `.fpack` | HF dataset (2.7 GB) or `--embeddings-dir` -> `out/<pack_id>.fpack` | torch (text tower), internet |
 | `bioclip_export/build_region_species_list.py` | regional species list from GBIF (COL XR accepted species, mapping of insect-detect-post v1.1.0; v1 packs used v1.0.0) | GBIF API -> CSV + `.json` | internet, stdlib only |
-| `bioclip_export/build_country_lists.py` | per-country GBIF lists (>= 3 records) for `build_label_pack.py --country-lists` (header blocks: `fpack.py`) | GBIF API -> `.json` | internet |
+| `bioclip_export/build_country_lists.py` | per-country GBIF lists (>= 3 presence records) for `build_label_pack.py --country-lists` (header blocks: `fpack.py`) | GBIF API -> `.json` | internet |
 | `bioclip_export/country_neighbours.py` | neighbours (land border or <= 100 km of sea; Natural Earth) | -> tracked `country_neighbours.csv` | shapely |
 | `bioclip_export/add_pack_blocks.py`, `check_pack_blocks.py` | add the blocks to a pack (same vectors); check them, the app's header limits, `--same-as` | | |
 | `bioclip_export/verify_parity.py` | PyTorch vs `.tflite` embeddings: cosine, same answer per rank | `--tflite --images [--pack ...] [--crops-csv]` | |
@@ -138,9 +138,9 @@ Uploads: one repo per step, `--upload --repo X --private`, owner checks, then pu
 `--private` a new collection is created private too). HF commits: `publish/published.json`; the
 app's catalogue links match it (round 314).
 
-Label pack v3 (BioCLIP 2 Europe, 2026-10-27, NOT uploaded; `out/packs_v3/` on the SSD): v2 byte
+Label pack v3 (BioCLIP 2 Europe, 2026-10-28, NOT uploaded; `out/packs_v3/` on the SSD): v2 byte
 for byte plus blocks `gbif` (key per row) and `regions` (rows per country, neighbours). The app
-reads them in a later round.
+reads them later.
 
 The MegaDetector file is also a GitHub release asset of the app (`v0.8.0-alpha.1`); that asset
 stays online forever. The owner's older HF repo `flower_visitor_order_detector` is unrelated.

@@ -3,12 +3,12 @@
 pack can narrow its names to a country (build_label_pack.py --country-lists).
 
 For every country GBIF has arthropod records from, one occurrence request (the same request as
-build_region_species_list.py --countries, so a country gives the same species there and in
-insect-detect-post): accepted species of the Catalogue of Life Extended Release (COL XR) with at
-least --min-occurrences records in that country. Kept per country: the COL species keys of the
-mapped TreeOfLife species of the CSV's orders (mapping of insect-detect-post v1.1.0, checked by
-SHA-256), with their record counts, and how many TreeOfLife names of those orders the country's
-list holds. A pack keeps only its own rows of each list (build_label_pack.py).
+build_region_species_list.py --countries): accepted species of the Catalogue of Life Extended
+Release (COL XR) with at least --min-occurrences presence records in that country, fossil
+specimens left out. Kept per country: the COL species keys of the mapped TreeOfLife species of the
+CSV's orders (mapping of insect-detect-post v1.1.0, checked by SHA-256), with their record counts,
+and how many TreeOfLife names of those orders the country's list holds. A pack keeps only its own
+rows of each list (build_label_pack.py).
 
 Where the idea comes from and whose approach is followed: see build_region_species_list.py
 (BioCLIP's "Geo-Restricted Taxon List Predictions", Imageomics; Maximilian Sittinger's
@@ -16,7 +16,7 @@ insect-detect-post, own code here). GBIF occurrence data: GBIF.org (query date i
 Catalogue of Life: the release named in the output (COL26.6 XR: https://doi.org/10.48580/dgy8b).
 
 About 250 requests, under a second each for most countries (a few seconds for the largest);
-about 2.5 minutes in total (147 s on 2026-10-27), no account needed.
+about 2.5 to 3.5 minutes in total (147 s on 2026-10-27, 195 s on 2026-10-28), no account needed.
 
 Example (the v2 Europe list; orders and minimum are read from its .json):
     python build_country_lists.py --species-csv out/packs_v2/species_europe_4orders_col.csv --out out/packs_v3/countries_4orders_col.json
@@ -29,19 +29,22 @@ import csv
 import json
 import sys
 import time
+import urllib.parse
 from datetime import date
 from pathlib import Path
 
-from build_region_species_list import (ARTHROPODA_COL_KEY, COL_XR, GBIF_API, MAPPING_FILES, RELEASE, _get_json,
-                                       mapping_file, species_counts)
+from build_region_species_list import (ARTHROPODA_COL_KEY, COL_XR, EXCLUDED_BASIS, GBIF_API, MAPPING_FILES,
+                                       OCCURRENCE_STATUS, RELEASE, _get_json, gbif_col_release, mapping_file,
+                                       record_filter, species_counts)
 
 
 def gbif_countries() -> list[str]:
     """ISO codes of the countries GBIF has COL XR arthropod records from, largest first. Codes
     outside GBIF's country list (e.g. ZZ, unknown) are left out: a request for them fails."""
     known = {c["iso2"] for c in _get_json(f"{GBIF_API}/enumeration/country")}
-    r = _get_json(f"{GBIF_API}/occurrence/search?checklistKey={COL_XR}&phylumKey={ARTHROPODA_COL_KEY}"
-                  "&limit=0&facet=country&country.facetLimit=1000")
+    params = {"checklistKey": COL_XR, "phylumKey": ARTHROPODA_COL_KEY, **record_filter(), "limit": 0,
+              "facet": "country", "country.facetLimit": 1000}
+    r = _get_json(f"{GBIF_API}/occurrence/search?" + urllib.parse.urlencode(params, doseq=True))
     return [c["name"] for c in r["facets"][0]["counts"] if c["name"] in known]
 
 
@@ -72,6 +75,7 @@ def main() -> int:
         names_per_key[m["gbif_species_key"]] = names_per_key.get(m["gbif_species_key"], 0) + 1
     print(f"mapping: {len(mapping)} TreeOfLife species of {orders} with a COL species key")
 
+    col_release = gbif_col_release(provenance.get("col_release"))
     countries = gbif_countries()
     print(f"{len(countries)} countries with arthropod records in GBIF")
     out: dict[str, dict] = {}
@@ -83,11 +87,14 @@ def main() -> int:
         if i % 25 == 0 or i == len(countries):
             print(f"  {i}/{len(countries)} countries ({time.time() - t0:.0f} s)")
 
-    result = {"orders": orders, "min_occurrences": min_occ, "gbif_checklist_key": COL_XR,
+    result = {"orders": orders, "min_occurrences": min_occ, "occurrence_status": OCCURRENCE_STATUS,
+              "basis_of_record_excluded": list(EXCLUDED_BASIS),
+              "gbif_checklist_key": COL_XR,
               "mapping": {"url": RELEASE + csv_path.name, "sha256": MAPPING_FILES[csv_path.name],
                           "col_release": provenance.get("col_release"),
                           "tol_species_list": provenance.get("tol_species_list")},
-              "species_csv": args.species_csv.name, "date": date.today().isoformat(), "countries": out}
+              "gbif_col_release": col_release, "species_csv": args.species_csv.name,
+              "date": date.today().isoformat(), "countries": out}
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(json.dumps(result, indent=1))
     biggest = sorted(out, key=lambda c: -out[c]["names_in_country"])[:5]

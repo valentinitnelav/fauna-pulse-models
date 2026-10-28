@@ -172,7 +172,7 @@ insectDCT (no name vectors; `fpack.write_class_list`, see [`classifier_export/RE
 least 3 records for in a region (a GBIF continent or a set of countries). Restricting
 the candidates to a regional GBIF species list is what BioCLIP's documentation
 recommends ("Geo-Restricted Taxon List Predictions"). The way of getting that list follows
-Maximilian Sittinger's `insect-detect-post`, so a region gives the same species there:
+Maximilian Sittinger's `insect-detect-post`:
 records are counted per accepted species of the Catalogue of Life Extended Release (the
 taxonomy GBIF uses since it replaced the GBIF Backbone), and TreeOfLife names are mapped to
 those species with his mapping table (release v1.1.0, made from the BioCLIP 2 names file and
@@ -199,7 +199,7 @@ each pack header, `source.species_csv`).
 name (header block `gbif`, one entry per row; the same mapping as insect-detect-post, so a
 track gets the same key in both programs and joins GBIF data, synonyms included). With
 `--country-lists` the pack also records which of its rows GBIF lists in each country (at least 3
-records there, as in insect-detect-post) and each country's neighbours (block `regions`), so
+presence records there, no fossil specimens) and each country's neighbours (block `regions`), so
 the app can narrow the names to the session's country and its neighbours, or use the whole
 pack. Format of both blocks: `fpack.py`; older app versions ignore them.
 
@@ -215,39 +215,58 @@ blocks (seconds, no torch). A new pack gets them from `build_label_pack.py --cou
 (same blocks); it is not used for v3 because it embeds the six "none of these" rows again, and
 their float16 values can differ in the last bit from one computer to another (3 of 6 rows, at
 most 3e-5, against v2). `build_country_lists.py` sends one GBIF request per country (250
-countries, about 2.5 minutes).
+countries, about 3 minutes).
 
-Neighbours come from the tracked table `country_neighbours.csv` (423 pairs): a shared land
+Only presence records count and fossil specimens are left out (since 2026-10-28,
+`record_filter()` in `build_region_species_list.py`, also for new Europe lists). The v2 Europe
+list is older: 163 of its names would not be in it today; v3 keeps them, as it keeps all of v2's rows.
+
+Neighbours come from the tracked table `country_neighbours.csv` (425 pairs): a shared land
 border, or at most 100 km apart over the sea by a connection that crosses no third country
 (Germany and Sweden, Great Britain and France, Malta and Italy, Croatia and Italy over the Gulf
-of Trieste; not Germany and Italy, 46 km apart across Austria; Iceland has none). Computed from
+of Trieste; not Germany and Italy, 46 km apart across Austria; Iceland has none). Two pairs are
+added by hand, with their reason in `country_neighbours.json`: Greece and Italy (Natural Earth
+lacks the small Greek islands about 80 km from Italy) and Anguilla and Sint Maarten (French
+Saint-Martin lies between them on the same island). Computed from
 Natural Earth (map units 1:10m, v5.1.2, public domain) by `country_neighbours.py` (needs
 shapely; rerun only to change the rule). Natural Earth units without an ISO code (e.g. Northern
 Cyprus) take the code GBIF's reverse geocoder gives them. How much a country narrows the Europe
 list (v3): see 3c.
 
+**Limits.** A country list says where GBIF holds records of a species, and records follow where
+people observe, collect and digitise. Europe, North America and Australia are well recorded; much
+of the tropics, Africa and Asia is not (e.g.: names of the four orders with at least 3 records, 28
+October 2026: Germany 16,768, Brazil 10,204, DR Congo 1,931, Nigeria 1,307), so there a list
+misses many species that live in the country, and the neighbours or the whole pack are the
+better choice. Species do not follow borders either: a country list holds species of all its
+habitats, and a site near a border may share species with a country that is not a neighbour
+by this rule. The neighbour rule (100 km, map units 1:10m, distances on a local flat projection)
+is one simple choice among many, not an ecological boundary.
+
 ### 3c. Packs built so far
 
-v3 (2026-10-27, not uploaded yet): `bioclip-2_pollinator-orders-europe_v3`, the v2 Europe pack
-byte for byte (rows, names, vectors) plus the blocks `gbif` (every name has a key: 34,336
-distinct keys, synonyms share one) and `regions` (248 countries, GBIF queried 27 October 2026);
-59.5 MB (header 5.8 MB). 522 names have 3 records in Europe but in no single country: only the
-whole pack has them. Names per country (at least 3 records there) and with its neighbours:
+v3 (2026-10-28, not uploaded yet): `bioclip-2_pollinator-orders-europe_v3`, the v2 Europe pack
+byte for byte (rows, names, vectors) plus the blocks `gbif` (every row has a key: 34,978 rows,
+34,974 distinct names, 34,336 distinct keys, synonyms share one) and `regions` (248 countries,
+GBIF queried 28 October 2026, presence records, no fossil specimens); 59.5 MB (header 5.8 MB). 636 rows are in no
+single country's list: only the whole pack has them. Distinct names per country (at least 3
+presence records there) and with its neighbours:
 
 | Country | Alone (its GBIF list for the four orders) | With neighbours |
 |---|---|---|
-| Germany | 16,989 (16,991) | 28,458 (AT BE CH CZ DK FR LU NL PL SE) |
-| France | 17,791 (17,920) | 27,933 |
-| Great Britain | 14,952 (14,982) | 22,723 (BE FR GG IE IM) |
-| Romania | 3,895 (3,895) | 13,418 |
-| Cyprus | 1,025 (1,162) | 4,006 (TR) |
-| Malta | 337 (337) | 11,911 (IT) |
+| Germany | 16,766 (16,768) | 28,272 (AT BE CH CZ DK FR LU NL PL SE) |
+| France | 17,593 (17,715) | 27,716 |
+| Great Britain | 14,708 (14,738) | 22,540 (BE FR GG IE IM) |
+| Romania | 3,773 (3,773) | 13,332 |
+| Cyprus | 1,024 (1,161) | 3,905 (TR) |
+| Malta | 310 (310) | 11,807 (IT) |
 
 The number in brackets is the country's whole list for the four orders: Cyprus shows that some
 of its species are not in a Europe pack (Asian species). The BioCLIP 2.5 and mammals-and-birds
-packs have no v3: the same command makes a BioCLIP 2.5 v3 from its v2 (its 586 missing Europe
-names stay missing; closing that gap needs a mapping of the 2.5 names file), and mammals and
-birds first need a key mapping (GBIF name matching of their 17,130 names; insect-detect-post maps
+packs have no v3: BioCLIP 2.5 first needs a mapping of its own names file (`add_pack_blocks.py`
+refuses a species list whose mapping was made from another TreeOfLife names file; such a mapping
+would also close the gap of its 586 missing Europe names), and mammals and birds first need a key
+mapping (GBIF name matching of their 17,130 names; insect-detect-post maps
 only arthropods).
 
 v2 (2026-10-26, `--name-rules higher-rank`, Europe list made the insect-detect-post way):

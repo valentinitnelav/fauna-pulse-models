@@ -37,8 +37,10 @@ def raw_parts(path: Path) -> tuple[bytes, bytes]:
 
 
 def app_accepts_header(hdr: bytes) -> None:
-    """Python copy of LabelPack._checkJsonShape and the size limit (app round 327)."""
-    assert len(hdr) <= APP_MAX_HEADER_BYTES, f"header {len(hdr)} bytes > the app's limit {APP_MAX_HEADER_BYTES}"
+    """Python copy of LabelPack._checkJsonShape and the size limit (app round 327). Raises
+    ValueError (not assert, so it also works under python -O; the writers call it)."""
+    if len(hdr) > APP_MAX_HEADER_BYTES:
+        raise ValueError(f"header {len(hdr)} bytes > the app's limit {APP_MAX_HEADER_BYTES}")
     depth = containers = 0
     in_string = escaped = False
     limit = 64 + len(hdr) // 16
@@ -55,7 +57,8 @@ def app_accepts_header(hdr: bytes) -> None:
         elif b in (0x5B, 0x7B):
             depth += 1
             containers += 1
-            assert depth <= 16 and containers <= limit, "the app would refuse this header's shape"
+            if depth > 16 or containers > limit:
+                raise ValueError("the app would refuse this header's shape")
         elif b in (0x5D, 0x7D):
             depth -= 1
 
@@ -153,6 +156,8 @@ def self_test() -> None:
 
 
 def main() -> int:
+    if not __debug__:
+        raise SystemExit("run without -O: the checks are assert statements")
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("pack", type=Path, nargs="?", help="pack to check (default: self-test only)")
     ap.add_argument("--same-as", type=Path, default=None, help="older pack that must hold the same rows and vectors")

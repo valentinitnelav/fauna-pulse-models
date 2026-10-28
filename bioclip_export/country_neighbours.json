@@ -1,6 +1,10 @@
 {
-  "rule": "shared land border, or at most 100 km apart over the sea by a connection that crosses no third country",
+  "rule": "shared land border, or at most 100 km apart over the sea by a connection that crosses no third country; added by hand: AI-SX, GR-IT",
   "max_km": 100.0,
+  "manual_pairs": {
+    "AI-SX": "neighbouring islands over the sea; every straight connection from Anguilla to Sint Maarten crosses French Saint-Martin (MF), which lies between them on the same island",
+    "GR-IT": "Natural Earth 1:10m lacks the Diapontia islands (Othonoi, Mathraki, Ereikoussa), about 80 km from Italy; measured from Corfu instead: just over 100 km"
+  },
   "source": {
     "data": "Natural Earth admin-0 map units 1:10m v5.1.2 (public domain)",
     "url": "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/v5.1.2/geojson/ne_10m_admin_0_map_units.geojson",
@@ -8,6 +12,6 @@
   },
   "unit_codes": "ISO 3166-1 alpha-2; units without one: the code of GBIF's reverse geocoder (2026-10-27)",
   "countries": 250,
-  "pairs": 423,
-  "date": "2026-10-27"
+  "pairs": 425,
+  "date": "2026-10-28"
 }

@@ -25,6 +25,7 @@ from datetime import date
 from pathlib import Path
 
 from build_label_pack import gbif_block, read_species_csv, regions_block
+from check_pack_blocks import app_accepts_header, raw_parts
 from fpack import read_raw, write_raw
 
 
@@ -58,7 +59,7 @@ def main() -> int:
 
     old_id, old_built = hdr["pack_id"], hdr.get("built_with")
     hdr["pack_id"] = args.pack_id
-    hdr["gbif"] = gbif_block(row_names, gbif, sink_rows, args.species_csv)
+    hdr["gbif"] = gbif_block(row_names, gbif, sink_rows, args.species_csv, hdr["source"]["names_file_sha256"])
     print(f"gbif: {sum(k is not None for k in hdr['gbif']['species_key'])} of {len(row_names)} species rows "
           "have a GBIF species key")
     hdr.pop("regions", None)  # an old block would not match the new keys and date
@@ -73,7 +74,16 @@ def main() -> int:
                                                    "built_with": old_built}}
     args.out.mkdir(parents=True, exist_ok=True)
     out_path = args.out / f"{args.pack_id}.fpack"
-    write_raw(out_path, hdr, payload)
+    if out_path.resolve() == args.pack.resolve():
+        raise SystemExit("--pack-id and --out would overwrite the input pack")
+    tmp = out_path.with_name(out_path.name + ".part")
+    write_raw(tmp, hdr, payload)
+    try:
+        app_accepts_header(raw_parts(tmp)[0])
+    except ValueError as e:
+        tmp.unlink()
+        raise SystemExit(f"not written: no released app version could open it ({e})")
+    tmp.replace(out_path)
     print(f"Pack written: {out_path} ({out_path.stat().st_size / 1e6:.1f} MB, {hdr['rows']} rows, vectors of {args.pack.name})")
     return 0
 

@@ -17,12 +17,22 @@ countries layer counts them with France, the Netherlands and Norway (France woul
 Brazil). Codes are ISO 3166-1 alpha-2, the codes GBIF gives its records. Units without an ISO
 code in Natural Earth get the code that GBIF's reverse geocoder gave a point inside them on
 2026-10-27 (UNIT_CODES; e.g. Northern Cyprus CY, Somaliland SO); overlays such as the Korean
-demilitarised zone lie on top of other units and are left out.
+demilitarised zone lie on top of other units and are left out (so the borders under the DMZ and
+the UNDOF zone show as gaps of under 2 km, not 0). Borders follow Natural Earth's de facto view,
+which differs from GBIF in a few disputed areas: Crimea (here RU, GBIF UA), the Golan (IL, GBIF
+SY), the Ilemi triangle (KE, GBIF SS), the north of the Paracels (VN, GBIF CN at Woody Island).
+The pairs are the same either way; a GPS-to-country lookup with these shapes is not.
 
 Distance: in a local flat projection (longitude scaled by the cosine of the latitude where the
 two shapes come closest), within about 1 % at these distances; a shared border has distance 0.
 When the shortest connection crosses a third country, the shortest one over sea only is searched
-from every border point of each country (sea_gap_km).
+from every border point of each country (sea_gap_km): one straight line from a border point to
+the nearest point of the other country, so the km can be a little longer than the shortest sea
+route, and an island whose coast towards the other country belongs to a third country misses
+that neighbour (Anguilla and Sint Maarten: between them lies French Saint-Martin). Natural Earth 1:10m also
+lacks some small islands: Greece and Italy come out at 102.6 km (Corfu), because the Diapontia
+islands (about 80 km from Italy) are missing. Both pairs are added by hand (MANUAL_PAIRS, owner's
+choice 2026-10-28; listed with their reason in the .json, km as measured on Natural Earth).
 
 Needs shapely (requirements.txt). A few seconds.
     python country_neighbours.py            # writes country_neighbours.csv and .json here
@@ -59,6 +69,15 @@ UNIT_CODES = {
     "Siachen Glacier": "IN", "Southern Patagonian Ice Field": "AR", "Bir Tawil": "EG",
     "Paracel Islands": "VN", "Spratly Islands": "PH", "Scarborough Reef": "PH", "Serranilla Bank": "CO",
     "Bajo Nuevo Bank (Petrel Is.)": "CO", "Jan Mayen": "SJ",
+}
+
+
+# Pairs the rule means but the data or the straight-line search cannot find (owner, 2026-10-28).
+MANUAL_PAIRS = {
+    ("AI", "SX"): "neighbouring islands over the sea; every straight connection from Anguilla to Sint Maarten "
+                  "crosses French Saint-Martin (MF), which lies between them on the same island",
+    ("GR", "IT"): "Natural Earth 1:10m lacks the Diapontia islands (Othonoi, Mathraki, Ereikoussa), about 80 km "
+                  "from Italy; measured from Corfu instead: just over 100 km",
 }
 
 
@@ -190,12 +209,20 @@ def main() -> int:
                 best = km if best is None else min(best, km)
             if best is not None:
                 pairs.append((a, b, round(best, 1)))
+    found = {(a, b) for a, b, _ in pairs}
+    for a, b in sorted(MANUAL_PAIRS):
+        if (a, b) not in found:
+            near = near_parts(countries[a], countries[b], max(2 * args.max_km, 250))
+            pairs.append((a, b, round(distance_km(*near)[0], 1)))
+    pairs.sort()
     with open(args.out, "w", newline="", encoding="utf-8") as f:
         w = csv.writer(f)
         w.writerow(["country", "neighbour", "km"])  # one row per pair, country < neighbour; km 0 = land border
         w.writerows(pairs)
     meta = {"rule": f"shared land border, or at most {args.max_km:g} km apart over the sea by a connection "
-                    "that crosses no third country", "max_km": args.max_km,
+                    "that crosses no third country; added by hand: "
+                    + ", ".join(f"{a}-{b}" for a, b in sorted(MANUAL_PAIRS)), "max_km": args.max_km,
+            "manual_pairs": {f"{a}-{b}": why for (a, b), why in sorted(MANUAL_PAIRS.items())},
             "source": {"data": "Natural Earth admin-0 map units 1:10m v5.1.2 (public domain)", "url": NE_URL,
                        "sha256": NE_SHA256},
             "unit_codes": "ISO 3166-1 alpha-2; units without one: the code of GBIF's reverse geocoder (2026-10-27)",
