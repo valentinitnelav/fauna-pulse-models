@@ -68,7 +68,10 @@ Imageomics Institute.
     names have at least 3 GBIF presence records there (fossil specimens left out), with each
     country's neighbours (a shared land border, or at most 100 km apart over the sea, plus two
     pairs added by hand), so an app can narrow the names to the country where a session was
-    recorded (FaunaPulse: in a coming version). GBIF queried 28 October 2026.
+    recorded (FaunaPulse: in a coming version). GBIF queried 28 October 2026. The presence-only,
+    no-fossil rule is for the country lists: the whole list is v2's, for which every GBIF record
+    counted (absence records and fossil specimens too), so 163 of its names would not be in a
+    Europe list made with that rule today (v3 keeps them, as it keeps all of v2's rows).
   - The v2 and v3 packs use the names as described in [Names](#names). The v1 packs (same selections;
     the v1 Europe list was made on 20 September 2026 with 35,264 names and an earlier version of
     the same method) use every row as published. They stay here unchanged because installed
@@ -140,7 +143,7 @@ pack header."
   itself is not redistributed, v3 holds the key and accepted name of each of its rows). v2: records
   counted per accepted species of the Catalogue of Life (release 2026-06-19 XR, as GBIF interprets
   them), with the table of `insect-detect-post` v1.1.0, made from the same names file. v1: the
-  earlier table (GBIF Backbone keys). v3: the same list, plus per-country lists from GBIF.org
+  earlier table (GBIF Backbone keys). v3: v2's list unchanged, plus per-country lists from GBIF.org
   occurrence data (one request per country, at least 3 presence records of the species there,
   fossil specimens left out, queried 28 October 2026) and a neighbour table computed from Natural
   Earth country borders (admin-0 map units 1:10m, v5.1.2, public domain).
