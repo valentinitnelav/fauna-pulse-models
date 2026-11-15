@@ -98,7 +98,7 @@ All source files were downloaded again from the authors' own links and SHA-256-c
 | `flatbug-tflite` | `flatbug-n_640_fp16.tflite` (+ `.json`), `flatbug-s_640_fp16.tflite` (+ `.json`; new, gets a catalogue file when the links go in) | same / none | MIT | public, `0ab3ca4` |
 | `insectdct-v8-tflite` | `insectdct-v8s_640_fp16.tflite` (+ `.json`) | `insectdct-v8-s_640_fp16.tflite` | GPL-3.0 | public, `f5ac1bb` |
 | `insectdct-cls-v7-tflite` | `insectdct-cls-v7-eff2s_224_fp16.tflite`, `.fpack` (+ `.json`) | `insectdct-cls-v7_eff2s_fp16.*` | GPL-3.0 | public, `8ded6d9` |
-| `bioclip-2-tflite` | `bioclip-2_224_fp16.tflite` (+ `.json`), `bioclip-2_pollinator-orders-europe_v1.fpack`, `bioclip-2_flower-visitors-32fam_v1.fpack`, `bioclip-2_mammals-birds-world_v1.fpack`; v2: `bioclip-2_pollinator-orders-europe_v2.fpack`, `bioclip-2_mammals-birds-world_v2.fpack` | `bioclip-2_image_fp16_4d.tflite`, `bioclip2_*_v1.fpack`; v2 none yet | MIT (packs CC0-1.0, common names GBIF CC BY 4.0) | public, `cbf9b26`; v2 `6a2961e` |
+| `bioclip-2-tflite` | `bioclip-2_224_fp16.tflite` (+ `.json`), `bioclip-2_pollinator-orders-europe_v1.fpack`, `bioclip-2_flower-visitors-32fam_v1.fpack`, `bioclip-2_mammals-birds-world_v1.fpack`; v2: `bioclip-2_pollinator-orders-europe_v2.fpack`, `bioclip-2_mammals-birds-world_v2.fpack`; v3: `bioclip-2_pollinator-orders-europe_v3.fpack` | `bioclip-2_image_fp16_4d.tflite`, `bioclip2_*_v1.fpack`; v2 same, v3 none | MIT (packs CC0-1.0, common names GBIF CC BY 4.0) | public, `cbf9b26`; v2 `6a2961e`; v3 `c8c69a0` |
 | `bioclip-2.5-tflite` | `bioclip-2.5_224_fp16.tflite` (+ `.json`), `bioclip-2.5_pollinator-orders-europe_v1.fpack`, `bioclip-2.5_flower-visitors-32fam_v1.fpack`; v2: `bioclip-2.5_pollinator-orders-europe_v2.fpack` | `bioclip-25_image_fp16.tflite`, `bioclip25_*_v1.fpack`; v2 none yet | MIT | public, `dd1f5b7`; v2 `2f54024` |
 
 Label packs v2 (2026-10-26, independently reviewed; local files `bioclip_export/out/packs_v2/`
@@ -138,9 +138,8 @@ Uploads: one repo per step, `--upload --repo X --private`, owner checks, then pu
 `--private` a new collection is created private too). HF commits: `publish/published.json`; the
 app's catalogue links match it (round 314).
 
-Label pack v3 (BioCLIP 2 Europe, 2026-10-28, NOT uploaded; `out/packs_v3/` on the SSD): v2 byte
-for byte plus blocks `gbif` (key per row) and `regions` (rows per country, neighbours). The app
-reads them later.
+Label pack v3 (BioCLIP 2 Europe, on HF 2026-11-15) = v2 plus blocks `gbif` and
+`regions` (`bioclip_export/README.md` 3c), read by app rounds 372-374.
 
 The MegaDetector file is also a GitHub release asset of the app (`v0.8.0-alpha.1`); that asset
 stays online forever. The owner's older HF repo `flower_visitor_order_detector` is unrelated.

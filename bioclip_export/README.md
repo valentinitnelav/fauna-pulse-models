@@ -245,7 +245,7 @@ is one simple choice among many, not an ecological boundary.
 
 ### 3c. Packs built so far
 
-v3 (2026-10-28, not uploaded yet): `bioclip-2_pollinator-orders-europe_v3`, the v2 Europe pack
+v3 (2026-10-28, on Hugging Face since 2026-11-15): `bioclip-2_pollinator-orders-europe_v3`, the v2 Europe pack
 byte for byte (rows, names, vectors) plus the blocks `gbif` (every row has a key: 34,978 rows,
 34,974 distinct names, 34,336 distinct keys, synonyms share one) and `regions` (248 countries,
 GBIF queried 28 October 2026, presence records, no fossil specimens); 59.5 MB (header 5.8 MB). 636 rows are in no
