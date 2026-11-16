@@ -483,7 +483,8 @@ https://doi.org/10.5281/zenodo.21822140), re-implemented in our own code:**
   tools' outputs can be analysed with the same scripts; the app's pooling rule itself
   differs (round 219: certainty-weighted average of the crops' embeddings scored once, the
   "Average Logit" of Dussert et al. 2025; `reproduce_track_conf.py` in this folder recomputes
-  a session's track-id results off the phone from the stored embeddings and a pack);
+  a session's track-id results off the phone from the stored embeddings and a pack, with
+  `--countries` also as narrowed to the country lists the app used);
 - the square-on-the-longer-side crop rule (`make_bbox_square()`); FaunaPulse pads at
   photo edges instead of shifting the square, and has an optional margin (0 by default
   since round 256).

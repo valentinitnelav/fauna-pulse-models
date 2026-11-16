@@ -17,13 +17,23 @@ Rule (defaults = the app's defaults):
   m     = sum(w_i e_i) / sum(w_i)         over counted crops, NOT re-normalised
   pbar  = softmax(scale * M @ m)          scored once; masses = species summed per taxon
   ladder: top-down best child of the chosen parent; identified rank = deepest
-          rank with mass >= tau
+          rank with mass >= tau; none_p = mass of the "none of these" rows of pbar
 
-Usage:
+Country list (--countries, the app's round 373 rule, track_fusion.dart Scorer.narrow): the
+weights w_i, the drop rule and none_p stay over EVERY row of the pack; only what is shown (the
+ladder, the identified rank, each crop's top-1 and own masses) is narrowed, for each crop's p_i
+and for pbar alike: q = p on the sink rows, 0 on species rows outside the list, and
+(1 - none) * p_i / sum(p over the listed species rows) on the listed ones (from the scores in
+log space when that sum is below 1e-30). A list without a single row of the pack never narrows.
+
+Usage (from this folder):
   python3 reproduce_track_conf.py <session_dir> <pack.fpack> [--model STEM]
-      [--tau 0.6] [--drop-factor 10] [--temperature T] [--track ID] [--crops]
+      [--tau 0.6] [--drop-factor 10] [--temperature T] [--countries DE+AT+...]
+      [--track ID] [--crops]
 
-Needs only numpy. Compare with <session>/identification/tracks_<pack>.json.
+--countries takes what the app used, the last column of tracks_<pack>.csv
+(`name_list_countries`: `DE+AT+...`, or `all` for the whole list). Needs numpy and the sibling
+fpack.py. Compare with <session>/identification/tracks_<pack>.json.
 """
 import argparse
 import json
@@ -32,6 +42,8 @@ import sys
 from collections import defaultdict
 
 import numpy as np
+
+from fpack import bits_to_rows
 
 RANKS = ["kingdom", "phylum", "class", "order", "family", "genus", "species"]
 
@@ -67,6 +79,40 @@ def softmax(z):
     return e / e.sum()
 
 
+def listed_rows(hdr, codes, sink):
+    """Species rows GBIF lists in any of [codes] (the pack's `regions` block), or None = the
+    whole pack: no codes, or a list without a single row (the app never narrows then)."""
+    if not codes:
+        return None
+    countries = (hdr.get("regions") or {}).get("countries") or {}
+    if not countries:
+        sys.exit("--countries: this pack has no country lists (no `regions` block)")
+    mask = np.zeros(hdr["rows"], bool)
+    for c in codes:
+        if c not in countries:
+            print(f"note: the pack has no list for {c}; it adds no names (as in the app)")
+            continue
+        mask |= bits_to_rows(countries[c]["rows"], hdr["rows"])
+    mask &= ~sink
+    return np.nonzero(mask)[0] if mask.any() else None
+
+
+def narrow(logits, whole, kept, sink):
+    """The app's Scorer.narrow: [whole] = softmax(logits) over every row, narrowed to [kept]."""
+    if kept is None:
+        return whole
+    out = np.zeros_like(whole)
+    out[sink] = whole[sink]
+    none = whole[sink].sum()
+    listed = whole[kept].sum()
+    if listed > 1e-30:
+        out[kept] = whole[kept] * max(0.0, 1 - none) / listed
+    else:  # every listed probability underflows: from the scores, in log space
+        ex = np.exp(logits[kept] - logits[kept].max())
+        out[kept] = ex * max(0.0, 1 - none) / ex.sum()
+    return out
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("session_dir")
@@ -75,6 +121,8 @@ def main():
     ap.add_argument("--tau", type=float, default=0.6)
     ap.add_argument("--drop-factor", type=float, default=10.0)
     ap.add_argument("--temperature", type=float, default=None, help="override the pack's calibration temperature")
+    ap.add_argument("--countries", default="all",
+                    help="narrow to these country lists, as the app records them: DE+AT+... (or DE,AT); all = whole pack")
     ap.add_argument("--track", type=int, default=None, help="only this track id")
     ap.add_argument("--crops", action="store_true", help="also print the per-crop table")
     a = ap.parse_args()
@@ -89,6 +137,10 @@ def main():
             if kk[k]:
                 rows_under[k][kk[k]].append(r)
     rows_under = [{key: np.array(v) for key, v in d.items()} for d in rows_under]
+    sink = np.array([l[0] == "none" for l in labels])
+    codes = [] if a.countries.strip().lower() == "all" else \
+        [c.strip().upper() for c in a.countries.replace(",", "+").split("+") if c.strip()]
+    kept = listed_rows(hdr, codes, sink)
 
     crops, E = load_embeddings(a.session_dir, a.model)
     by_track = defaultdict(list)
@@ -96,17 +148,24 @@ def main():
         by_track[c.get("track_id")].append(c)
     print(f"pack {hdr.get('pack_id')} ({len(labels)} names), scale {scale:.1f} (temperature {temperature}), "
           f"tau {a.tau}, drop factor {a.drop_factor}, {len(crops)} crops in {len(by_track)} track ids")
+    print("names on offer: " + ("the whole pack" if kept is None else f"{len(kept)} species rows of {'+'.join(codes)}"
+                                f" (+ {int(sink.sum())} 'none of these' rows)"))
 
     for tid in sorted(by_track, key=lambda t: (t is None, t)):
         if a.track is not None and tid != a.track:
             continue
         cr = by_track[tid]
-        e = np.stack([E[c["row"]] for c in cr])
-        P = np.stack([softmax(scale * (M @ v)) for v in e])
-        w = P.max(axis=1)
+        e = np.stack([E[c["row"]] for c in cr]).astype(np.float64)
+        L = scale * (e @ M.T)  # each crop's scores against every row
+        P_whole = np.stack([softmax(l) for l in L])
+        w = P_whole.max(axis=1)  # weights and the drop rule: over every row, whatever the list
         counted = w >= w.max() / a.drop_factor if a.drop_factor > 1 else np.ones(len(cr), bool)
-        m = (w[counted, None] * e[counted]).sum(0) / w[counted].sum()
-        pbar = softmax(scale * (M @ m))
+        # pooled scores = the weighted mean of the counted crops' scores (= scale * M @ m)
+        pooled = ((w[counted, None] / w[counted].sum()) * L[counted]).sum(0)
+        pbar_whole = softmax(pooled)
+        none_p = float(pbar_whole[sink].sum())
+        pbar = narrow(pooled, pbar_whole, kept, sink)
+        P = np.stack([narrow(L[i], P_whole[i], kept, sink) for i in range(len(cr))])  # shown
         top1 = P.argmax(axis=1)
 
         def mass(p, key, k):
@@ -121,7 +180,7 @@ def main():
                 if k > 0 and not key.startswith(parent + "|"):
                     continue
                 v = float(pbar[idx].sum())
-                if v > best:
+                if v > 0 and v > best:  # the app rolls up only rows with mass (rollUp)
                     best, best_key = v, key
             if best_key is None:
                 break
@@ -136,7 +195,8 @@ def main():
                 identified = rank
             else:
                 break
-        print(f"\n== track id {tid}: {len(cr)} crops, {int(counted.sum())} counted; identified rank: {identified}")
+        print(f"\n== track id {tid}: {len(cr)} crops, {int(counted.sum())} counted; identified rank: {identified}; "
+              f"none_p {none_p:.4f}")
         print(f"   {'rank':8s} {'taxon':28s} {'Conf.':>6s} {'p_mean':>7s} {'p_max':>6s} {'p_agree':>8s} {'agree':>6s}")
         for rank, taxon, p, pm, px, pa, ag in ladder:
             print(f"   {rank:8s} {taxon[:28]:28s} {p*100:5.1f}% {pm*100:6.1f}% {px*100:5.1f}% {pa*100:7.1f}% {ag*100:5.0f}%")
@@ -147,10 +207,12 @@ def main():
                 cand = [key for key in rows_under[k] if (k == 0 or key.startswith(parent + "|")) and key.split("|")[-1] == (taxon.split(" ")[-1] if k == 6 else taxon)]
                 lkeys.append(cand[0] if cand else None)
                 parent = lkeys[-1] or parent
-            print(f"   {'no':>3s} {'counted':>7s} {'top-1 species':30s} {'sp.conf':>7s} " + " ".join(f"{r[:5]:>6s}" for r, *_ in ladder) + "  photo")
+            print(f"   {'no':>3s} {'counted':>7s} {'top-1 species':30s} {'top1_p':>7s} {'weight':>7s} {'none_p':>7s} "
+                  + " ".join(f"{r[:5]:>6s}" for r, *_ in ladder) + "  photo")
             for i, c in enumerate(cr):
                 own = " ".join(f"{mass(P[i], key, k)*100:5.0f}%" if key else "    -" for k, key in enumerate(lkeys))
-                print(f"   {i+1:>3d} {'yes' if counted[i] else 'no':>7s} {' '.join(labels[top1[i]][5:7])[:30]:30s} {w[i]*100:6.1f}% {own}  {c['src']}")
+                print(f"   {i+1:>3d} {'yes' if counted[i] else 'no':>7s} {' '.join(labels[top1[i]][5:7])[:30]:30s} "
+                      f"{P[i].max()*100:6.1f}% {w[i]*100:6.1f}% {P_whole[i][sink].sum()*100:6.1f}% {own}  {c['src']}")
 
 
 if __name__ == "__main__":

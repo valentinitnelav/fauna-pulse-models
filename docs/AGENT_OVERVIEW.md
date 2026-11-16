@@ -1,7 +1,7 @@
 # Agent overview (state only)
 
 What is true now, where it lives, and the reason where it is not obvious. Replace text when it
-changes; history is git. Keep under ~50k characters.
+changes; history is git. Keep under 25,000 characters.
 
 ## Purpose
 
@@ -35,7 +35,7 @@ import path and breaks `from fpack import ...` and the sibling imports.
 | `bioclip_export/add_pack_blocks.py`, `check_pack_blocks.py` | add the blocks to a pack (same vectors); check them, the app's header limits, `--same-as` | | |
 | `bioclip_export/verify_parity.py` | PyTorch vs `.tflite` embeddings: cosine, same answer per rank | `--tflite --images [--pack ...] [--crops-csv]` | |
 | `bioclip_export/inspect_tflite.py` | ops and weight storage of a `.tflite` (positional arg, no `--help`) | prints | |
-| `bioclip_export/reproduce_track_conf.py` | recomputes the app's per-track pooling off the phone | session `identification/embeddings_*` + pack | own copy of the fpack reader |
+| `bioclip_export/reproduce_track_conf.py` | recomputes the app's per-track pooling off the phone, also narrowed to country lists (`--countries` as the app records them) | session `identification/embeddings_*` + pack | `fpack.bits_to_rows` |
 | `bioclip_export/app_rules.py` | the app's identification defaults and top-down answer (Python copy), imported by `verify_parity.py` and the calibration benchmark (separate repository) | | numpy, scipy |
 | `bioclip_export/fpack.py` | `.fpack` format: `write_fpack`, `write_class_list`, `read_fpack`, `class_probabilities`; `__main__` writes the app's test fixtures (2 positional paths; no argparse: `--help` would create a file) | | numpy |
 | `publish/publish_hf.py` | dry run (default; `--write-cards DIR` writes the rendered cards, metadata checked by the Hub) / `--upload --repo <one>` / `--verify [--full]`; config `publish/hf_repos.json`, cards `hf_cards/<repo>/README.md` (`{{FILES_TABLE}}`, `{{CODE_COMMIT}}` filled at upload), result `publish/published.json` | `--catalogue $APP/assets/model_downloads.json` | huggingface_hub, `hf auth login`; refuses unpushed code commit, catalogue mismatch, replacing a file (except a corrected `.json` with `--replace-manifests`) |
@@ -184,7 +184,7 @@ stays online forever. The owner's older HF repo `flower_visitor_order_detector` 
 | `fpack.class_probabilities` | `lib/fauna_pulse/identification/track_fusion.dart` (same formula) | `track_fusion_test.dart` uses `test_scores`/`test_probs` stored in the fixture |
 | output names of all export scripts | naming rule, `tool/model_downloads/README.md` | `update_catalogue.py --names` |
 | model input/output layout (NCHW 0..1; embedder output `[1,n]`; classifier heads concatenated, `dim` = their sum; detector `[1,4+c,N]`; Ultralytics metadata re-appended to fp16 files) | `packages/ultralytics_yolo` (Kotlin), `Embedder.kt`, `model_file_kind.dart` | phone checks: `integration_test/*_check_test.dart` |
-| pooling rule copy in `reproduce_track_conf.py` (whole list only; not the country narrowing of app round 373) | `track_fusion.dart` | by hand |
+| pooling and country-narrowing rule copy in `reproduce_track_conf.py` | `track_fusion.dart` (`Scorer.fuse`, `narrow`) | by hand; checked 2026-11-16 against the app's code on made-up crops of the v3 pack (whole list, DE with neighbours, MT): same results |
 | `country_neighbours.py`: `load_countries`, `unit_code`, `UNIT_CODES`, Natural Earth file (`NE_URL`, `NE_SHA256`): the codes of the packs' `regions` | `tool/country_borders/make_country_borders.py` imports them -> `assets/country_borders.json` (same codes) | re-run the app's tool after a change; rename only with a note to the app |
 | `bioclip_export/app_rules.py`: defaults (48 px, 10 crops, drop factor 10) and top-down answer | `lib/fauna_pulse/identification/identification_assets.dart`, `track_fusion.dart` | by hand |
 | app behaviour named on the cards, kept broad on purpose (owner, 2026-10-16): cls card "How FaunaPulse uses the scores" (no formula, points to the app docs); detector cards "the app does NMS", 640 px input, square area of interest (v8 card); every card's "Use in FaunaPulse" (menu path, "versions after v0.8.0-alpha.1") | the matching app code and screens | by hand; editing a card on the Hub is a new commit and never breaks the pinned file links |

@@ -10,7 +10,7 @@ This file provides guidance to AI coding agents (Claude Code, codex, etc.) when 
    cards, what must stay in sync with the app). It is enough to start most tasks; open other files
    only as the task needs them.
 2. Keep it current: when a change alters what is true, replace the affected text (no history
-   there, history is git; keep it under ~50k characters). When the reason for a choice is not
+   there, history is git; keep it under 25,000 characters, as it is read at every session start). When the reason for a choice is not
    obvious, give it in one short clause next to the fact, or in a code comment.
 3. No decision logs, journals or notes about the maintainer's thinking in tracked files: this
    repository and the app's are public. Reports and plans that are not public yet go in
