@@ -1,7 +1,7 @@
 # Agent overview (state only)
 
 What is true now, where it lives, and the reason where it is not obvious. Replace text when it
-changes; history is git. Keep under 25,000 characters.
+changes; history is git. Size limit: `AGENTS.md`.
 
 ## Purpose
 
