@@ -136,7 +136,7 @@
         "url": "https://huggingface.co/Valen-Peregrine/bioclip-2-tflite/resolve/c8c69a0a2abca6998efd6d8398435f894c8834a1/bioclip-2_pollinator-orders-europe_v3.fpack"
       }
     },
-    "card_commit": "c8c69a0a2abca6998efd6d8398435f894c8834a1"
+    "card_commit": "b1b97c975184050fba17ee2b358b971489d77703"
   },
   "Valen-Peregrine/insectdct-cls-v7-tflite": {
     "files": {
