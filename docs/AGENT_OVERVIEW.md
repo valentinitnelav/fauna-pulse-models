@@ -64,14 +64,13 @@ Face (table below) and the source models from their authors' links (model cards)
 - Hugging Face cache (BioCLIP 2 source weights 1.7 GB, TreeOfLife-200M species names 2.8 GB):
   `/media/$USER/PortableSSD/.cache/huggingface/hub`, removed from `$HOME/.cache/huggingface`.
   Use it in place with `export HF_HUB_CACHE=/media/$USER/PortableSSD/.cache/huggingface/hub`
-  (tested offline 2026-10-16: open_clip loads BioCLIP 2, `build_label_pack.py` finds the names).
+  (works offline).
   Set `HF_HUB_CACHE`, not `HF_HOME`: the login token stays in `$HOME/.cache/huggingface`.
   Without the SSD the scripts download the same files again (internet, 4.5 GB).
 - BioCLIP 2.5 sources (`open_clip_model.safetensors` 3.9 GB, `txt_emb_bioclip-2.5-vith14.npy`
   3.3 GB): `/media/$USER/PortableSSD/insect-model-zoo/weights/bioclip-2.5/` (`--weights`,
   `--embeddings-dir`); insectDCT V7 zip and `.pth`: `.../weights/insectdct-cls-v7/`.
-- Files tried on the phone: `$HOME/InsectDetectApp/ForFaunaPulse/models/` (2.6 GB, still on the laptop);
-  `$HOME/InsectDetectApp/weights/` is an older subset.
+- Files tried on the phone: `$HOME/InsectDetectApp/ForFaunaPulse/models/` (2.6 GB, laptop).
 - Those folders also hold collaborator models: publish nothing that is not in the table below
   without the maintainer's explicit clearance.
 
@@ -88,9 +87,8 @@ drift apart). Files are published under the app's naming rule, because a publish
 never change (10 of the 12 catalogue files got a new name, same bytes; `publish_hf.py` matches them to the catalogue by SHA-256), each
 repo also gets the original model's `LICENSE` (`hf_cards/<repo>/LICENSE`, verbatim upstream text).
 Card sources: `hf_cards/<repo>/README.md`. Provenance (authors, citations, licences, source
-weights and their SHA-256) was researched and verified on 2026-10-15; the cards hold the result.
-All source files were downloaded again from the authors' own links and SHA-256-checked on
-2026-10-16 (byte-identical); the cards name only those links.
+weights with SHA-256) is on the cards, from the authors' own links only (all re-downloaded and
+SHA-256-checked 2026-10-16).
 
 | HF repo | Files (published name) | Catalogue name today | Licence | Status |
 |---|---|---|---|---|
@@ -98,13 +96,11 @@ All source files were downloaded again from the authors' own links and SHA-256-c
 | `flatbug-tflite` | `flatbug-n_640_fp16.tflite` (+ `.json`), `flatbug-s_640_fp16.tflite` (+ `.json`; new, gets a catalogue file when the links go in) | same / none | MIT | public, `0ab3ca4` |
 | `insectdct-v8-tflite` | `insectdct-v8s_640_fp16.tflite` (+ `.json`) | `insectdct-v8-s_640_fp16.tflite` | GPL-3.0 | public, `f5ac1bb` |
 | `insectdct-cls-v7-tflite` | `insectdct-cls-v7-eff2s_224_fp16.tflite`, `.fpack` (+ `.json`) | `insectdct-cls-v7_eff2s_fp16.*` | GPL-3.0 | public, `8ded6d9` |
-| `bioclip-2-tflite` | `bioclip-2_224_fp16.tflite` (+ `.json`), `bioclip-2_pollinator-orders-europe_v1.fpack`, `bioclip-2_flower-visitors-32fam_v1.fpack`, `bioclip-2_mammals-birds-world_v1.fpack`; v2: `bioclip-2_pollinator-orders-europe_v2.fpack`, `bioclip-2_mammals-birds-world_v2.fpack`; v3: `bioclip-2_pollinator-orders-europe_v3.fpack` | `bioclip-2_image_fp16_4d.tflite`, `bioclip2_*_v1.fpack`; v2 same, v3 none | MIT (packs CC0-1.0, common names GBIF CC BY 4.0) | public, `cbf9b26`; v2 `6a2961e`; v3 `c8c69a0` |
+| `bioclip-2-tflite` | `bioclip-2_224_fp16.tflite` (+ `.json`), `bioclip-2_pollinator-orders-europe_v1.fpack`, `bioclip-2_flower-visitors-32fam_v1.fpack`, `bioclip-2_mammals-birds-world_v1.fpack`; v2: `bioclip-2_pollinator-orders-europe_v2.fpack`, `bioclip-2_mammals-birds-world_v2.fpack`; v3: `bioclip-2_pollinator-orders-europe_v3.fpack` | `bioclip-2_image_fp16_4d.tflite`, `bioclip2_*_v1.fpack`; v2, v3 same | MIT (packs CC0-1.0, common names GBIF CC BY 4.0) | public, `cbf9b26`; v2 `6a2961e`; v3 `c8c69a0` |
 | `bioclip-2.5-tflite` | `bioclip-2.5_224_fp16.tflite` (+ `.json`), `bioclip-2.5_pollinator-orders-europe_v1.fpack`, `bioclip-2.5_flower-visitors-32fam_v1.fpack`; v2: `bioclip-2.5_pollinator-orders-europe_v2.fpack` | `bioclip-25_image_fp16.tflite`, `bioclip25_*_v1.fpack`; v2 none yet | MIT | public, `dd1f5b7`; v2 `2f54024` |
 
-Label packs v2 (2026-10-26, independently reviewed; local files `bioclip_export/out/packs_v2/`
-on the SSD):
-Europe for BioCLIP 2 and 2.5, mammals and birds. The app's catalogue does not offer them yet
-(an app round). The 32-family packs are an unmaintained demo (no v2); their v1 files stay.
+Label packs v2 (2026-10-26; SSD `bioclip_export/out/packs_v2/`): Europe for BioCLIP 2 and 2.5,
+mammals and birds. The 32-family packs are an unmaintained demo (no v2); their v1 files stay.
 
 Facts that are easy to get wrong (verified 2026-10-15, sources on the cards):
 - Sources = the authors' own links only (owner's rule, 2026-10-16): flat-bug from the ERDA store
@@ -117,9 +113,8 @@ Facts that are easy to get wrong (verified 2026-10-15, sources on the cards):
   8.3 names its dynamic-range TFLite `_int8.tflite`; no calibration pictures were involved.
 - flat-bug N and S are the 2024 YOLOv8-seg models of the paper. The authors' default since
   flat-bug 1.2 (July 2026) is `flat_bug_M_v2.pt`: YOLO26m-seg, checkpoint 54.6 MB, trained at
-  1024 px for 300 epochs on the flatbug data (no new data named in the release or PR #153);
-  on the authors' validation set vs the old M: precision 92.3 vs 92.4, recall 96.4 vs 95.0, F1
-  93.7 vs 93.1. No N or S v2 exists. Not converted (owner did not ask for it): about 45-50 MB
+  1024 px for 300 epochs on the flatbug data; on the authors' validation set vs the old M:
+  precision 92.3 vs 92.4, recall 96.4 vs 95.0, F1 93.7 vs 93.1. No N or S v2 exists. Not converted (owner did not ask): about 45-50 MB
   as fp16 (estimate), about 3 times the compute of S; a YOLO26 export should pass
   `nms=None` (raw head; the app reads both heads).
 - insectDCT "v8" = the authors' detection dataset version 8 (network YOLO11s), not YOLOv8;
@@ -134,12 +129,12 @@ Facts that are easy to get wrong (verified 2026-10-15, sources on the cards):
   result; new `.fpack` SHA-256 `6d5ec961...`, which the catalogue takes when the links go in). Label packs
   pair by file name and size only.
 
-Uploads: one repo per step, `--upload --repo X --private`, owner checks, then public (with
-`--private` a new collection is created private too). HF commits: `publish/published.json`; the
-app's catalogue links match it (round 314).
+Uploads: one repo per step (`--upload --repo X`; a new repo with `--private` first, owner checks,
+then public). HF commits: `publish/published.json`; the app's catalogue links match it.
 
 Label pack v3 (BioCLIP 2 Europe, on HF 2026-11-15) = v2 plus blocks `gbif` and
-`regions` (`bioclip_export/README.md` 3c), read by app rounds 372-374.
+`regions` (`bioclip_export/README.md` 3c), read by app rounds 372-374; in the app's catalogue
+since round 375 (v2 moved to its former name lists).
 
 The MegaDetector file is also a GitHub release asset of the app (`v0.8.0-alpha.1`); that asset
 stays online forever. The owner's older HF repo `flower_visitor_order_detector` is unrelated.
@@ -185,11 +180,12 @@ stays online forever. The owner's older HF repo `flower_visitor_order_detector` 
 
 | Here | App ($APP) | Check |
 |---|---|---|
-| `.fpack` writer `bioclip_export/fpack.py` (optional blocks `gbif`, `regions`: bit order in `rows_to_bits`) | reader `lib/fauna_pulse/identification/label_pack.dart` (header comment = format notes; ignores the blocks today) | fixtures `test/fauna_pulse/fixtures/tiny_pack.fpack`, `tiny_classes.fpack`, tests `label_pack_test.dart`, `track_fusion_test.dart` |
+| `.fpack` writer `bioclip_export/fpack.py` (optional blocks `gbif`, `regions`: bit order in `rows_to_bits`) | reader `lib/fauna_pulse/identification/label_pack.dart` (header comment = format notes) | fixtures `test/fauna_pulse/fixtures/tiny_pack.fpack`, `tiny_pack_regions.fpack`, `tiny_classes.fpack`, tests `label_pack_test.dart`, `track_fusion_test.dart` |
 | `fpack.class_probabilities` | `lib/fauna_pulse/identification/track_fusion.dart` (same formula) | `track_fusion_test.dart` uses `test_scores`/`test_probs` stored in the fixture |
 | output names of all export scripts | naming rule, `tool/model_downloads/README.md` | `update_catalogue.py --names` |
 | model input/output layout (NCHW 0..1; embedder output `[1,n]`; classifier heads concatenated, `dim` = their sum; detector `[1,4+c,N]`; Ultralytics metadata re-appended to fp16 files) | `packages/ultralytics_yolo` (Kotlin), `Embedder.kt`, `model_file_kind.dart` | phone checks: `integration_test/*_check_test.dart` |
-| pooling rule copy in `reproduce_track_conf.py` | `track_fusion.dart` | by hand |
+| pooling rule copy in `reproduce_track_conf.py` (whole list only; not the country narrowing of app round 373) | `track_fusion.dart` | by hand |
+| `country_neighbours.py`: `load_countries`, `unit_code`, `UNIT_CODES`, Natural Earth file (`NE_URL`, `NE_SHA256`): the codes of the packs' `regions` | `tool/country_borders/make_country_borders.py` imports them -> `assets/country_borders.json` (same codes) | re-run the app's tool after a change; rename only with a note to the app |
 | `bioclip_export/app_rules.py`: defaults (48 px, 10 crops, drop factor 10) and top-down answer | `lib/fauna_pulse/identification/identification_assets.dart`, `track_fusion.dart` | by hand |
 | app behaviour named on the cards, kept broad on purpose (owner, 2026-10-16): cls card "How FaunaPulse uses the scores" (no formula, points to the app docs); detector cards "the app does NMS", 640 px input, square area of interest (v8 card); every card's "Use in FaunaPulse" (menu path, "versions after v0.8.0-alpha.1") | the matching app code and screens | by hand; editing a card on the Hub is a new commit and never breaks the pinned file links |
 

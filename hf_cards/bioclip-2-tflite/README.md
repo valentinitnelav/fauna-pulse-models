@@ -68,10 +68,10 @@ Imageomics Institute.
     names have at least 3 GBIF presence records there (fossil specimens left out), with each
     country's neighbours (a shared land border, or at most 100 km apart over the sea, plus two
     pairs added by hand), so an app can narrow the names to the country where a session was
-    recorded (FaunaPulse: in a coming version). GBIF queried 28 October 2026. The presence-only,
-    no-fossil rule is for the country lists: the whole list is v2's, for which every GBIF record
-    counted (absence records and fossil specimens too), so 163 of its names would not be in a
-    Europe list made with that rule today (v3 keeps them, as it keeps all of v2's rows).
+    recorded. GBIF queried 28 October 2026. Only the country lists leave out fossil specimens
+    and records of absence (a species looked for and not found). The whole list is v2's
+    unchanged, for which every GBIF record counted: 163 of its names (0.5%) reach 3 records in
+    Europe only through fossil specimens or records of absence. They are still in v3.
   - The v2 and v3 packs use the names as described in [Names](#names). The v1 packs (same selections;
     the v1 Europe list was made on 20 September 2026 with 35,264 names and an earlier version of
     the same method) use every row as published. They stay here unchanged because installed
