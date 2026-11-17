@@ -57,48 +57,54 @@ Imageomics Institute.
   for FaunaPulse, embedded with the BioCLIP 2 text tower (arthropod packs: flower, leaf, shadow,
   debris, blurry, spider web; mammals and birds pack: camera-trap scenes such as bare ground,
   vegetation, a person or a vehicle).
-  - `bioclip-2_pollinator-orders-europe_v2.fpack`: flies, bees and wasps, beetles, butterflies
-    and moths (Diptera, Hymenoptera, Coleoptera, Lepidoptera) with at least 3 GBIF records in
-    Europe, counted per accepted species of the Catalogue of Life (34,978 names; GBIF queried
-    26 October 2026).
-  - `bioclip-2_mammals-birds-world_v2.fpack`: mammals and birds of the world (17,130 names).
-  - `bioclip-2_pollinator-orders-europe_v3.fpack`: the v2 Europe pack (same 34,978 names, same
-    vectors) with two additions in its header: the GBIF species of every name (Catalogue of Life
-    key and accepted name, as `insect-detect-post` v1.1.0 gives them) and, per country, which
-    names have at least 3 GBIF presence records there (fossil specimens left out), with each
-    country's neighbours (a shared land border, or at most 100 km apart over the sea, plus two
-    pairs added by hand), so an app can narrow the names to the country where a session was
-    recorded. GBIF queried 28 October 2026. Only the country lists leave out fossil specimens
-    and records of absence (a species looked for and not found). The whole list is v2's
-    unchanged, for which every GBIF record counted: 163 of its names (0.5%) reach 3 records in
-    Europe only through fossil specimens or records of absence. They are still in v3.
+  **Current packs** (use these):
   - `bioclip-2_pollinator-orders-europe_v4.fpack`, `bioclip-2_pollinator-orders-north-america_v1.fpack`,
     `bioclip-2_pollinator-orders-south-america_v1.fpack`, `bioclip-2_pollinator-orders-africa_v1.fpack`,
     `bioclip-2_pollinator-orders-asia_v1.fpack`, `bioclip-2_pollinator-orders-oceania_v1.fpack`:
-    the same four orders with at least 3 GBIF presence records in the continent (GBIF's
-    continents; North America includes Central America and the Caribbean), fossil specimens and
-    records of absence left out, counted per accepted species of the Catalogue of Life (35,014 /
-    56,446 / 23,660 / 22,358 / 37,897 / 23,255 names; GBIF queried 17 November 2026). Each holds,
-    like v3, the GBIF species of every name and per country the names with at least 3 presence
-    records there, with each country's neighbours. Species that the Catalogue of Life marks as
-    extinct and of which GBIF holds no observation of a living individual are left out (Europe:
-    114 names). Europe v4 is a new count, not v3 with
-    additions: 511 names of v3 are not in it and 551 are new. A country near a continent border
-    can have part of its species only in the neighbouring continent's list (for example
-    Indonesia: 4,665 of its 5,523 names are in the Asia list, 2,191 in the Oceania list).
-  - The v2 and v3 packs use the names as described in [Names](#names). The v1 packs (same selections;
-    the v1 Europe list was made on 20 September 2026 with 35,264 names and an earlier version of
-    the same method) use every row as published. They stay here unchanged because installed
-    apps pin them.
-  - `bioclip-2_flower-visitors-32fam_v1.fpack` (38,570 names) is a **demo, not maintained**: it
-    shows that a pack can be built from a list of taxa given by the user. It holds every species,
-    worldwide, of 32 hand-picked families. It is not a justified selection of flower visitors:
-    of its insects in the four main orders only 14% have 3 or more GBIF records in Europe, and it
-    leaves out flower visitors such as the bee family Melittidae, longhorn beetles and most
-    moths. For Europe, use the Europe pack.
-  - Inside each v1 pack, its `pack_id` keeps the name it was built with (for example
-    `bioclip2_pollinator_orders_europe_v1`); a v2 or v3 pack's `pack_id` is its file name. The file
-    names follow the FaunaPulse naming rule.
+    flies, bees and wasps, beetles, butterflies and moths (Diptera, Hymenoptera, Coleoptera,
+    Lepidoptera) with at least 3 GBIF presence records in the continent (GBIF's continents; North
+    America includes Central America and the Caribbean), fossil specimens and records of absence
+    left out, counted per accepted species of the Catalogue of Life (35,014 / 56,446 / 23,660 /
+    22,358 / 37,897 / 23,255 names; GBIF queried 17 November 2026). Each holds the GBIF species of
+    every name (Catalogue of Life key and accepted name) and, per country, the names with at least
+    3 presence records there, with each country's neighbours (a shared land border, or at most
+    100 km apart over the sea, plus two pairs added by hand), so an app can narrow the names to
+    the country where a session was recorded. Species that the Catalogue of Life marks as extinct
+    and of which GBIF holds no observation of a living individual are left out (Europe: 114
+    names).
+    **Why one pack per continent:** only for size on the phone. FaunaPulse keeps and compares
+    every name of the chosen pack for each crop, so memory and time grow with the number of
+    names. A world pack of these four orders (about 193,000 names) is too large for the app on
+    an ordinary phone today; a continent pack (22,000 to 56,000 names) is not. The continents
+    are GBIF's, a practical cut, not a biogeographic claim: species do not follow them, and a
+    country near a continent border can have part of its species only in the neighbouring
+    continent's pack (for example Indonesia: 4,665 of its 5,523 names are in the Asia pack, 2,191
+    in the Oceania pack). Use the pack that holds the most species of your study area; a single
+    world pack is planned once the app can load only the names of the chosen countries.
+  - `bioclip-2_mammals-birds-world_v2.fpack`: mammals and birds of the world (17,130 names).
+
+  **Older versions** (kept unchanged because installed apps pin them; not for new work):
+  - `bioclip-2_pollinator-orders-europe_v3.fpack`: replaced by Europe v4. The v2 Europe list
+    (same 34,978 names, same vectors) plus the GBIF species of every name (as `insect-detect-post`
+    v1.1.0 gives them, Catalogue of Life release COL26.6 XR) and per-country lists (GBIF queried
+    28 October 2026; only the country lists leave out fossil specimens and records of absence,
+    so 163 names (0.5%) of the whole list reach 3 records in Europe only through such records).
+    v4 is a new count, not v3 with additions: 511 names of v3 are not in v4 and 551 are new.
+  - `bioclip-2_pollinator-orders-europe_v2.fpack`: the four orders with at least 3 GBIF records
+    in Europe (34,978 names; GBIF queried 26 October 2026); no GBIF species and no country lists.
+  - `bioclip-2_pollinator-orders-europe_v1.fpack` (35,264 names, 20 September 2026, an earlier
+    version of the same method) and `bioclip-2_mammals-birds-world_v1.fpack`.
+  - The v2 to v4 packs and the continent packs use the names as described in [Names](#names);
+    the v1 packs use every row as published. Inside each v1 pack, its `pack_id` keeps the name
+    it was built with (for example `bioclip2_pollinator_orders_europe_v1`); in the later packs
+    the `pack_id` is the file name. The file names follow the FaunaPulse naming rule.
+
+  **Demo, not maintained:**
+  - `bioclip-2_flower-visitors-32fam_v1.fpack` (38,570 names) shows that a pack can be built
+    from a list of taxa given by the user. It holds every species, worldwide, of 32 hand-picked
+    families. It is not a justified selection of flower visitors: of its insects in the four
+    main orders only 14% have 3 or more GBIF records in Europe, and it leaves out flower visitors
+    such as the bee family Melittidae, longhorn beetles and most moths. Use a continent pack.
 - `.json`: the export manifest. Its `"file"` field gives the name before upload
   (`bioclip-2_image_fp16.tflite`); same SHA-256.
 - `LICENSE`: the MIT licence of BioCLIP 2, copied from the authors' code repository.
@@ -107,7 +113,7 @@ Imageomics Institute.
 
 The names and their taxonomy are those of TreeOfLife-200M, as the BioCLIP 2 authors publish
 them: no name is corrected, added or removed. A few rows are not in the plain form "genus,
-epithet". In the v2 and v3 packs the app uses such a row only down to the rank where it is still plain:
+epithet". In the v2 and later packs (and the continent packs) the app uses such a row only down to the rank where it is still plain:
 
 | Row | Example (row of `txt_emb_species.json`) | Used down to |
 |---|---|---|
@@ -122,7 +128,7 @@ file and its names as published), so every change can be checked and undone;
 plain row keeps whatever placement the source gives it, and a row with an empty order or family
 (343 rows of the mammals and birds pack) counts only down to the rank above the gap.
 
-To cite the names of a v2 or v3 pack: "TreeOfLife-200M (https://doi.org/10.57967/hf/8980), names file
+To cite the names of a v2 or later pack: "TreeOfLife-200M (https://doi.org/10.57967/hf/8980), names file
 `embeddings/txt_emb_species.json` (SHA-256 4648928b...), names used as published. The dataset
 card lists kingdom Metazoa as unresolved; it is read as Animalia (NCBI Taxonomy lists Animalia as
 a synonym). Rows not in the plain form are used only down to genus or family, as listed in the
@@ -209,7 +215,7 @@ the continent lists also `make_gbif_mapping.py`),
   rows are a FaunaPulse addition that BioCLIP 2 was not designed with.
 - Names and taxonomy are as published in TreeOfLife-200M, so a name may be outdated or a
   synonym. The v1 packs also use the rows described in [Names](#names) as published (for
-  example the species answer "Bombus spec" in the 32-family demo pack); the v2 and v3 packs use them
+  example the species answer "Bombus spec" in the 32-family demo pack); the later packs use them
   only down to genus or family.
 - The country lists of the v3, v4 and continent packs show where GBIF holds records, which depends on how well a
   country is recorded (well in Europe, much less in many tropical countries), and species do not
@@ -234,7 +240,7 @@ the continent lists also `make_gbif_mapping.py`),
   Backbone Taxonomy (CC BY 4.0, https://doi.org/10.15468/39omei), so please credit GBIF when you
   reuse them. The six "none of these" rows of each pack (short descriptions such as a leaf or
   bare ground, embedded with the BioCLIP 2 text tower) were added for FaunaPulse on the same
-  CC0 1.0 terms. The GBIF keys and accepted names in the v3 pack come from the Catalogue of Life
+  CC0 1.0 terms. The GBIF keys and accepted names in the v3, v4 and continent packs come from the Catalogue of Life
   (CC BY 4.0, please cite it as below); its country lists are derived from GBIF.org occurrence
   counts and Natural Earth borders (public domain).
 
