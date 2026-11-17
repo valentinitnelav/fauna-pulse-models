@@ -26,13 +26,23 @@ and for pbar alike: q = p on the sink rows, 0 on species rows outside the list, 
 (1 - none) * p_i / sum(p over the listed species rows) on the listed ones (from the scores in
 log space when that sum is below 1e-30). A list without a single row of the pack never narrows.
 
+Orders and families (--taxa, the app's round 377 rule, name_list_region.dart resolveNameList and
+label_pack.dart PackTaxa): a row (not a "none of these" row) has an order when its kingdom,
+phylum, class and order are all filled in, and a family when the family is filled in too. The
+chosen names that are an order or a family of some row are used (matching by exact name); a row
+is kept when its order or its family is one of them. With --countries as well, only rows in both
+are kept; when no row is in both, the whole pack is used (the app records `all`, `all` then).
+No usable name: no narrowing. The scoring is the country rule above, with these rows as the
+listed species rows.
+
 Usage (from this folder):
   python3 reproduce_track_conf.py <session_dir> <pack.fpack> [--model STEM]
       [--tau 0.6] [--drop-factor 10] [--temperature T] [--countries DE+AT+...]
-      [--track ID] [--crops]
+      [--taxa Apidae+Syrphidae] [--track ID] [--crops]
 
 --countries takes what the app used, the last column of tracks_<pack>.csv
-(`name_list_countries`: `DE+AT+...`, or `all` for the whole list). Needs numpy and the sibling
+(`name_list_countries`: `DE+AT+...`, or `all` for the whole list), --taxa the very last one
+(`name_list_taxa`: `Apidae+Syrphidae`, or `all`). Needs numpy and the sibling
 fpack.py. Compare with <session>/identification/tracks_<pack>.json.
 """
 import argparse
@@ -80,8 +90,8 @@ def softmax(z):
 
 
 def listed_rows(hdr, codes, sink):
-    """Species rows GBIF lists in any of [codes] (the pack's `regions` block), or None = the
-    whole pack: no codes, or a list without a single row (the app never narrows then)."""
+    """Mask of the species rows GBIF lists in any of [codes] (the pack's `regions` block), or
+    None = the whole pack: no codes, or a list without a single row (the app never narrows then)."""
     if not codes:
         return None
     countries = (hdr.get("regions") or {}).get("countries") or {}
@@ -94,7 +104,24 @@ def listed_rows(hdr, codes, sink):
             continue
         mask |= bits_to_rows(countries[c]["rows"], hdr["rows"])
     mask &= ~sink
-    return np.nonzero(mask)[0] if mask.any() else None
+    return mask if mask.any() else None
+
+
+def taxa_rows(labels, names, sink):
+    """(mask, used) for the app's PackTaxa.rowBits: rows whose order or family is one of the
+    chosen [names]. mask None = no narrowing (no chosen name is an order or a family here)."""
+    order = [l[3] if all(l[:4]) else "" for l in labels]
+    family = [l[4] if all(l[:5]) else "" for l in labels]
+    known = {o for o, s in zip(order, sink) if o and not s} | {f for f, s in zip(family, sink) if f and not s}
+    used = sorted(set(n for n in names if n in known))
+    for n in names:
+        if n not in known:
+            print(f"note: no order or family of this pack is named {n}; it adds no names (as in the app)")
+    if not used:
+        return None, []
+    wanted = set(used)
+    mask = np.array([not s and (o in wanted or f in wanted) for o, f, s in zip(order, family, sink)])
+    return mask, used
 
 
 def narrow(logits, whole, kept, sink):
@@ -123,6 +150,8 @@ def main():
     ap.add_argument("--temperature", type=float, default=None, help="override the pack's calibration temperature")
     ap.add_argument("--countries", default="all",
                     help="narrow to these country lists, as the app records them: DE+AT+... (or DE,AT); all = whole pack")
+    ap.add_argument("--taxa", default="all",
+                    help="narrow to these orders and families, as the app records them: Apidae+Syrphidae (or a,b); all = every one")
     ap.add_argument("--track", type=int, default=None, help="only this track id")
     ap.add_argument("--crops", action="store_true", help="also print the per-crop table")
     a = ap.parse_args()
@@ -140,7 +169,19 @@ def main():
     sink = np.array([l[0] == "none" for l in labels])
     codes = [] if a.countries.strip().lower() == "all" else \
         [c.strip().upper() for c in a.countries.replace(",", "+").split("+") if c.strip()]
-    kept = listed_rows(hdr, codes, sink)
+    in_countries = listed_rows(hdr, codes, sink)
+    names = [] if a.taxa.strip().lower() == "all" else \
+        [t.strip() for t in a.taxa.replace(",", "+").split("+") if t.strip()]
+    in_taxa, used = taxa_rows(labels, names, sink)
+    if in_countries is not None and in_taxa is not None:
+        both = in_countries & in_taxa
+        mask = both if both.any() else None  # no common names: the whole pack, as in the app
+        if mask is None:
+            print("note: no name is in both the countries and the taxa: the whole pack is used "
+                  "(the app records `all`, `all`, `no_common_names`)")
+    else:
+        mask = in_countries if in_countries is not None else in_taxa
+    kept = None if mask is None else np.nonzero(mask)[0]
 
     crops, E = load_embeddings(a.session_dir, a.model)
     by_track = defaultdict(list)
@@ -148,8 +189,12 @@ def main():
         by_track[c.get("track_id")].append(c)
     print(f"pack {hdr.get('pack_id')} ({len(labels)} names), scale {scale:.1f} (temperature {temperature}), "
           f"tau {a.tau}, drop factor {a.drop_factor}, {len(crops)} crops in {len(by_track)} track ids")
-    print("names on offer: " + ("the whole pack" if kept is None else f"{len(kept)} species rows of {'+'.join(codes)}"
-                                f" (+ {int(sink.sum())} 'none of these' rows)"))
+    if kept is None:
+        offer = "the whole pack"
+    else:
+        within = [x for x, m in (("+".join(used), in_taxa), ("+".join(codes), in_countries)) if m is not None]
+        offer = f"{len(kept)} species rows of {' within '.join(within)} (+ {int(sink.sum())} 'none of these' rows)"
+    print("names on offer: " + offer)
 
     for tid in sorted(by_track, key=lambda t: (t is None, t)):
         if a.track is not None and tid != a.track:
