@@ -233,6 +233,47 @@ shapely; rerun only to change the rule). Natural Earth units without an ISO code
 Cyprus) take the code GBIF's reverse geocoder gives them. How much a country narrows the Europe
 list (v3): see 3c.
 
+**The whole world, and lists per continent (November 2026).** `--world` counts the records of
+the whole world instead of a region (GBIF does not answer one request for all arthropods of the
+world, so the count is made order by order). `--min-occurrences 1` keeps every species GBIF has a
+presence record of. `--leave-out-extinct` leaves out species that the Catalogue of Life marks as
+extinct and that GBIF holds no observation of a living individual of; the mark alone also sits
+on some living species, and the fossil-specimen rule alone misses fossils filed as preserved
+specimens. The names left out are written to `<list>_extinct_left_out.csv` (961 for the world
+list, nearly all amber ants and fossil flies and beetles). One country-list file serves every
+list of the same orders:
+
+```bash
+M=out/mapping_col26.10xr/bioclip_gbif_species_mapping_Arthropoda.csv   # see the next paragraph
+O=Diptera,Hymenoptera,Coleoptera,Lepidoptera
+P=out/packs_2026-11
+python build_region_species_list.py --world --min-occurrences 1 --leave-out-extinct --orders $O --mapping-csv $M --out $P/species_world_4orders.csv
+python build_region_species_list.py --continent north_america --leave-out-extinct --orders $O --mapping-csv $M --out $P/species_north-america_4orders.csv
+python build_country_lists.py --species-csv $P/species_north-america_4orders.csv --min-occurrences 3 --mapping-csv $M --out $P/countries_4orders.json
+python build_label_pack.py --model bioclip-2 --classes Insecta --species-csv $P/species_north-america_4orders.csv \
+  --country-lists $P/countries_4orders.json --pack-id bioclip-2_pollinator-orders-north-america_v1 --out $P
+python check_pack_blocks.py $P/bioclip-2_pollinator-orders-north-america_v1.fpack --countries US,CA,MX
+```
+
+The continents are GBIF's (`europe`, `north_america` with Central America and the Caribbean,
+`south_america`, `africa`, `asia`, `oceania`; boundaries: https://github.com/gbif/continents). A
+country near a continent border can have many of its species in the neighbouring continent's
+list only (Indonesia: 4,665 of its 5,523 names are in the Asia list, 2,191 in Oceania's); the
+app warns when a list holds under 80 % of a country's GBIF list.
+
+**When GBIF moves to a newer Catalogue of Life release.** Species keys belong to one release:
+when GBIF moved from COL26.6 XR to COL26.10 XR in November 2026, 929 of the 34,974 names of
+the Europe list got another key although their names stayed (*Speyeria aglaja*: `93N9L`, then
+`4YKG8`), so a mapping of the older release misses such species in GBIF's counts.
+`build_region_species_list.py` and `build_country_lists.py` therefore stop when GBIF's release
+is not the mapping's. `make_gbif_mapping.py` then makes the mapping for the current release by
+running insect-detect-post's own mapping script unchanged (it needs his environment; about
+300,000 name requests to GBIF, 7.5 hours with the retry passes on 17 November 2026;
+`--model bioclip-2.5` maps that model's names file), and `--mapping-csv` gives it to the two
+scripts. Lists and packs record the mapping they were made with (SHA-256, COL release, the
+commit of insect-detect-post). A published pack is not affected: its names and country lists
+stay as built, and its keys are those of the release named in its header.
+
 **Limits.** A country list says where GBIF holds records of a species, and records follow where
 people observe, collect and digitise. Europe, North America and Australia are well recorded; much
 of the tropics, Africa and Asia is not (e.g.: names of the four orders with at least 3 records, 28
@@ -244,6 +285,29 @@ by this rule. The neighbour rule (100 km, map units 1:10m, distances on a local 
 is one simple choice among many, not an ecological boundary.
 
 ### 3c. Packs built so far
+
+November 2026 (built 2026-11-17, not on Hugging Face): the four orders for the whole world and
+per continent, made with the mapping of COL26.10 XR and GBIF as queried that day (presence
+records, no fossil specimens, extinct species without an observation left out,
+`--name-rules higher-rank`), each with the `gbif` and `regions` blocks:
+
+| Pack id | Region | Names | Size (header) | Rows in no country list | Opens in the app |
+|---|---|---|---|---|---|
+| `bioclip-2_pollinator-orders-world_v2` | world, at least 1 record | 192,886 | 327.7 MB (31.4 MB) | 36,250 | no (header above the app's 16 MB limit): for PC use |
+| `bioclip-2_pollinator-orders-europe_v4` | Europe, at least 3 records | 35,014 | 59.6 MB (5.8 MB) | 457 | yes |
+| `bioclip-2_pollinator-orders-north-america_v1` | North America, at least 3 | 56,446 | 96.0 MB (9.2 MB) | 425 | yes |
+| `bioclip-2_pollinator-orders-south-america_v1` | South America, at least 3 | 23,660 | 40.2 MB (3.9 MB) | 558 | yes |
+| `bioclip-2_pollinator-orders-africa_v1` | Africa, at least 3 | 22,358 | 38.0 MB (3.7 MB) | 821 | yes |
+| `bioclip-2_pollinator-orders-asia_v1` | Asia, at least 3 | 37,897 | 64.4 MB (6.2 MB) | 963 | yes |
+| `bioclip-2_pollinator-orders-oceania_v1` | Oceania, at least 3 | 23,255 | 39.5 MB (3.8 MB) | 67 | yes |
+
+The world list holds every name of the six continent lists (158,125 names) and 34,761 more,
+mostly species with 1 or 2 records. Distinct names per country in the world list, alone and
+with its neighbours: United States 39,351 and 58,636; Germany 16,937 and 28,534; Australia
+16,590 and 17,952; Brazil 10,242 and 19,702; Japan 7,503 and 19,366; South Africa 7,220 and
+9,053; India 6,530 and 13,234; Kenya 2,911 and 5,112. Europe v4 against v3: 511 names of v3 are
+not in v4 and 551 are new (v3 keeps the rows of v2, counted in October with the older mapping;
+GBIF's name matching no longer finds the names with two genera in one row, 72 rows of v3).
 
 v3 (2026-10-28, on Hugging Face since 2026-11-15): `bioclip-2_pollinator-orders-europe_v3`, the v2 Europe pack
 byte for byte (rows, names, vectors) plus the blocks `gbif` (every row has a key: 34,978 rows,
@@ -448,6 +512,7 @@ References:
 | `fpack.py` | the pack container format (also writes the app's test fixture) |
 | `build_region_species_list.py` | GBIF occurrence facets + TreeOfLife-to-GBIF mapping -> regional species CSV |
 | `build_country_lists.py` | one GBIF facet per country -> per-country species keys for `--country-lists` |
+| `make_gbif_mapping.py` | runs insect-detect-post's mapping script for the Catalogue of Life release GBIF uses now -> mapping CSV for `--mapping-csv` |
 | `add_pack_blocks.py` | an existing pack + its species list (+ country lists) -> the same pack with the `gbif` and `regions` blocks, vectors copied byte for byte |
 | `country_neighbours.py` | Natural Earth borders -> `country_neighbours.csv` + `.json` (tracked neighbour table) |
 | `check_pack_blocks.py` | checks of a pack's `gbif` and `regions` blocks, the app's header limits, and v3 against v2 |

@@ -29,10 +29,11 @@ import path and breaks `from fpack import ...` and the sibling imports.
 | `bioclip_export/export_image_tower.py` | BioCLIP 1/2/2.5 image tower -> `.tflite` (GPU-friendly 4-d attention, normalisation + L2 built in) + `.json` | HF download or `--weights` -> `out/<model>_<px>_<prec>.tflite` | ~7 GB RAM (11 GB for 2.5), internet |
 | `bioclip_export/quantise_tflite.py` | fp32 `.tflite` -> fp16 / int8 (dynamic range) / int8 weights; patches an ai-edge-quantizer 0.9 bug | writes next to input | no calibration images |
 | `bioclip_export/build_label_pack.py` | TreeOfLife embeddings, filtered, names as published (rows not in the plain form used only to genus/family: `--name-rules`, listed in the header; v1 packs: `none`), + "none of these" sink rows -> label pack `.fpack` | HF dataset (2.7 GB) or `--embeddings-dir` -> `out/<pack_id>.fpack` | torch (text tower), internet |
-| `bioclip_export/build_region_species_list.py` | regional species list from GBIF (COL XR accepted species, mapping of insect-detect-post v1.1.0; v1 packs used v1.0.0) | GBIF API -> CSV + `.json` | internet, stdlib only |
+| `bioclip_export/build_region_species_list.py` | species list from GBIF for a continent, countries or the world (`--world`, counted order by order); COL XR accepted species; `--leave-out-extinct`. Mapping: insect-detect-post v1.1.0 (COL26.6 XR; v1 packs used v1.0.0) or `--mapping-csv`. Stops when GBIF's COL release is not the mapping's, because species keys change between releases (GBIF uses COL26.10 XR since November 2026) | GBIF API -> CSV + `.json` | internet, stdlib only |
+| `bioclip_export/make_gbif_mapping.py` | the mapping for GBIF's current COL release, by running insect-detect-post's own script unchanged (`--model bioclip-2.5` for that names file) | his clone -> mapping CSV + `.json` + `.run.json` | his environment (SSD: `/media/$USER/PortableSSD/venvs/insect-detect-post`), about 300,000 GBIF requests, hours |
 | `bioclip_export/build_country_lists.py` | per-country GBIF lists (>= 3 presence records) for `build_label_pack.py --country-lists` (header blocks: `fpack.py`) | GBIF API -> `.json` | internet |
 | `bioclip_export/country_neighbours.py` | neighbours (land border or <= 100 km of sea; Natural Earth) | -> tracked `country_neighbours.csv` | shapely |
-| `bioclip_export/add_pack_blocks.py`, `check_pack_blocks.py` | add the blocks to a pack (same vectors); check them, the app's header limits, `--same-as` | | |
+| `bioclip_export/add_pack_blocks.py`, `check_pack_blocks.py` | add the blocks to a pack (same vectors); check them, the app's header limits (exit 1 for a pack only a PC can open), `--same-as`, `--countries` | | |
 | `bioclip_export/verify_parity.py` | PyTorch vs `.tflite` embeddings: cosine, same answer per rank | `--tflite --images [--pack ...] [--crops-csv]` | |
 | `bioclip_export/inspect_tflite.py` | ops and weight storage of a `.tflite` (positional arg, no `--help`) | prints | |
 | `bioclip_export/reproduce_track_conf.py` | recomputes the app's per-track pooling off the phone, also narrowed to country lists (`--countries` as the app records them) | session `identification/embeddings_*` + pack | `fpack.bits_to_rows` |
@@ -135,6 +136,13 @@ then public). HF commits: `publish/published.json`; the app's catalogue links ma
 Label pack v3 (BioCLIP 2 Europe, on HF 2026-11-15) = v2 plus blocks `gbif` and
 `regions` (`bioclip_export/README.md` 3c), read by app rounds 372-374; in the app's catalogue
 since round 375 (v2 moved to its former name lists).
+
+November 2026 packs (BioCLIP 2, SSD `bioclip_export/out/packs_2026-11/`, built 2026-11-17, NOT on
+Hugging Face and not in `publish/hf_repos.json`: the owner decides which to publish): the four
+orders for the world (`..._world_v2`, 192,886 names, header 31 MB, so no app version opens it)
+and per GBIF continent (`europe_v4`, `north-america_v1`, `south-america_v1`, `africa_v1`,
+`asia_v1`, `oceania_v1`; all within the app's limits), with the mapping of COL26.10 XR in
+`out/mapping_col26.10xr/`; table in `bioclip_export/README.md` 3c.
 
 The MegaDetector file is also a GitHub release asset of the app (`v0.8.0-alpha.1`); that asset
 stays online forever. The owner's older HF repo `flower_visitor_order_detector` is unrelated.

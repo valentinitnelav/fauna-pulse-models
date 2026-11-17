@@ -33,9 +33,8 @@ import urllib.parse
 from datetime import date
 from pathlib import Path
 
-from build_region_species_list import (ARTHROPODA_COL_KEY, COL_XR, EXCLUDED_BASIS, GBIF_API, MAPPING_FILES,
-                                       OCCURRENCE_STATUS, RELEASE, _get_json, gbif_col_release, mapping_file,
-                                       record_filter, species_counts)
+from build_region_species_list import (ARTHROPODA_COL_KEY, COL_XR, EXCLUDED_BASIS, GBIF_API, OCCURRENCE_STATUS,
+                                       _get_json, gbif_col_release, mapping_source, record_filter, species_counts)
 
 
 def gbif_countries() -> list[str]:
@@ -56,6 +55,9 @@ def main() -> int:
     ap.add_argument("--min-occurrences", type=int, default=None,
                     help="GBIF records needed in a country (default: from the CSV's .json, else 3)")
     ap.add_argument("--mapping-dir", type=Path, default=Path("out"), help="where the mapping files are kept")
+    ap.add_argument("--mapping-csv", type=Path, default=None,
+                    help="a mapping made by make_gbif_mapping.py (default: the release asset v1.1.0); "
+                         "must be the one the species list was made with")
     ap.add_argument("--out", type=Path, required=True)
     args = ap.parse_args()
 
@@ -66,8 +68,9 @@ def main() -> int:
         raise SystemExit(f"no orders: pass --orders (no 'orders' in {meta_path})")
     min_occ = args.min_occurrences or meta.get("min_occurrences", 3)
 
-    csv_path = mapping_file(args.mapping_dir, "bioclip_gbif_species_mapping_Arthropoda.csv")
-    provenance = json.loads(mapping_file(args.mapping_dir, "bioclip_gbif_species_mapping_Arthropoda.json").read_text())
+    csv_path, provenance, mapping_record = mapping_source(args.mapping_dir, args.mapping_csv)
+    if meta.get("mapping") and meta["mapping"].get("sha256") != mapping_record["sha256"]:
+        raise SystemExit(f"{args.species_csv.name} was made with another mapping: pass the same --mapping-csv")
     with open(csv_path, newline="", encoding="utf-8") as f:
         mapping = [m for m in csv.DictReader(f) if m["bioclip_order"] in set(orders) and m["gbif_species_key"]]
     names_per_key: dict[str, int] = {}
@@ -90,9 +93,7 @@ def main() -> int:
     result = {"orders": orders, "min_occurrences": min_occ, "occurrence_status": OCCURRENCE_STATUS,
               "basis_of_record_excluded": list(EXCLUDED_BASIS),
               "gbif_checklist_key": COL_XR,
-              "mapping": {"url": RELEASE + csv_path.name, "sha256": MAPPING_FILES[csv_path.name],
-                          "col_release": provenance.get("col_release"),
-                          "tol_species_list": provenance.get("tol_species_list")},
+              "mapping": mapping_record,
               "gbif_col_release": col_release, "species_csv": args.species_csv.name,
               "date": date.today().isoformat(), "countries": out}
     args.out.parent.mkdir(parents=True, exist_ok=True)

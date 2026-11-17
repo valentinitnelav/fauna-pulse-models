@@ -63,14 +63,23 @@ def app_accepts_header(hdr: bytes) -> None:
             depth -= 1
 
 
-def check_pack(path: Path, same_as: Path | None = None) -> None:
+SAMPLE_COUNTRIES = ("DE", "FR", "GB", "MT", "CY", "RO")
+
+
+def check_pack(path: Path, same_as: Path | None = None, countries: tuple[str, ...] = SAMPLE_COUNTRIES) -> bool:
+    """Checks [path]; False when the blocks are fine but no released app version can open the file
+    (a pack for PC use, e.g. a world pack), True when the app can."""
     hdr_bytes, payload = raw_parts(path)
-    app_accepts_header(hdr_bytes)
+    try:
+        app_accepts_header(hdr_bytes)
+        app = "ok"
+    except ValueError as e:
+        app = f"NO released app version can open it ({e})"
     hdr, mat = read_fpack(path)
     n, sinks = hdr["rows"], hdr.get("sink_rows", 0)
     assert len(hdr["labels"]) == n and mat.shape == (n, hdr["dim"])
     print(f"{path.name}: {n} rows ({sinks} sink rows), header {len(hdr_bytes) / 1e6:.2f} MB, "
-          f"file {path.stat().st_size / 1e6:.1f} MB; app limits: ok")
+          f"file {path.stat().st_size / 1e6:.1f} MB; app limits: {app}")
     sink = np.zeros(n, dtype=bool)
     sink[n - sinks:] = True
     assert all(hdr["labels"][i][0] == "none" for i in range(n - sinks, n)), "sink rows must be last"
@@ -105,7 +114,7 @@ def check_pack(path: Path, same_as: Path | None = None) -> None:
             anywhere |= bits_to_rows(c["rows"], n)
         print(f"  regions: {len(reg['countries'])} countries, {int((~anywhere & ~sink).sum())} species rows in no "
               f"country (whole pack only); rule: {reg['neighbours_rule']}")
-        for code in ("DE", "FR", "GB", "MT", "CY", "RO"):
+        for code in countries:
             if code in reg["countries"]:
                 union = bits_to_rows(reg["countries"][code]["rows"], n).copy()
                 for other in reg["neighbours"].get(code, []):
@@ -124,6 +133,7 @@ def check_pack(path: Path, same_as: Path | None = None) -> None:
         for k in sorted(set(hdr["source"]) | set(old["source"])):
             assert hdr["source"].get(k) == old["source"].get(k), f"source.{k} differs from {same_as.name}"
         print(f"  same rows, names, name rules and vectors (byte-identical) as {same_as.name}")
+    return app == "ok"
 
 
 def self_test() -> None:
@@ -161,10 +171,12 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("pack", type=Path, nargs="?", help="pack to check (default: self-test only)")
     ap.add_argument("--same-as", type=Path, default=None, help="older pack that must hold the same rows and vectors")
+    ap.add_argument("--countries", default=",".join(SAMPLE_COUNTRIES),
+                    help="countries whose list sizes are printed (default: %(default)s)")
     args = ap.parse_args()
     self_test()
-    if args.pack:
-        check_pack(args.pack, args.same_as)
+    if args.pack and not check_pack(args.pack, args.same_as, tuple(c.strip().upper() for c in args.countries.split(","))):
+        return 1  # the blocks are fine, but the app cannot open the file
     return 0
 
 
