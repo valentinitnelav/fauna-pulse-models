@@ -310,7 +310,7 @@ with its neighbours: United States 39,351 and 58,636; Germany 16,937 and 28,534;
 not in v4 and 551 are new (v3 keeps the rows of v2, counted in October with the older mapping;
 GBIF's name matching no longer finds the names with two genera in one row, 72 rows of v3).
 
-BioCLIP 2.5, the same selections (built 2026-11-17, not on Hugging Face), with its own mapping
+BioCLIP 2.5, the same selections (built 2026-11-17; the six continent packs published on Hugging Face on 2026-11-17, the world pack not), with its own mapping
 `out/mapping_col26.10xr_bioclip-2.5/` (`make_gbif_mapping.py --model bioclip-2.5`, run on the GPU
 workstation with `--workers 4`; 276,384 of 286,485 names with a key), in
 `out/packs_2026-11_bioclip-2.5/`. The first BioCLIP 2.5 packs with the `gbif` and `regions` blocks:
