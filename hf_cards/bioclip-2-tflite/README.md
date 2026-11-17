@@ -64,8 +64,8 @@ Imageomics Institute.
     flies, bees and wasps, beetles, butterflies and moths (Diptera, Hymenoptera, Coleoptera,
     Lepidoptera) with at least 3 GBIF presence records in the continent (GBIF's continents; North
     America includes Central America and the Caribbean), fossil specimens and records of absence
-    left out, counted per accepted species of the Catalogue of Life (35,014 / 56,446 / 23,660 /
-    22,358 / 37,897 / 23,255 names; GBIF queried 17 November 2026). Each holds the GBIF species of
+    left out, counted per accepted species of the Catalogue of Life (35,018 / 56,451 / 23,661 /
+    22,358 / 37,900 / 23,255 names, counted as in the app: rows without the six "none of these" rows; GBIF queried 17 November 2026). Each holds the GBIF species of
     every name (Catalogue of Life key and accepted name) and, per country, the names with at least
     3 presence records there, with each country's neighbours (a shared land border, or at most
     100 km apart over the sea, plus two pairs added by hand), so an app can narrow the names to

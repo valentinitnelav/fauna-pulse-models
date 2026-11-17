@@ -325,6 +325,10 @@ workstation with `--workers 4`; 276,384 of 286,485 names with a key), in
 | `bioclip-2.5_pollinator-orders-asia_v1` | 37,199 | 82.3 MB (6.1 MB) | 909 | yes |
 | `bioclip-2.5_pollinator-orders-oceania_v1` | 22,995 | 50.9 MB (3.8 MB) | 62 | yes |
 
+"Names" in both tables are the names of the species list; a pack can hold a few more rows (one
+name can have more than one TreeOfLife row), and the app's catalogue titles and the cards count
+rows without the six sink rows (BioCLIP 2 Europe v4: 35,014 names, 35,018 rows).
+
 `build_label_pack.py` exits non-zero after writing a pack the app cannot open (the world pack):
 a script that builds several packs must not stop there.
 

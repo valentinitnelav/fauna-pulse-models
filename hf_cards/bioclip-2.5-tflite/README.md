@@ -66,8 +66,8 @@ the Imageomics Institute.
     flies, bees and wasps, beetles, butterflies and moths (Diptera, Hymenoptera, Coleoptera,
     Lepidoptera) with at least 3 GBIF presence records in the continent (GBIF's continents; North
     America includes Central America and the Caribbean), fossil specimens and records of absence
-    left out, counted per accepted species of the Catalogue of Life (35,017 / 56,396 / 23,121 /
-    21,765 / 37,199 / 22,995 names; GBIF queried 17 November 2026). The lists are made from the
+    left out, counted per accepted species of the Catalogue of Life (35,021 / 56,401 / 23,122 /
+    21,765 / 37,202 / 22,995 names, counted as in the app: rows without the six "none of these" rows; GBIF queried 17 November 2026). The lists are made from the
     BioCLIP 2.5 name list itself, so unlike v2 no Europe names are lost to differences between
     the BioCLIP 2 and 2.5 lists. Each holds the GBIF species of every name (Catalogue of Life key
     and accepted name) and, per country, the names with at least 3 presence records there, with
