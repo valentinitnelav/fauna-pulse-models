@@ -275,9 +275,13 @@ For the label packs:
 - Bánki, O., Roskov, Y., Döring, M., et al. (2026). Catalogue of Life (Version 2026-06-19 XR).
   Catalogue of Life Foundation. https://doi.org/10.48580/dgy8b (the species counting of the v2
   Europe list; the keys and accepted names in v3)
+- Bánki, O., Roskov, Y., Döring, M., et al. (2026). Catalogue of Life (2026-10-16 XR).
+  Catalogue of Life Foundation. https://doi.org/10.48580/dgzlf (COL26.10 XR: the species
+  counting, keys and accepted names of the continent packs)
 - GBIF.org (2026). GBIF Occurrence Search, https://www.gbif.org (queried 26 October 2026 for the
-  v2 Europe list and 28 October 2026 for the v3 country lists)
-- Country borders of the v3 neighbour table: Made with Natural Earth (public domain),
+  v2 Europe list, 28 October 2026 for the v3 country lists and 17 November 2026 for the
+  continent packs)
+- Country borders of the neighbour tables: Made with Natural Earth (public domain),
   https://www.naturalearthdata.com
 
 ## Notes

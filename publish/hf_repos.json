@@ -63,9 +63,15 @@
       "card": "hf_cards/bioclip-2.5-tflite/README.md",
       "files": [
         {"name": "bioclip-2.5_224_fp16.tflite", "local": "bioclip_export/out/bioclip25/bioclip-25_image_fp16.tflite", "input_px": 224, "precision": "fp16", "role": "image embedder"},
+        {"name": "bioclip-2.5_pollinator-orders-europe_v3.fpack", "local": "bioclip_export/out/packs_2026-11_bioclip-2.5/bioclip-2.5_pollinator-orders-europe_v3.fpack", "role": "label pack"},
+        {"name": "bioclip-2.5_pollinator-orders-north-america_v1.fpack", "local": "bioclip_export/out/packs_2026-11_bioclip-2.5/bioclip-2.5_pollinator-orders-north-america_v1.fpack", "role": "label pack"},
+        {"name": "bioclip-2.5_pollinator-orders-south-america_v1.fpack", "local": "bioclip_export/out/packs_2026-11_bioclip-2.5/bioclip-2.5_pollinator-orders-south-america_v1.fpack", "role": "label pack"},
+        {"name": "bioclip-2.5_pollinator-orders-africa_v1.fpack", "local": "bioclip_export/out/packs_2026-11_bioclip-2.5/bioclip-2.5_pollinator-orders-africa_v1.fpack", "role": "label pack"},
+        {"name": "bioclip-2.5_pollinator-orders-asia_v1.fpack", "local": "bioclip_export/out/packs_2026-11_bioclip-2.5/bioclip-2.5_pollinator-orders-asia_v1.fpack", "role": "label pack"},
+        {"name": "bioclip-2.5_pollinator-orders-oceania_v1.fpack", "local": "bioclip_export/out/packs_2026-11_bioclip-2.5/bioclip-2.5_pollinator-orders-oceania_v1.fpack", "role": "label pack"},
+        {"name": "bioclip-2.5_pollinator-orders-europe_v2.fpack", "local": "bioclip_export/out/packs_v2/bioclip-2.5_pollinator-orders-europe_v2.fpack", "role": "label pack"},
         {"name": "bioclip-2.5_pollinator-orders-europe_v1.fpack", "local": "bioclip_export/out/bioclip25/bioclip25_pollinator_orders_europe_v1.fpack", "role": "label pack"},
         {"name": "bioclip-2.5_flower-visitors-32fam_v1.fpack", "local": "bioclip_export/out/bioclip25/bioclip25_flower_visitors_32fam_v1.fpack", "role": "label pack"},
-        {"name": "bioclip-2.5_pollinator-orders-europe_v2.fpack", "local": "bioclip_export/out/packs_v2/bioclip-2.5_pollinator-orders-europe_v2.fpack", "role": "label pack"},
         {"name": "bioclip-2.5_224_fp16.json", "local": "bioclip_export/out/bioclip25/bioclip-25_image_fp16.json", "role": "export manifest"},
         {"name": "LICENSE", "local": "hf_cards/bioclip-2.5-tflite/LICENSE", "role": "licence of the original model"}
       ]
