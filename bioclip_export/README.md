@@ -292,6 +292,12 @@ python build_country_lists.py --species-csv $P/species_mammals-birds_keys.csv --
 python add_pack_blocks.py bioclip-2_mammals-birds-world_v2.fpack --species-csv $P/species_mammals-birds_keys.csv \
   --country-lists $P/countries_mammals-birds.json --in-every-country people-and-domestic --short-list-names 300 \
   --drop-sink person --pack-id bioclip-2_mammals-birds-world_v3 --out $P
+# v4: v3 without its extinct and fossil rows
+python list_fossil_rows.py $P/bioclip-2_mammals-birds-world_v3.fpack --extinct-csv $P/countries_mammals-birds_extinct_left_out.csv \
+  --mdd-csv MDD_v2.5_6904species.csv --out $P/fossil_rows_mammals-birds.csv
+python add_pack_blocks.py bioclip-2_mammals-birds-world_v2.fpack --species-csv $P/species_mammals-birds_keys.csv \
+  --country-lists $P/countries_mammals-birds.json --in-every-country people-and-domestic --short-list-names 300 \
+  --drop-sink person --drop-rows $P/fossil_rows_mammals-birds.csv --pack-id bioclip-2_mammals-birds-world_v4 --out $P
 ```
 
 Extinct species stay rows of the pack, and three rules keep them off the country lists (the names
@@ -314,6 +320,19 @@ the app sends MegaDetector's "person" boxes to BioCLIP, and the *Homo sapiens* r
 `--short-list-names` records below how many names a country with its neighbours counts as short
 for this pack (`regions.short_list_names`); the app's own rule (5,000 names) fits the pollinator
 lists, while a mammals-and-birds country with its neighbours has 25 to 4,751 names.
+
+Since v4 the extinct and fossil species are not rows of the pack at all (owner's decision of
+2026-11-17): on the country lists alone they still competed whenever the app used the whole list,
+and a person was named *Homo neanderthalensis*. `list_fossil_rows.py` writes one line per row it
+tests, with the decision and the reason: a row stays when a name of it is a living MDD species;
+otherwise it goes when its GBIF species is on the extinct list above or MDD lists it as extinct, or
+when it has no GBIF species and the Paleobiology Database marks every chordate record of its names
+extinct (records of other phyla, i.e. a plant of the same name, do not count). Rows of a name rule are
+tested by their TreeOfLife names too (e.g. *Crocidura sicula*, shown as Soricidae, stays). A row
+that PBDB marks living or does not know stays (e.g. *Dendrocopus major*, a misspelled woodpecker).
+`add_pack_blocks.py --drop-rows` leaves those rows out, checks each by its name, keeps every other
+row byte for byte and writes the rows with their reasons into the header (`built_with`);
+`check_pack_blocks.py --same-as` checks the result against the older pack without them.
 
 How complete the mammal lists are, against the Mammal Diversity Database's country field (v2.5,
 the 3,912 MDD species whose name matches a mapped TreeOfLife mammal): a country with its neighbours
@@ -412,6 +431,15 @@ matching does not find), 163 extinct, 155 with under 3 records in every country.
 country, alone and with its neighbours: United States 3,063 and 4,247; Brazil 2,598 and 4,623;
 Indonesia 2,516 and 3,385; India 1,976 and 2,833; Kenya 1,756 and 2,360; DR Congo 1,609 and
 2,459; Germany 1,622 and 2,211; Nigeria 1,241 and 1,569; Malta 298 and 746.
+
+Mammals and birds v4 (built 2026-11-17, not on Hugging Face): v3 without 1,804 extinct and fossil
+species rows (288 on the extinct list of the country lists, 1,514 fossil species of PBDB without a
+GBIF species, 2 extinct species of MDD), so 15,331 rows (15,326 names, 5 sink rows), 26.5 MB
+(header 2.9 MB); of the genus *Homo* only *H. sapiens* is left. Kept: 2 species on the extinct list
+that MDD counts as living (*Mystacina robusta*, *Lagostomus crassus*), and without a GBIF species
+53 names of living MDD species (some are fossil forms MDD counts as synonyms, e.g. *Equus
+scotti*), 9 that PBDB marks living, 5 it gives no status or phylum for, 22 it does not know.
+Country lists as v3 (rows renumbered).
 
 v2 (2026-10-26, `--name-rules higher-rank`, Europe list made the insect-detect-post way):
 `bioclip-2_pollinator-orders-europe_v2` (34,978 names), `bioclip-2_mammals-birds-world_v2`
@@ -595,6 +623,7 @@ References:
 | `build_country_lists.py` | one GBIF facet per country -> per-country species keys for `--country-lists` |
 | `make_gbif_mapping.py` | runs insect-detect-post's mapping script for the Catalogue of Life release GBIF uses now -> mapping CSV for `--mapping-csv` |
 | `add_pack_blocks.py` | an existing pack + its species list (+ country lists) -> the same pack with the `gbif` and `regions` blocks, vectors copied byte for byte |
+| `list_fossil_rows.py` | a pack with a `gbif` block + extinct list + MDD + PBDB -> CSV of the extinct and fossil rows for `add_pack_blocks.py --drop-rows` |
 | `country_neighbours.py` | Natural Earth borders -> `country_neighbours.csv` + `.json` (tracked neighbour table) |
 | `check_pack_blocks.py` | checks of a pack's `gbif` and `regions` blocks, the app's header limits, and v3 against v2 |
 | `verify_parity.py` | PyTorch vs `.tflite` comparison on real images |

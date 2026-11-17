@@ -21,7 +21,7 @@ from pathlib import Path
 
 import numpy as np
 
-from fpack import MAGIC, RANKS, bits_to_rows, read_fpack, rows_to_bits, sink_label, write_fpack
+from fpack import MAGIC, RANKS, bits_to_rows, leave_out_species_rows, read_fpack, row_names, rows_to_bits, shown_name, sink_label, write_fpack
 
 # The app refuses larger or oddly shaped headers (label_pack.dart, round 327): an old app version
 # must still open every new pack.
@@ -126,8 +126,18 @@ def check_pack(path: Path, same_as: Path | None = None, countries: tuple[str, ..
     if same_as is not None:
         old_hdr_bytes, old_payload = raw_parts(same_as)
         old, _ = read_fpack(same_as)
+        source = hdr.get("built_with", {}).get("rows_and_vectors_from") or {}
+        # add_pack_blocks.py --drop-rows: those species rows are left out (checked by name), every other row stays.
+        left_out = (source.get("species_rows_left_out") or {}).get("rows") or []
+        if left_out:
+            old_published = {r["pack_row"]: r["published"] for r in old.get("name_rules", {}).get("rows", [])}
+            for i, name, tested, _ in left_out:
+                assert shown_name(old["labels"][i]) == name and \
+                    " | ".join(row_names(old["labels"][i], old_published.get(i))) == tested, f"{same_as.name}: row {i} is not '{name}' ({tested})"
+            old_payload = leave_out_species_rows(old, old_payload, [row[0] for row in left_out])
+            print(f"  {same_as.name} without the {len(left_out)} species rows listed in the header:")
         # add_pack_blocks.py --drop-sink: those sink rows are left out, every other row stays.
-        dropped = (hdr.get("built_with", {}).get("rows_and_vectors_from") or {}).get("sink_rows_left_out") or []
+        dropped = source.get("sink_rows_left_out") or []
         if dropped:
             row_bytes = len(old_payload) // old["rows"]
             gone = [i for i in range(old["rows"] - old["sink_rows"], old["rows"]) if old["labels"][i][6] in dropped]
@@ -172,6 +182,20 @@ def self_test() -> None:
         (h0, m0), (h1, m1) = read_fpack(plain), read_fpack(extra)
         assert h0["labels"] == h1["labels"] and np.array_equal(m0, m1) and raw_parts(plain)[1] == raw_parts(extra)[1]
         check_pack(extra)
+    # leave_out_species_rows (add_pack_blocks.py --drop-rows): other rows keep bytes, order and name rules.
+    hdr = {**base, "rows": 3, "dim": 4, "dtype": "f16", **blocks,
+           "name_rules": {"counts": {"two_genera": 1}, "rows": [{"pack_row": 1, "rule": "two_genera", "published": labels[1]}]}}
+    raw = mat.astype("<f2").tobytes()
+    out = leave_out_species_rows(hdr, raw, [0])
+    assert out == raw[8:] and hdr["rows"] == 2 and hdr["labels"] == labels[1:] and "gbif" not in hdr and "regions" not in hdr
+    assert hdr["name_rules"]["rows"][0]["pack_row"] == 0 and hdr["name_rules"]["counts"] == {"two_genera": 1}
+    assert shown_name(labels[0]) == "Eristalis tenax" and shown_name(["Animalia", "Chordata", "Aves", "", "Emeidae", "", "", ""]) == "Emeidae"
+    for bad in ([2], [0, 0]):  # a sink row, a row twice
+        try:
+            leave_out_species_rows({**base, "rows": 3, "dim": 4, "dtype": "f16"}, raw, bad)
+            raise AssertionError(f"rows {bad} must be refused")
+        except ValueError:
+            pass
     print("self-test: ok")
 
 

@@ -17,9 +17,19 @@ build_region_species_list.py --every-mapped-name for the same classes instead.
 row byte for byte: the mammals-and-birds pack v3 is v2 without the "person" row (humans are named
 by the Homo sapiens row since v3, see SINK_SETS in build_label_pack.py).
 
+--drop-rows CSV leaves out the species rows the CSV marks "drop" (list_fossil_rows.py: extinct and
+fossil species), keeping every other row byte for byte; each row is checked by its name, and the
+rows left out are written into the header (built_with) with their reasons. Owner's decision of
+2026-11-17: the mammals-and-birds pack v4 is v3 without its extinct and fossil rows (a person
+was named Homo neanderthalensis when the app used the whole list).
+
     python add_pack_blocks.py bioclip-2_mammals-birds-world_v2.fpack --species-csv species_mammals-birds_keys.csv \
         --country-lists countries_mammals-birds.json --in-every-country people-and-domestic --short-list-names 300 --drop-sink person \
         --pack-id bioclip-2_mammals-birds-world_v3 --out out/packs_2026-11
+
+    python add_pack_blocks.py bioclip-2_mammals-birds-world_v2.fpack --species-csv species_mammals-birds_keys.csv \
+        --country-lists countries_mammals-birds.json --in-every-country people-and-domestic --short-list-names 300 --drop-sink person \
+        --drop-rows fossil_rows_mammals-birds.csv --pack-id bioclip-2_mammals-birds-world_v4 --out out/packs_2026-11
 
     python add_pack_blocks.py out/packs_v2/bioclip-2_pollinator-orders-europe_v2.fpack \
         --species-csv out/packs_v2/species_europe_4orders_col.csv --country-lists out/packs_v3/countries_4orders_col.json \
@@ -29,6 +39,8 @@ by the Homo sapiens row since v3, see SINK_SETS in build_label_pack.py).
 from __future__ import annotations
 
 import argparse
+import collections
+import csv
 import hashlib
 import json
 import sys
@@ -37,7 +49,7 @@ from pathlib import Path
 
 from build_label_pack import EVERY_COUNTRY_SETS, SINK_SETS, gbif_block, read_species_csv, regions_block, taxa_of
 from check_pack_blocks import app_accepts_header, raw_parts
-from fpack import read_raw, write_raw
+from fpack import leave_out_species_rows, read_raw, row_names, shown_name, write_raw
 
 
 def drop_sink_rows(hdr: dict, payload: bytes, keys: list[str]) -> bytes:
@@ -58,6 +70,34 @@ def drop_sink_rows(hdr: dict, payload: bytes, keys: list[str]) -> bytes:
     return b"".join(payload[i * row_bytes:(i + 1) * row_bytes] for i in kept)
 
 
+def drop_listed_rows(hdr: dict, payload: bytes, csv_path: Path) -> tuple[bytes, dict]:
+    """Leave out the species rows that [csv_path] (list_fossil_rows.py) marks "drop"; a row whose
+    names differ from the CSV's (the name shown and every name tested, so also rows of a name rule
+    that show only a family) stops the run: the CSV was made from another pack.
+    Returns the new payload and the record for the header."""
+    with open(csv_path, newline="", encoding="utf-8") as f:
+        listed = [r for r in csv.DictReader(f) if r["decision"] == "drop"]
+    if not listed:
+        raise SystemExit(f"{csv_path}: no row marked 'drop'")
+    published = {r["pack_row"]: r["published"] for r in hdr.get("name_rules", {}).get("rows", [])}
+    for r in listed:
+        i = int(r["pack_row"])
+        if i >= hdr["rows"] - hdr.get("sink_rows", 0) or shown_name(hdr["labels"][i]) != r["name_in_pack"] \
+                or " | ".join(row_names(hdr["labels"][i], published.get(i))) != r["names_tested"]:
+            raise SystemExit(f"{csv_path}: row {i} is not '{r['name_in_pack']}' ({r['names_tested']}) in this pack")
+    gone = sorted(int(r["pack_row"]) for r in listed)
+    try:
+        payload = leave_out_species_rows(hdr, payload, gone)
+    except ValueError as e:
+        raise SystemExit(f"--drop-rows: {e}")
+    reasons = collections.Counter(r["reason"] for r in listed)
+    print(f"left out {len(gone)} species rows: {dict(reasons)}")
+    return payload, {"file": csv_path.name, "sha256": hashlib.sha256(csv_path.read_bytes()).hexdigest(),
+                     "count": len(gone), "reasons": dict(sorted(reasons.items())),
+                     "rows": [[int(r["pack_row"]), r["name_in_pack"], r["names_tested"], r["reason"]]
+                              for r in sorted(listed, key=lambda r: int(r["pack_row"]))]}
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("pack", type=Path, help="existing label pack (.fpack)")
@@ -70,6 +110,8 @@ def main() -> int:
                     help="with --country-lists: the pack's own short-list threshold (see build_label_pack.py)")
     ap.add_argument("--drop-sink", action="append", default=[], metavar="KEY",
                     help="leave out this 'none of these' row (e.g. person); may be given more than once")
+    ap.add_argument("--drop-rows", type=Path, default=None, metavar="CSV",
+                    help="leave out the species rows this CSV marks 'drop' (list_fossil_rows.py)")
     ap.add_argument("--pack-id", required=True, help="the new pack's id and file name, e.g. <model>_<list>_v3")
     ap.add_argument("--out", type=Path, default=Path("out"))
     args = ap.parse_args()
@@ -93,14 +135,10 @@ def main() -> int:
     if not gbif:
         raise SystemExit(f"{args.species_csv} has no gbif_species_key column (build_region_species_list.py)")
 
-    # The species list holds the names as published; a row with a name rule keeps them in the header.
+    rows_left_out = None
+    if args.drop_rows:
+        payload, rows_left_out = drop_listed_rows(hdr, payload, args.drop_rows)
     sink_rows = hdr.get("sink_rows", 0)
-    published = {r["pack_row"]: r["published"] for r in hdr.get("name_rules", {}).get("rows", [])}
-    row_names = []
-    for i in range(hdr["rows"] - sink_rows):
-        lab = published.get(i, hdr["labels"][i])
-        row_names.append(f"{lab[5]} {lab[6]}".strip())
-
     if args.drop_sink:
         args.drop_sink = sorted(set(args.drop_sink))
         payload = drop_sink_rows(hdr, payload, args.drop_sink)
@@ -108,6 +146,13 @@ def main() -> int:
         left = [l[6] for l in hdr["labels"][len(hdr["labels"]) - sink_rows:]]
         if hdr.get("sink_set") in SINK_SETS and left != [k for k, _ in SINK_SETS[hdr["sink_set"]]]:
             raise SystemExit(f"the sink rows left are not today's sink set '{hdr['sink_set']}' of build_label_pack.py")
+
+    # The species list holds the names as published; a row with a name rule keeps them in the header.
+    published = {r["pack_row"]: r["published"] for r in hdr.get("name_rules", {}).get("rows", [])}
+    row_names = []
+    for i in range(hdr["rows"] - sink_rows):
+        lab = published.get(i, hdr["labels"][i])
+        row_names.append(f"{lab[5]} {lab[6]}".strip())
     old_id, old_built = hdr["pack_id"], hdr.get("built_with")
     hdr["pack_id"] = args.pack_id
     hdr["gbif"] = gbif_block(row_names, gbif, sink_rows, args.species_csv, hdr["source"]["names_file_sha256"])
@@ -124,7 +169,8 @@ def main() -> int:
                          "rows_and_vectors_from": {"pack_id": old_id, "file": args.pack.name,
                                                    "sha256": hashlib.sha256(args.pack.read_bytes()).hexdigest(),
                                                    "built_with": old_built,
-                                                   **({"sink_rows_left_out": args.drop_sink} if args.drop_sink else {})}}
+                                                   **({"sink_rows_left_out": args.drop_sink} if args.drop_sink else {}),
+                                                   **({"species_rows_left_out": rows_left_out} if rows_left_out else {})}}
     args.out.mkdir(parents=True, exist_ok=True)
     out_path = args.out / f"{args.pack_id}.fpack"
     if out_path.resolve() == args.pack.resolve():

@@ -33,7 +33,7 @@ import path and breaks `from fpack import ...` and the sibling imports.
 | `bioclip_export/make_gbif_mapping.py` | the mapping for GBIF's current COL release, by running insect-detect-post's own script unchanged (`--model bioclip-2.5` for that names file; `--phylum Chordata` for mammals and birds) | his clone -> mapping CSV + `.json` + `.run.json` | his environment (SSD: `/media/$USER/PortableSSD/venvs/insect-detect-post`), about 300,000 GBIF requests, hours |
 | `bioclip_export/build_country_lists.py` | per-country GBIF lists (>= 3 presence records) for `build_label_pack.py --country-lists` (header blocks: `fpack.py`); extinct species off the lists: `--leave-out-extinct`, `-iucn-extinct`, `-pbdb-extinct` (README 3b) | GBIF API -> `.json` | internet |
 | `bioclip_export/country_neighbours.py` | neighbours (land border or <= 100 km of sea; Natural Earth) | -> tracked `country_neighbours.csv` | shapely |
-| `bioclip_export/add_pack_blocks.py`, `check_pack_blocks.py` | add the blocks to a pack (same vectors; `--drop-sink`, `--in-every-country`); check them, the app's header limits (exit 1 for a pack only a PC can open), `--same-as`, `--countries` | | |
+| `bioclip_export/add_pack_blocks.py`, `check_pack_blocks.py` | add the blocks to a pack (same vectors; `--drop-sink`, `--drop-rows` from `list_fossil_rows.py`, `--in-every-country`); check them, the app's header limits (exit 1 for a pack only a PC can open), `--same-as`, `--countries` | | |
 | `bioclip_export/verify_parity.py` | PyTorch vs `.tflite` embeddings: cosine, same answer per rank | `--tflite --images [--pack ...] [--crops-csv]` | |
 | `bioclip_export/inspect_tflite.py` | ops and weight storage of a `.tflite` (positional arg, no `--help`) | prints | |
 | `bioclip_export/build_text_tower_pack.py` | a pack with the same rows as a reference pack, vectors from another model's text tower (taxonomy + common name, 80 OpenAI templates); for benchmark rows such as BioCAP, not for publishing | reference `.fpack` + an open_clip model in `export_image_tower.MODELS` | `fpack.read_fpack`, `write_fpack` |
@@ -154,7 +154,8 @@ go to the GPU workstation with few workers, not the owner's home line.
 
 Mammals and birds v3 (built 2026-11-17, not published; SSD `out/packs_2026-11/` once copied, until
 then on the workstation): v2 without the "person" sink row, plus `gbif` and `regions` (chordate mapping
-`out/mapping_col26.10xr_chordata/`; README 3b, 3c).
+`out/mapping_col26.10xr_chordata/`; README 3b, 3c). v4 (same day): v3 without 1,804 extinct and
+fossil rows (`list_fossil_rows.py`).
 
 The MegaDetector file is also a GitHub release asset of the app (`v0.8.0-alpha.1`); that asset
 stays online forever. The owner's older HF repo `flower_visitor_order_detector` is unrelated.

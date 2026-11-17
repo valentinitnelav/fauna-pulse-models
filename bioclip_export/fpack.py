@@ -39,6 +39,7 @@ from __future__ import annotations
 
 import base64
 import json
+import re
 import struct
 from pathlib import Path
 
@@ -46,6 +47,7 @@ import numpy as np
 
 MAGIC = b"FPK1"
 RANKS = ["kingdom", "phylum", "class", "order", "family", "genus", "species"]
+_PLAIN_NAME = re.compile(r"[A-Z][a-z]+ [a-z][a-z-]+")  # "Genus epithet"
 
 
 def write_raw(path: Path, header: dict, payload: bytes) -> None:
@@ -149,6 +151,62 @@ def read_fpack(path: Path) -> tuple[dict, np.ndarray]:
         np_dtype = "<f2" if dtype == "f16" else "<f4"
         mat = np.frombuffer(f.read(), dtype=np_dtype, count=rows * dim).astype(np.float32)
     return hdr, mat.reshape(rows, dim)
+
+
+def shown_name(label: list[str]) -> str:
+    """The lowest name of a pack row as the app shows it (species, else genus, family, order, class)."""
+    return " ".join(x for x in label[5:7] if x) or label[4] or label[3] or label[2]
+
+
+def row_names(label: list[str], published: list[str] | None) -> list[str]:
+    """The "Genus epithet" names of a pack row, plain names only, in order: the pack's species
+    name and, for a row of a name rule ([published]: its TreeOfLife names), the genus slot with the
+    species slot's first word, and the species slot's own first two words when it starts with a
+    genus (rules two_genera and metazoa). For list_fossil_rows.py and the row checks of --drop-rows."""
+    names = [f"{label[5]} {label[6]}"]
+    if published:
+        genus, slot = published[5], published[6]
+        words = slot.split()
+        if words:
+            names.append(f"{genus} {words[0]}")
+            if len(words) >= 2 and words[0][:1].isupper():
+                names.append(f"{words[0]} {words[1]}")
+                names.append(f"{genus} {words[1]}")
+    out = []
+    for n in names:
+        n = n.strip()
+        if _PLAIN_NAME.fullmatch(n) and n not in out:
+            out.append(n)
+    return out
+
+
+def leave_out_species_rows(hdr: dict, payload: bytes, gone: list[int]) -> bytes:
+    """Leave the species rows [gone] (row numbers of [hdr]) out of [hdr] and [payload] (raw matrix
+    bytes); every other row keeps its bytes and order. Updates "labels", "rows" and "name_rules"
+    (row numbers moved down, counts recounted). The "gbif" and "regions" blocks are row lists of
+    the old numbering: they are removed here and must be written again by the caller.
+    For add_pack_blocks.py --drop-rows and its check in check_pack_blocks.py --same-as."""
+    row_bytes = hdr["dim"] * {"f16": 2, "f32": 4}[hdr["dtype"]]
+    n, sinks = hdr["rows"], hdr.get("sink_rows", 0)
+    if len(payload) != n * row_bytes:
+        raise ValueError(f"payload {len(payload)} bytes, expected {n} rows of {row_bytes}")
+    gone_set = set(gone)
+    if len(gone_set) != len(gone) or any(not 0 <= i < n - sinks for i in gone_set):
+        raise ValueError(f"rows to leave out must be distinct species rows (0 to {n - sinks - 1})")
+    kept = [i for i in range(n) if i not in gone_set]
+    new_row = {old: new for new, old in enumerate(kept)}
+    hdr["labels"] = [hdr["labels"][i] for i in kept]
+    hdr["rows"] = len(kept)
+    rules = hdr.get("name_rules")
+    if rules and rules.get("rows"):
+        rules["rows"] = [{**r, "pack_row": new_row[r["pack_row"]]} for r in rules["rows"] if r["pack_row"] not in gone_set]
+        counted = {k: 0 for k in rules.get("counts", {})}
+        for r in rules["rows"]:
+            counted[r["rule"]] = counted.get(r["rule"], 0) + 1
+        rules["counts"] = counted
+    hdr.pop("gbif", None)
+    hdr.pop("regions", None)
+    return b"".join(payload[i * row_bytes:(i + 1) * row_bytes] for i in kept)
 
 
 def rows_to_bits(rows, n: int) -> str:
