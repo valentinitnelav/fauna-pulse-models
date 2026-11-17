@@ -55,6 +55,8 @@ def main() -> int:
     ap.add_argument("--clone", type=Path, required=True, help="local clone of insect-detect-post")
     ap.add_argument("--out", type=Path, required=True, help="folder for the mapping CSV and its .json")
     ap.add_argument("--model", choices=sorted(MODELS), default="bioclip-2", help="whose TreeOfLife names file")
+    ap.add_argument("--workers", type=int, default=None,
+                    help="parallel GBIF requests (his default 64; 8 keeps a home connection usable, about 8 times slower)")
     args = ap.parse_args()
 
     def git(*cmd: str) -> str:
@@ -71,12 +73,14 @@ def main() -> int:
     if names_file:
         repo = his.get_tol_repo_id(his.BIOCLIP_MODEL_STR)  # the BioCLIP 2 dataset also holds the 2.5 names file
         his.TOL_SPECIES_FILE, his.BIOCLIP_MODEL_STR, his.get_tol_repo_id = names_file, model_name, lambda _model: repo
+    if args.workers:
+        his.MAX_WORKERS = args.workers
     logging.basicConfig(level=logging.INFO, format="%(message)s")
     if not his.build_bioclip_gbif_species_mapping():
         return 1
     run = {"made_with": "insect-detect-post, filters/build_bioclip_gbif_species_mapping.py, run by make_gbif_mapping.py",
            "insect_detect_post_commit": commit, "insect_detect_post_changed_files": changed,
-           "model": args.model, "date": date.today().isoformat()}
+           "model": args.model, "workers": his.MAX_WORKERS, "date": date.today().isoformat()}
     his.OUTPUT_CSV.with_suffix(".run.json").write_text(json.dumps(run, indent=2))
     print(f"wrote {his.OUTPUT_CSV} (+ .json, .run.json)")
     return 0
