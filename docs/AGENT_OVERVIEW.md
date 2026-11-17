@@ -132,6 +132,9 @@ Facts that are easy to get wrong (verified 2026-10-15, sources on the cards):
 
 Uploads: one repo per step (`--upload --repo X`; a new repo with `--private` first, owner checks,
 then public). HF commits: `publish/published.json`; the app's catalogue links match it.
+A label pack with country lists also needs its local `.fpack` path in the hand-off: the app's
+`update_catalogue.py --countries` checks size and SHA-256 and copies `regions.countries.<code>.names`
+into `assets/name_list_countries.json` (suggests a list by the user's country before download).
 
 Label pack v3 (BioCLIP 2 Europe, on HF 2026-11-15) = v2 plus blocks `gbif` and
 `regions` (`bioclip_export/README.md` 3c), read by app rounds 372-374; in the app's catalogue
@@ -197,6 +200,7 @@ stays online forever. The owner's older HF repo `flower_visitor_order_detector` 
 | output names of all export scripts | naming rule, `tool/model_downloads/README.md` | `update_catalogue.py --names` |
 | model input/output layout (NCHW 0..1; embedder output `[1,n]`; classifier heads concatenated, `dim` = their sum; detector `[1,4+c,N]`; Ultralytics metadata re-appended to fp16 files) | `packages/ultralytics_yolo` (Kotlin), `Embedder.kt`, `model_file_kind.dart` | phone checks: `integration_test/*_check_test.dart` |
 | pooling and country-narrowing rule copy in `reproduce_track_conf.py` | `track_fusion.dart` (`Scorer.fuse`, `narrow`) | by hand; checked 2026-11-16 against the app's code on made-up crops of the v3 pack (whole list, DE with neighbours, MT): same results |
+| `regions.countries.<code>.names` in the pack header (`fpack.py`) | `tool/model_downloads/update_catalogue.py --countries` -> `assets/name_list_countries.json` | app test fails when an offered list with country lists is missing from it; rename only with a note to the app |
 | `country_neighbours.py`: `load_countries`, `unit_code`, `UNIT_CODES`, Natural Earth file (`NE_URL`, `NE_SHA256`): the codes of the packs' `regions` | `tool/country_borders/make_country_borders.py` imports them -> `assets/country_borders.json` (same codes) | re-run the app's tool after a change; rename only with a note to the app |
 | `bioclip_export/app_rules.py`: defaults (48 px, 10 crops, drop factor 10) and top-down answer | `lib/fauna_pulse/identification/identification_assets.dart`, `track_fusion.dart` | by hand |
 | app behaviour named on the cards, kept broad on purpose (owner, 2026-10-16): cls card "How FaunaPulse uses the scores" (no formula, points to the app docs); detector cards "the app does NMS", 640 px input, square area of interest (v8 card); every card's "Use in FaunaPulse" (menu path, "versions after v0.8.0-alpha.1") | the matching app code and screens | by hand; editing a card on the Hub is a new commit and never breaks the pinned file links |
