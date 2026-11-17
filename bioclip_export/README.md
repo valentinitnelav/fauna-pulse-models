@@ -286,7 +286,8 @@ is one simple choice among many, not an ecological boundary.
 
 ### 3c. Packs built so far
 
-November 2026 (built 2026-11-17, not on Hugging Face): the four orders for the whole world and
+November 2026 (built 2026-11-17; the six continent packs published on Hugging Face on
+2026-11-17, the world pack not, since no app version opens it yet): the four orders for the whole world and
 per continent, made with the mapping of COL26.10 XR and GBIF as queried that day (presence
 records, no fossil specimens, extinct species without an observation left out,
 `--name-rules higher-rank`), each with the `gbif` and `regions` blocks:

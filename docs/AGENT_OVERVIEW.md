@@ -137,8 +137,9 @@ Label pack v3 (BioCLIP 2 Europe, on HF 2026-11-15) = v2 plus blocks `gbif` and
 `regions` (`bioclip_export/README.md` 3c), read by app rounds 372-374; in the app's catalogue
 since round 375 (v2 moved to its former name lists).
 
-November 2026 packs (BioCLIP 2, SSD `bioclip_export/out/packs_2026-11/`, built 2026-11-17, NOT on
-Hugging Face and not in `publish/hf_repos.json`: the owner decides which to publish): the four
+November 2026 packs (BioCLIP 2, SSD `bioclip_export/out/packs_2026-11/`, built 2026-11-17; the six
+continent packs are published (HF commit in `publish/published.json`), the world pack is not
+and is not in `publish/hf_repos.json`): the four
 orders for the world (`..._world_v2`, 192,886 names, header 31 MB, so no app version opens it)
 and per GBIF continent (`europe_v4`, `north-america_v1`, `south-america_v1`, `africa_v1`,
 `asia_v1`, `oceania_v1`; all within the app's limits), with the mapping of COL26.10 XR in

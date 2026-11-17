@@ -134,9 +134,45 @@
         "bytes": 59543986,
         "sha256": "4de14132e1407413cf4ca3b31a4c87bc82b893d9e2b4a8e2810420d7dadfd478",
         "url": "https://huggingface.co/Valen-Peregrine/bioclip-2-tflite/resolve/c8c69a0a2abca6998efd6d8398435f894c8834a1/bioclip-2_pollinator-orders-europe_v3.fpack"
+      },
+      "bioclip-2_pollinator-orders-europe_v4.fpack": {
+        "commit": "9ea38108bc99d66d1441db208624461ec21c94ba",
+        "bytes": 59601937,
+        "sha256": "f4681edc0ae61980b0680336db514428b8151467ace7e556e0585de87b7cc662",
+        "url": "https://huggingface.co/Valen-Peregrine/bioclip-2-tflite/resolve/9ea38108bc99d66d1441db208624461ec21c94ba/bioclip-2_pollinator-orders-europe_v4.fpack"
+      },
+      "bioclip-2_pollinator-orders-north-america_v1.fpack": {
+        "commit": "9ea38108bc99d66d1441db208624461ec21c94ba",
+        "bytes": 95954274,
+        "sha256": "d4c0dead002db91f6fc43bafa79ddadf70f6806a142986c8bbb65a8b9cb08aee",
+        "url": "https://huggingface.co/Valen-Peregrine/bioclip-2-tflite/resolve/9ea38108bc99d66d1441db208624461ec21c94ba/bioclip-2_pollinator-orders-north-america_v1.fpack"
+      },
+      "bioclip-2_pollinator-orders-south-america_v1.fpack": {
+        "commit": "9ea38108bc99d66d1441db208624461ec21c94ba",
+        "bytes": 40202597,
+        "sha256": "0facefa2b38cb3a88613e1421ac4203683b38dbc1afa3a786fc652c4803cbb95",
+        "url": "https://huggingface.co/Valen-Peregrine/bioclip-2-tflite/resolve/9ea38108bc99d66d1441db208624461ec21c94ba/bioclip-2_pollinator-orders-south-america_v1.fpack"
+      },
+      "bioclip-2_pollinator-orders-africa_v1.fpack": {
+        "commit": "9ea38108bc99d66d1441db208624461ec21c94ba",
+        "bytes": 38009931,
+        "sha256": "9f128456a7ebd7176f6fcf38fd31f4b9ded9aa88f0bdb3a9f0048777586cfd13",
+        "url": "https://huggingface.co/Valen-Peregrine/bioclip-2-tflite/resolve/9ea38108bc99d66d1441db208624461ec21c94ba/bioclip-2_pollinator-orders-africa_v1.fpack"
+      },
+      "bioclip-2_pollinator-orders-asia_v1.fpack": {
+        "commit": "9ea38108bc99d66d1441db208624461ec21c94ba",
+        "bytes": 64434728,
+        "sha256": "f7eb9a589faed341fb80334005665ca5b579469142ea7a7f1d185dcf7004bdda",
+        "url": "https://huggingface.co/Valen-Peregrine/bioclip-2-tflite/resolve/9ea38108bc99d66d1441db208624461ec21c94ba/bioclip-2_pollinator-orders-asia_v1.fpack"
+      },
+      "bioclip-2_pollinator-orders-oceania_v1.fpack": {
+        "commit": "9ea38108bc99d66d1441db208624461ec21c94ba",
+        "bytes": 39542463,
+        "sha256": "c3452df9417036ad9fed6393e79f832f3e89cfe59cf1be9ecf812a9bbf3d288a",
+        "url": "https://huggingface.co/Valen-Peregrine/bioclip-2-tflite/resolve/9ea38108bc99d66d1441db208624461ec21c94ba/bioclip-2_pollinator-orders-oceania_v1.fpack"
       }
     },
-    "card_commit": "b1b97c975184050fba17ee2b358b971489d77703"
+    "card_commit": "9ea38108bc99d66d1441db208624461ec21c94ba"
   },
   "Valen-Peregrine/insectdct-cls-v7-tflite": {
     "files": {
