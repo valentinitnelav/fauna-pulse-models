@@ -72,6 +72,20 @@ Imageomics Institute.
     and records of absence (a species looked for and not found). The whole list is v2's
     unchanged, for which every GBIF record counted: 163 of its names (0.5%) reach 3 records in
     Europe only through fossil specimens or records of absence. They are still in v3.
+  - `bioclip-2_pollinator-orders-europe_v4.fpack`, `bioclip-2_pollinator-orders-north-america_v1.fpack`,
+    `bioclip-2_pollinator-orders-south-america_v1.fpack`, `bioclip-2_pollinator-orders-africa_v1.fpack`,
+    `bioclip-2_pollinator-orders-asia_v1.fpack`, `bioclip-2_pollinator-orders-oceania_v1.fpack`:
+    the same four orders with at least 3 GBIF presence records in the continent (GBIF's
+    continents; North America includes Central America and the Caribbean), fossil specimens and
+    records of absence left out, counted per accepted species of the Catalogue of Life (35,014 /
+    56,446 / 23,660 / 22,358 / 37,897 / 23,255 names; GBIF queried 17 November 2026). Each holds,
+    like v3, the GBIF species of every name and per country the names with at least 3 presence
+    records there, with each country's neighbours. Species that the Catalogue of Life marks as
+    extinct and of which GBIF holds no observation of a living individual are left out (Europe:
+    114 names). Europe v4 is a new count, not v3 with
+    additions: 511 names of v3 are not in it and 551 are new. A country near a continent border
+    can have part of its species only in the neighbouring continent's list (for example
+    Indonesia: 4,665 of its 5,523 names are in the Asia list, 2,191 in the Oceania list).
   - The v2 and v3 packs use the names as described in [Names](#names). The v1 packs (same selections;
     the v1 Europe list was made on 20 September 2026 with 35,264 names and an earlier version of
     the same method) use every row as published. They stay here unchanged because installed
@@ -147,6 +161,16 @@ pack header."
   occurrence data (one request per country, at least 3 presence records of the species there,
   fossil specimens left out, queried 28 October 2026) and a neighbour table computed from Natural
   Earth country borders (admin-0 map units 1:10m, v5.1.2, public domain).
+- **Continent lists (Europe v4 and the other continents, v1)**: the same method, with GBIF.org
+  occurrence data queried on 17 November 2026 (one request per continent and per country). GBIF
+  read its records in the Catalogue of Life Extended Release COL26.10 XR
+  (https://doi.org/10.48580/dgzlf) on that day, and species keys change between releases, so the
+  TreeOfLife-to-GBIF key table was made again for that release by running the mapping script of
+  `insect-detect-post` unchanged (commit da050d2) on 17 November 2026; it is not his published
+  table v1.1.0, which is of COL26.6 XR. The keys in these packs are keys of COL26.10 XR (v3:
+  COL26.6 XR); a key can be a different one in a later release although the name stays.
+  Extinct species: the Catalogue of Life's extinct mark (ChecklistBank), kept when GBIF holds a
+  human or machine observation of the species.
 
 ## What it is
 
@@ -164,7 +188,7 @@ pack header."
 Home screen menu, **Download & import models**: the app downloads the model and a label pack
 from links pinned to one commit of this repository and checks each file's SHA-256 (FaunaPulse
 versions after v0.8.0-alpha.1; with any version you can also download the files here and import
-them by hand). Download on Wi-Fi (610 MB for the model, plus 28 to 63 MB for a label pack).
+them by hand). Download on Wi-Fi (610 MB for the model, plus 28 to 96 MB for a label pack).
 
 ## How it was made
 
@@ -172,7 +196,8 @@ them by hand). Download on Wi-Fi (610 MB for the model, plus 28 to 63 MB for a l
 [fauna-pulse-models](https://github.com/valentinitnelav/fauna-pulse-models/tree/{{CODE_COMMIT}}/bioclip_export)
 (CPU only): `export_image_tower.py --model bioclip-2 --precision fp16` for the image tower,
 `build_label_pack.py` for the label packs (with `build_region_species_list.py` for the Europe
-list; for v3, `build_country_lists.py`, `country_neighbours.py` and `add_pack_blocks.py`),
+list; for v3, `build_country_lists.py`, `country_neighbours.py` and `add_pack_blocks.py`; for
+the continent lists also `make_gbif_mapping.py`),
 `verify_parity.py` for the PyTorch vs `.tflite` comparison.
 
 ## Limitations
@@ -186,7 +211,7 @@ list; for v3, `build_country_lists.py`, `country_neighbours.py` and `add_pack_bl
   synonym. The v1 packs also use the rows described in [Names](#names) as published (for
   example the species answer "Bombus spec" in the 32-family demo pack); the v2 and v3 packs use them
   only down to genus or family.
-- The country lists of the v3 pack show where GBIF holds records, which depends on how well a
+- The country lists of the v3, v4 and continent packs show where GBIF holds records, which depends on how well a
   country is recorded (well in Europe, much less in many tropical countries), and species do not
   follow borders: a country list is a practical narrowing, not a range map. The whole pack is
   always available.
