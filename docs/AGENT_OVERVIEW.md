@@ -29,11 +29,11 @@ import path and breaks `from fpack import ...` and the sibling imports.
 | `bioclip_export/export_image_tower.py` | BioCLIP 1/2/2.5 image tower -> `.tflite` (GPU-friendly 4-d attention, normalisation + L2 built in) + `.json` | HF download or `--weights` -> `out/<model>_<px>_<prec>.tflite` | ~7 GB RAM (11 GB for 2.5), internet |
 | `bioclip_export/quantise_tflite.py` | fp32 `.tflite` -> fp16 / int8 (dynamic range) / int8 weights; patches an ai-edge-quantizer 0.9 bug | writes next to input | no calibration images |
 | `bioclip_export/build_label_pack.py` | TreeOfLife embeddings, filtered, names as published (rows not in the plain form used only to genus/family: `--name-rules`, listed in the header; v1 packs: `none`), + "none of these" sink rows -> label pack `.fpack` | HF dataset (2.7 GB) or `--embeddings-dir` -> `out/<pack_id>.fpack` | torch (text tower), internet |
-| `bioclip_export/build_region_species_list.py` | species list from GBIF for a continent, countries or the world (`--world`, counted order by order); COL XR accepted species; `--leave-out-extinct`. Mapping: insect-detect-post v1.1.0 (COL26.6 XR; v1 packs used v1.0.0) or `--mapping-csv`. Stops when GBIF's COL release is not the mapping's, because species keys change between releases (GBIF uses COL26.10 XR since November 2026) | GBIF API -> CSV + `.json` | internet, stdlib only |
-| `bioclip_export/make_gbif_mapping.py` | the mapping for GBIF's current COL release, by running insect-detect-post's own script unchanged (`--model bioclip-2.5` for that names file) | his clone -> mapping CSV + `.json` + `.run.json` | his environment (SSD: `/media/$USER/PortableSSD/venvs/insect-detect-post`), about 300,000 GBIF requests, hours |
-| `bioclip_export/build_country_lists.py` | per-country GBIF lists (>= 3 presence records) for `build_label_pack.py --country-lists` (header blocks: `fpack.py`) | GBIF API -> `.json` | internet |
+| `bioclip_export/build_region_species_list.py` | species list from GBIF for a continent, countries or the world (`--world`, counted order by order); COL XR accepted species; `--leave-out-extinct`; `--classes` (other phyla, with their mapping), `--every-mapped-name` (key list, no region). Mapping: insect-detect-post v1.1.0 (COL26.6 XR; v1 packs used v1.0.0) or `--mapping-csv`. Stops when GBIF's COL release is not the mapping's, because species keys change between releases (GBIF uses COL26.10 XR since November 2026) | GBIF API -> CSV + `.json` | internet, stdlib only |
+| `bioclip_export/make_gbif_mapping.py` | the mapping for GBIF's current COL release, by running insect-detect-post's own script unchanged (`--model bioclip-2.5` for that names file; `--phylum Chordata` for mammals and birds) | his clone -> mapping CSV + `.json` + `.run.json` | his environment (SSD: `/media/$USER/PortableSSD/venvs/insect-detect-post`), about 300,000 GBIF requests, hours |
+| `bioclip_export/build_country_lists.py` | per-country GBIF lists (>= 3 presence records) for `build_label_pack.py --country-lists` (header blocks: `fpack.py`); extinct species off the lists: `--leave-out-extinct`, `-iucn-extinct`, `-pbdb-extinct` (README 3b) | GBIF API -> `.json` | internet |
 | `bioclip_export/country_neighbours.py` | neighbours (land border or <= 100 km of sea; Natural Earth) | -> tracked `country_neighbours.csv` | shapely |
-| `bioclip_export/add_pack_blocks.py`, `check_pack_blocks.py` | add the blocks to a pack (same vectors); check them, the app's header limits (exit 1 for a pack only a PC can open), `--same-as`, `--countries` | | |
+| `bioclip_export/add_pack_blocks.py`, `check_pack_blocks.py` | add the blocks to a pack (same vectors; `--drop-sink`, `--in-every-country`); check them, the app's header limits (exit 1 for a pack only a PC can open), `--same-as`, `--countries` | | |
 | `bioclip_export/verify_parity.py` | PyTorch vs `.tflite` embeddings: cosine, same answer per rank | `--tflite --images [--pack ...] [--crops-csv]` | |
 | `bioclip_export/inspect_tflite.py` | ops and weight storage of a `.tflite` (positional arg, no `--help`) | prints | |
 | `bioclip_export/build_text_tower_pack.py` | a pack with the same rows as a reference pack, vectors from another model's text tower (taxonomy + common name, 80 OpenAI templates); for benchmark rows such as BioCAP, not for publishing | reference `.fpack` + an open_clip model in `export_image_tower.MODELS` | `fpack.read_fpack`, `write_fpack` |
@@ -151,6 +151,10 @@ and per GBIF continent (`europe_v4`, `north-america_v1`, `south-america_v1`, `af
 (`out/packs_2026-11_bioclip-2.5/`, Europe v3, world v1, others v1; its own mapping
 `out/mapping_col26.10xr_bioclip-2.5/`; continent packs published, world pack not). GBIF bulk runs (the mapping)
 go to the GPU workstation with few workers, not the owner's home line.
+
+Mammals and birds v3 (built 2026-11-17, not published; SSD `out/packs_2026-11/` once copied, until
+then on the workstation): v2 without the "person" sink row, plus `gbif` and `regions` (chordate mapping
+`out/mapping_col26.10xr_chordata/`; README 3b, 3c).
 
 The MegaDetector file is also a GitHub release asset of the app (`v0.8.0-alpha.1`); that asset
 stays online forever. The owner's older HF repo `flower_visitor_order_detector` is unrelated.

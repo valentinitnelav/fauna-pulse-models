@@ -274,6 +274,55 @@ scripts. Lists and packs record the mapping they were made with (SHA-256, COL re
 commit of insect-detect-post). A published pack is not affected: its names and country lists
 stay as built, and its keys are those of the release named in its header.
 
+**Mammals and birds (November 2026).** Insect-detect-post's mapping covers only arthropods, so
+`make_gbif_mapping.py --phylum Chordata` runs his script unchanged on the chordates of the
+BioCLIP 2 names file (57,900 names, 53,774 with a key; 20 minutes with 4 workers). `--classes`
+replaces `--orders` in both list scripts (GBIF is then asked for the records of those classes), and
+`--every-mapped-name` writes every mapped name without a region: the key list of a pack that keeps
+all its rows, as the worldwide mammals-and-birds pack does (`add_pack_blocks.py` takes it for a pack
+built from whole classes):
+
+```bash
+M=out/mapping_col26.10xr_chordata/bioclip_gbif_species_mapping_Chordata.csv
+P=out/packs_2026-11
+python build_region_species_list.py --every-mapped-name --classes Mammalia,Aves --mapping-csv $M --out $P/species_mammals-birds_keys.csv
+python build_country_lists.py --species-csv $P/species_mammals-birds_keys.csv --min-occurrences 3 --mapping-csv $M \
+  --leave-out-extinct --leave-out-iucn-extinct --leave-out-pbdb-extinct --mdd-csv MDD_v2.5_6904species.csv \
+  --out $P/countries_mammals-birds.json
+python add_pack_blocks.py bioclip-2_mammals-birds-world_v2.fpack --species-csv $P/species_mammals-birds_keys.csv \
+  --country-lists $P/countries_mammals-birds.json --in-every-country people-and-domestic --short-list-names 300 \
+  --drop-sink person --pack-id bioclip-2_mammals-birds-world_v3 --out $P
+```
+
+Extinct species stay rows of the pack, and three rules keep them off the country lists (the names
+and the rule that took each go to `<lists>_extinct_left_out.csv`): the two-part rule above
+(`--leave-out-extinct`); the IUCN Red List category EX (`--leave-out-iucn-extinct`, from the
+mapping; "extinct in the wild" stays, such species are reintroduced); and the Paleobiology Database
+(`--leave-out-pbdb-extinct`, https://paleobiodb.org, CC BY 4.0), for Ice Age species such as
+*Mammuthus primigenius* and *Ursus spelaeus*, which GBIF holds as museum specimens and material
+samples (not "fossil specimens") and which neither the Catalogue of Life nor the IUCN marks. PBDB
+alone also answered "extinct" for living species whose name matches a fossil (the moose, the anoas),
+so a species goes only when, in addition, the IUCN has not assessed it as living, under 10 % of its
+GBIF records are observations, and, for mammals, the Mammal Diversity Database v2.5
+(https://doi.org/10.5281/zenodo.21654811, CC BY 4.0; the file is checked by SHA-256) does not list it
+as a living species. People and domestic animals live everywhere but are rarely recorded (at least
+3 records: *Homo sapiens* in 67 countries of 250, the TreeOfLife row *Canis lupus*, common name
+Domestic Dog, in 78), so `--in-every-country people-and-domestic` puts ten rows on every country's
+list (humans, dog, cat, cattle, sheep, goat, pig, horse, donkey, chicken; `EVERY_COUNTRY_SETS` in
+`build_label_pack.py`, recorded in the header). Since v3 the `mammal` sink set has no "person" row:
+the app sends MegaDetector's "person" boxes to BioCLIP, and the *Homo sapiens* row names them.
+`--short-list-names` records below how many names a country with its neighbours counts as short
+for this pack (`regions.short_list_names`); the app's own rule (5,000 names) fits the pollinator
+lists, while a mammals-and-birds country with its neighbours has 25 to 4,751 names.
+
+How complete the mammal lists are, against the Mammal Diversity Database's country field (v2.5,
+the 3,912 MDD species whose name matches a mapped TreeOfLife mammal): a country with its neighbours
+holds a median 97 % of its MDD mammals (the lowest tenth of countries under 87 %), a country alone
+78 %. Lists with neighbours under 300 names are nearly all small islands, where most of the MDD
+species missing are whales and dolphins. Birds are recorded far better (eBird). The lists also hold
+more than the species living there (Germany: 1,622 names, 102 MDD mammals), from museum
+specimens, vagrants and kept animals.
+
 **Limits.** A country list says where GBIF holds records of a species, and records follow where
 people observe, collect and digitise. Europe, North America and Australia are well recorded; much
 of the tropics, Africa and Asia is not (e.g.: names of the four orders with at least 3 records, 28
@@ -351,9 +400,18 @@ presence records there) and with its neighbours:
 The number in brackets is the country's whole list for the four orders: Cyprus shows that some
 of its species are not in a Europe pack (Asian species). BioCLIP 2.5 got these blocks with the November
 packs above (its own mapping; `add_pack_blocks.py` refuses a species list whose mapping was made
-from another TreeOfLife names file). The mammals-and-birds packs have none: they first need a key
-mapping (GBIF name matching of their 17,130 names; insect-detect-post maps
-only arthropods).
+from another TreeOfLife names file).
+
+Mammals and birds v3 (built 2026-11-17, not on Hugging Face; 3b "Mammals and birds"):
+`bioclip-2_mammals-birds-world_v3` = v2 byte for byte (rows, names, name rules, vectors) without
+the "person" sink row (17,135 rows, 5 sink rows), plus `gbif` (15,526 of 17,130 names with a key,
+15,150 distinct keys) and `regions` (250 countries, GBIF queried 2026-11-17, at least 3 presence
+records); 29.4 MB (header 3.1 MB). 1,922 rows are in no country list: 1,604 without a key (1,435
+mammals, nearly all fossil species of TreeOfLife, e.g. *Astrapotherium magnus*, which GBIF's name
+matching does not find), 163 extinct, 155 with under 3 records in every country. Names per
+country, alone and with its neighbours: United States 3,063 and 4,247; Brazil 2,598 and 4,623;
+Indonesia 2,516 and 3,385; India 1,976 and 2,833; Kenya 1,756 and 2,360; DR Congo 1,609 and
+2,459; Germany 1,622 and 2,211; Nigeria 1,241 and 1,569; Malta 298 and 746.
 
 v2 (2026-10-26, `--name-rules higher-rank`, Europe list made the insect-detect-post way):
 `bioclip-2_pollinator-orders-europe_v2` (34,978 names), `bioclip-2_mammals-birds-world_v2`
@@ -409,7 +467,8 @@ Taxonomy lists Animalia as a synonym). Rows not in the plain form are used only 
 family, as listed in the pack header."
 
 Every pack ends with six "none of these" rows; `--sink-set arthropod` (default) uses
-flower-scene prompts, `--sink-set mammal` camera-trap prompts, `--no-sink` none.
+flower-scene prompts, `--sink-set mammal` camera-trap prompts (five since v3 of the mammals pack:
+no "person" row; `mammal-v2` is the six-row set of v1 and v2), `--no-sink` none.
 
 Other selections:
 

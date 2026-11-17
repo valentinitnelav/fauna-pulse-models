@@ -29,6 +29,13 @@ Differences here: regions may be GBIF continents or a union of ISO country codes
 and the rows are narrowed to --orders instead of classes. --world counts the records of the whole
 world (no region), order by order (world_species_counts).
 
+--classes instead of --orders selects whole classes of another phylum, with a mapping of that
+phylum (make_gbif_mapping.py --phylum Chordata for --classes Mammalia,Aves): GBIF is then asked for
+the records of those classes, whose COL keys are read from their own species (taxon_key).
+--every-mapped-name writes every mapped name of the selection without asking GBIF for records:
+the key list for a pack that keeps all its rows (the mammals-and-birds pack v3, where the country
+lists of build_country_lists.py do the narrowing).
+
 GBIF moves its COL XR checklist to newer Catalogue of Life releases, and a species can get a new
 key in a new release although its name stays (e.g. Speyeria aglaja: 93N9L in COL26.6 XR, 4YKG8
 in COL26.10 XR). A mapping made for one release therefore misses such species in the counts of
@@ -50,11 +57,13 @@ Examples:
     python build_region_species_list.py --continent EUROPE --orders Diptera,Hymenoptera,Coleoptera,Lepidoptera --out out/species_europe_pollinator_orders.csv
     python build_region_species_list.py --countries DE,AT,CH,CZ,PL --orders Diptera,Hymenoptera --out out/species_central_europe_flies_bees.csv
     python build_region_species_list.py --world --orders Diptera,Hymenoptera,Coleoptera,Lepidoptera --out out/species_world_4orders.csv
+    python build_region_species_list.py --every-mapped-name --classes Mammalia,Aves --mapping-csv out/mapping_col26.10xr_chordata/bioclip_gbif_species_mapping_Chordata.csv --out out/species_mammals-birds_keys.csv
 
 Then:
     python build_label_pack.py --model bioclip-2 --species-csv out/species_europe_pollinator_orders.csv --pack-id bioclip-2_pollinator-orders-europe_v2 --out ./out
 
-Only arthropods are covered by the mapping; other groups need their own key mapping.
+Insect-detect-post's published mapping covers only arthropods; other phyla need a mapping of
+their own (make_gbif_mapping.py --phylum).
 """
 
 from __future__ import annotations
@@ -64,6 +73,7 @@ import csv
 import functools
 import hashlib
 import json
+import re
 import sys
 import time
 import urllib.error
@@ -81,6 +91,7 @@ MAPPING_FILES = {
 GBIF_API = "https://api.gbif.org/v1"
 COL_XR = "7ddf754f-d193-4cc9-b351-99906754a03b"  # GBIF checklistKey of COL XR
 ARTHROPODA_COL_KEY = "RT"  # COL XR key of the phylum, restricts the facet server-side
+ARTHROPODA = {"phylumKey": ARTHROPODA_COL_KEY}  # the records counted for --orders (arthropod orders)
 FACET_LIMIT = 1_200_000
 # Only presence records count (since 2026-10-28); GBIF reads a record without a status as present.
 OCCURRENCE_STATUS = "PRESENT"
@@ -135,11 +146,12 @@ def _facet(where: dict, field: str, limit: int, min_count: int = 1) -> tuple[dic
     return {str(c["name"]): int(c["count"]) for c in counts}, int(r.get("count") or 0)
 
 
-def species_counts(region: dict, min_occ: int, allow_empty: bool = False) -> dict[str, int]:
-    """COL XR species key -> number of GBIF arthropod presence records in the region (>= min_occ),
-    fossil specimens left out. allow_empty: a region with records but no species reaching min_occ
-    gives {} (small countries in build_country_lists.py) instead of an error."""
-    counts, records = _facet({**region, "phylumKey": ARTHROPODA_COL_KEY}, "speciesKey", FACET_LIMIT, min_occ)
+def species_counts(region: dict, min_occ: int, allow_empty: bool = False, scope: dict | None = None) -> dict[str, int]:
+    """COL XR species key -> number of GBIF presence records in the region (>= min_occ) of the taxa
+    of [scope] (default: the arthropods), fossil specimens left out. allow_empty: a region with
+    records but no species reaching min_occ gives {} (small countries in build_country_lists.py)
+    instead of an error."""
+    counts, records = _facet({**region, **(scope or ARTHROPODA)}, "speciesKey", FACET_LIMIT, min_occ)
     # No species means a wrong region or a GBIF change, not an empty region: stop rather than
     # write a short list that would silently make a small pack.
     if not counts and not (allow_empty and records):
@@ -153,19 +165,23 @@ WORLD_FACET_LIMIT = 300_000
 KEYS_PER_REQUEST = 150
 
 
-def order_key(keys: list[str]) -> str | None:
-    """The COL XR key of the order that [keys] (species keys of one TreeOfLife order) sit in, read
-    from GBIF's records of some of them: the order with the most records (a stray species may sit
-    in another order). None when the sample has no record."""
+def taxon_key(keys: list[str], rank: str = "order") -> str | None:
+    """The COL XR key of the order (or class: [rank]) that [keys] (species keys of one TreeOfLife
+    order or class) sit in, read from GBIF's records of some of them: the taxon with the most
+    records (a stray species may sit in another one). None when the sample has no record."""
     sample = keys[::max(1, len(keys) // KEYS_PER_REQUEST)][:KEYS_PER_REQUEST]
-    order_keys, _ = _facet({"speciesKey": sample}, "orderKey", 1000)
-    return max(order_keys, key=lambda k: order_keys[k]) if order_keys else None
+    found, _ = _facet({"speciesKey": sample}, f"{rank}Key", 1000)
+    return max(found, key=lambda k: found[k]) if found else None
 
 
-def world_species_counts(keys_by_order: dict[str, list[str]], min_occ: int) -> dict[str, int]:
+def order_key(keys: list[str]) -> str | None:
+    return taxon_key(keys, "order")
+
+
+def world_species_counts(keys_by_order: dict[str, list[str]], min_occ: int, rank: str = "order") -> dict[str, int]:
     """COL XR species key -> number of presence records in the whole world (>= min_occ), for the
-    given keys only ({TreeOfLife order: its mapped species keys}); the same records as
-    species_counts (presence only, no fossil specimens).
+    given keys only ({TreeOfLife order (or class: [rank]): its mapped species keys}); the same
+    records as species_counts (presence only, no fossil specimens).
 
     GBIF does not answer the species facet of all arthropods without a region (2026-11-16: the
     request fails once it has to return more than about 400,000 species), so the count is made order
@@ -176,11 +192,11 @@ def world_species_counts(keys_by_order: dict[str, list[str]], min_occ: int) -> d
     counts: dict[str, int] = {}
     for order, keys in keys_by_order.items():
         t0 = time.time()
-        key = order_key(keys)
+        key = taxon_key(keys, rank)
         if key is None:
             print(f"  {order}: no records for a sample of its species; all asked for by key below")
             continue
-        found, _ = _facet({"orderKey": key}, "speciesKey", WORLD_FACET_LIMIT, min_occ)
+        found, _ = _facet({f"{rank}Key": key}, "speciesKey", WORLD_FACET_LIMIT, min_occ)
         mine = {k: n for k, n in found.items() if k in wanted}
         counts.update(mine)
         print(f"  world, {order}: {len(found)} species in GBIF, {len(mine)} of them mapped ({time.time() - t0:.0f} s)")
@@ -196,11 +212,26 @@ def world_species_counts(keys_by_order: dict[str, list[str]], min_occ: int) -> d
     return counts
 
 
+def class_scope(keys_by_class: dict[str, list[str]]) -> dict:
+    """GBIF search parameters for the records of whole classes (--classes): their COL XR keys, read
+    from their own mapped species (taxon_key), since a class name can also be the name of another
+    taxon. Stops when a class has no records."""
+    keys = {}
+    for cls, ks in keys_by_class.items():
+        if not ks:  # an empty speciesKey list would ask GBIF about all records and return another class
+            raise SystemExit(f"the mapping holds no species of the class {cls} with a key: check the name")
+        keys[cls] = taxon_key(ks, "class")
+        if keys[cls] is None:
+            raise SystemExit(f"GBIF has no records for a sample of the {cls} species: cannot find its COL key")
+    print("COL XR class keys: " + ", ".join(f"{c} {k}" for c, k in keys.items()))
+    return {"classKey": sorted(keys.values())}
+
+
 CLB_API = "https://api.checklistbank.org"
 OBSERVED_ALIVE = ("HUMAN_OBSERVATION", "MACHINE_OBSERVATION")  # GBIF's basisOfRecord of a living individual seen
 
 
-def extinct_unobserved(keys_by_order: dict[str, list[str]], clb_dataset_key: str) -> set[str]:
+def extinct_unobserved(keys_by_order: dict[str, list[str]], clb_dataset_key: str, rank: str = "order") -> set[str]:
     """The species keys of [keys_by_order] that the Catalogue of Life release marks as extinct and
     of which GBIF holds no observation of a living individual (--leave-out-extinct).
 
@@ -210,12 +241,12 @@ def extinct_unobserved(keys_by_order: dict[str, list[str]], clb_dataset_key: str
     finds them, but it also sits on some living species (2026-11-16: Bibio slossonae, 440
     observations); an observation keeps those. A living species with the mark and with museum
     specimens only is still left out, so the names left out are written next to the list.
-    The mark is asked for inside each order's main COL key (order_key), so a species that COL files
-    under another order is not checked."""
+    The mark is asked for inside each order's (or class's: [rank]) main COL key (taxon_key), so a
+    species that COL files under another one is not checked."""
     wanted = {k for keys in keys_by_order.values() for k in keys}
     extinct: set[str] = set()
     for keys in keys_by_order.values():
-        key = order_key(keys)
+        key = taxon_key(keys, rank)
         offset, total = 0, 1
         while key is not None and offset < total:  # 200 per page: larger answers broke off in transfer
             r = _get_json(f"{CLB_API}/dataset/{clb_dataset_key}/nameusage/search?" + urllib.parse.urlencode(
@@ -229,6 +260,96 @@ def extinct_unobserved(keys_by_order: dict[str, list[str]], clb_dataset_key: str
         found, _ = _facet({"speciesKey": part, "basisOfRecord": list(OBSERVED_ALIVE)}, "speciesKey", 10 * KEYS_PER_REQUEST)
         alive |= set(found)
     return extinct - alive
+
+
+PBDB_API = "https://paleobiodb.org/data1.2"
+# IUCN Red List categories of a living species: an assessment as one of these overrules a fossil
+# database's "extinct" (EW: extinct in the wild, kept in captivity and reintroduced).
+IUCN_LIVING = ("LC", "NT", "VU", "EN", "CR", "DD", "EW")
+
+
+# MDD release whose living species guard pbdb_extinct (Mammal Diversity Database v2.5, CC BY 4.0,
+# https://doi.org/10.5281/zenodo.21654811; file name -> SHA-256).
+MDD_FILES = {"MDD_v2.5_6904species.csv": "0d07a7e9409712fa86c1e3afadcf4c67bf4f9e16d5693a878e11ec1bf6860493"}
+MDD_URL = "https://zenodo.org/api/records/21654811/files/MDD_v2.5_6904species.csv/content"
+OBSERVED = ("HUMAN_OBSERVATION", "MACHINE_OBSERVATION", "OBSERVATION")  # GBIF's basisOfRecord of a sighting
+MAX_OBSERVED_SHARE = 0.10
+
+
+def mdd_living_names(path: Path) -> set[str]:
+    """"Genus epithet" names of the living species of the Mammal Diversity Database file [path]:
+    accepted names, their synonyms (nominalNames) and original combinations. Checked by SHA-256."""
+    digest = hashlib.sha256(path.read_bytes()).hexdigest()
+    if MDD_FILES.get(path.name) != digest:
+        raise SystemExit(f"{path}: not the MDD file named in MDD_FILES (download: {MDD_URL})")
+    names: set[str] = set()
+    with open(path, newline="", encoding="utf-8") as f:
+        for r in csv.DictReader(f):
+            if r["extinct"] == "1":
+                continue
+            names.add(r["sciName"].replace("_", " "))
+            for field in ("nominalNames", "originalNameCombination"):
+                for nominal in r[field].split("|"):
+                    w = nominal.replace("_", " ").split()
+                    if len(w) >= 2 and w[0][:1].isupper():
+                        names.add(f"{w[0]} {w[1]}")
+                    elif w and w[0][:1].islower():  # an epithet alone, of the species' genus
+                        names.add(f"{r['genus']} {w[0]}")
+    return names
+
+
+def pbdb_extinct(mapping_rows: list[dict], mdd_csv: Path | None = None) -> set[str]:
+    """The species keys of [mapping_rows] (rows of the mapping CSV) that the Paleobiology Database
+    marks as extinct (taxon attribute 'ext' 0), when also
+    - the IUCN has not assessed them as a living species (iucn_category not in IUCN_LIVING),
+    - under MAX_OBSERVED_SHARE of their GBIF records are observations (OBSERVED), and
+    - for mammals, the Mammal Diversity Database [mdd_csv] does not list the name as a living species.
+    For build_country_lists.py --leave-out-pbdb-extinct.
+
+    Why: Ice Age species are in GBIF as preserved specimens and material samples of museums, not as
+    "fossil specimens", and neither the Catalogue of Life nor the IUCN marks them extinct
+    (2026-11-17: Mammuthus primigenius on 12 country lists, Ursus spelaeus on 14, Bos priscus on 10).
+    Living species known only from museum specimens look the same in GBIF, so a fossil database
+    decides. PBDB alone is not enough: a name can also match a fossil taxon of the same name, and
+    'extinct' then came back for the moose (Alces alces), bandicoots (Isoodon), rails and the anoas
+    (Bubalus depressicornis, quarlesi). The observation share keeps the well observed ones, and MDD
+    the rarely observed living mammals (the anoas: 4 % observations; the IUCN category of the
+    mapping is missing for them). 2026-11-17, mammals and birds: 150 PBDB 'extinct' species keys,
+    127 left out, all fossil or extinct. A name is asked for as the TreeOfLife name and as the
+    accepted COL name; a name PBDB does not know leaves the species in.
+    Data: The Paleobiology Database, https://paleobiodb.org (CC BY 4.0), queried on the day the
+    lists are made; Mammal Diversity Database (MDD_FILES)."""
+    asked: dict[str, set[str]] = {}
+    for m in mapping_rows:
+        if m["gbif_species_key"] and m.get("iucn_category") not in IUCN_LIVING:
+            for name in {m["bioclip_species"], m["gbif_species"]} - {""}:
+                asked.setdefault(name, set()).add(m["gbif_species_key"])
+    names = sorted(n for n in asked if re.fullmatch(r"[A-Z][a-z]+ [a-z][a-z-]+", n))  # PBDB refuses other forms
+    extinct: set[str] = set()
+    for i in range(0, len(names), 100):  # PBDB takes a comma list of names
+        part = names[i:i + 100]
+        r = _get_json(f"{PBDB_API}/taxa/list.json?" + urllib.parse.urlencode({"name": ",".join(part), "show": "attr"}))
+        for rec in r.get("records") or []:
+            name = rec.get("nam", "")
+            plain = " ".join(w for w in name.split() if not w.startswith("("))  # 'Bos (Urus) priscus'
+            if str(rec.get("ext")) == "0" and plain in asked:  # PBDB writes "0" (extinct) or "1" as text
+                extinct |= asked[plain]
+    keys = sorted(extinct)
+    records, observed = {}, {}
+    for i in range(0, len(keys), KEYS_PER_REQUEST):
+        part = keys[i:i + KEYS_PER_REQUEST]
+        records.update(_facet({"speciesKey": part}, "speciesKey", 10 * KEYS_PER_REQUEST)[0])
+        observed.update(_facet({"speciesKey": part, "basisOfRecord": list(OBSERVED)}, "speciesKey", 10 * KEYS_PER_REQUEST)[0])
+    seen = {k for k in keys if observed.get(k, 0) >= MAX_OBSERVED_SHARE * max(1, records.get(k, 0))}
+    mammals = {m["gbif_species_key"] for m in mapping_rows if m["bioclip_class"] == "Mammalia"} & extinct
+    if mammals and mdd_csv is None:
+        raise SystemExit("--leave-out-pbdb-extinct for mammals needs --mdd-csv (the Mammal Diversity Database, MDD_URL)")
+    living = mdd_living_names(mdd_csv) if mammals else set()
+    in_mdd = {m["gbif_species_key"] for m in mapping_rows if m["gbif_species_key"] in mammals
+              and (m["bioclip_species"] in living or m["gbif_species"] in living)}
+    print(f"  PBDB: {len(names)} names without an IUCN category of a living species asked, {len(extinct)} species keys "
+          f"extinct there; kept as living: {len(seen)} often observed, {len(in_mdd - seen)} more in MDD")
+    return extinct - seen - in_mdd
 
 
 def gbif_col_release(mapping_release: dict | None) -> dict:
@@ -292,7 +413,11 @@ def main() -> int:
     g.add_argument("--continent", help="GBIF continent, e.g. EUROPE")
     g.add_argument("--countries", help="comma list of ISO 3166-1 alpha-2 codes, e.g. DE,AT,CH")
     g.add_argument("--world", action="store_true", help="no region: the records of the whole world")
-    ap.add_argument("--orders", required=True, help="comma list of order names")
+    g.add_argument("--every-mapped-name", action="store_true",
+                   help="no records asked for: every name of the selection that the mapping gives a species key")
+    t = ap.add_mutually_exclusive_group(required=True)
+    t.add_argument("--orders", help="comma list of order names (arthropods)")
+    t.add_argument("--classes", help="comma list of class names (e.g. Mammalia,Aves; needs a --mapping-csv of their phylum)")
     ap.add_argument("--min-occurrences", type=int, default=3, help="GBIF records needed in a region (default 3)")
     ap.add_argument("--mapping-dir", type=Path, default=Path("out"), help="where the mapping files are kept")
     ap.add_argument("--mapping-csv", type=Path, default=None,
@@ -305,35 +430,37 @@ def main() -> int:
     args = ap.parse_args()
 
     regions = ([{"continent": args.continent.upper()}] if args.continent
-               else [] if args.world
+               else [] if args.world or args.every_mapped_name
                else [{"country": c.strip().upper()} for c in args.countries.split(",") if c.strip()])
-    orders = [o.strip() for o in args.orders.split(",") if o.strip()]
+    rank = "class" if args.classes else "order"
+    groups = [o.strip() for o in (args.classes or args.orders).split(",") if o.strip()]
+    if args.classes and args.mapping_csv is None:
+        raise SystemExit("--classes needs a --mapping-csv of their phylum (the default mapping holds only arthropods)")
     csv_path, provenance, mapping_record = mapping_source(args.mapping_dir, args.mapping_csv)
     with open(csv_path, newline="", encoding="utf-8") as f:
-        mapping = [m for m in csv.DictReader(f) if m["bioclip_order"] in set(orders) and m["gbif_species_key"]]
-    print(f"mapping: {len(mapping)} TreeOfLife species of {orders} with a COL species key")
+        mapping = [m for m in csv.DictReader(f) if m[f"bioclip_{rank}"] in set(groups) and m["gbif_species_key"]]
+    print(f"mapping: {len(mapping)} TreeOfLife species of {groups} with a COL species key")
     col_release = gbif_col_release(provenance.get("col_release"))
+    keys_of = lambda ms, g: sorted({m["gbif_species_key"] for m in ms if m[f"bioclip_{rank}"] == g})
+    scope = ARTHROPODA if rank == "order" else class_scope({g: keys_of(mapping, g) for g in groups})
 
     # Each region on its own needs >= min_occurrences records (as in insect-detect-post); counts are summed.
     in_region: dict[str, int] = {}
     for region in regions:
         t0 = time.time()
-        counts = species_counts(region, args.min_occurrences)
+        counts = species_counts(region, args.min_occurrences, scope=scope)
         for key, n in counts.items():
             in_region[key] = in_region.get(key, 0) + n
-        print(f"  {region}: {len(counts)} arthropod species ({time.time() - t0:.0f} s)")
+        print(f"  {region}: {len(counts)} species ({time.time() - t0:.0f} s)")
     if args.world:
-        in_region = world_species_counts(
-            {o: sorted({m["gbif_species_key"] for m in mapping if m["bioclip_order"] == o}) for o in orders},
-            args.min_occurrences)
+        in_region = world_species_counts({g: keys_of(mapping, g) for g in groups}, args.min_occurrences, rank)
 
-    rows = sorted((m for m in mapping if m["gbif_species_key"] in in_region),
+    rows = sorted((m for m in mapping if args.every_mapped_name or m["gbif_species_key"] in in_region),
                   key=lambda m: (m["bioclip_order"], m["bioclip_family"], m["bioclip_species"]))
     args.out.parent.mkdir(parents=True, exist_ok=True)
     extinct_record = None
     if args.leave_out_extinct:
-        gone = extinct_unobserved({o: sorted({m["gbif_species_key"] for m in rows if m["bioclip_order"] == o})
-                                   for o in orders}, col_release["clb_dataset_key"])
+        gone = extinct_unobserved({g: keys_of(rows, g) for g in groups}, col_release["clb_dataset_key"], rank)
         left_out = [m for m in rows if m["gbif_species_key"] in gone]
         rows = [m for m in rows if m["gbif_species_key"] not in gone]
         side = args.out.with_name(args.out.stem + "_extinct_left_out.csv")
@@ -342,7 +469,7 @@ def main() -> int:
             w.writerow(["species", "family", "order", "gbif_species", "gbif_species_key", "gbif_occurrences_in_region"])
             for m in left_out:
                 w.writerow([m["bioclip_species"], m["bioclip_family"], m["bioclip_order"], m["gbif_species"],
-                            m["gbif_species_key"], in_region[m["gbif_species_key"]]])
+                            m["gbif_species_key"], in_region.get(m["gbif_species_key"], "")])
         extinct_record = {"rule": "marked extinct in the COL release and no GBIF record with basisOfRecord "
                                   + " or ".join(OBSERVED_ALIVE), "names": len(left_out), "file": side.name}
         print(f"left out as extinct and never observed alive: {len(left_out)} names ({side.name})")
@@ -355,16 +482,19 @@ def main() -> int:
         for m in rows:
             w.writerow([m["bioclip_species"], m["bioclip_genus"], m["bioclip_family"], m["bioclip_order"],
                         m["bioclip_class"], m["gbif_species"], m["gbif_species_key"], m["gbif_status"],
-                        in_region[m["gbif_species_key"]]])
-    meta = {"regions": regions or "world", "orders": orders, "min_occurrences": args.min_occurrences,
+                        in_region.get(m["gbif_species_key"], "")])
+    # The keys of --orders stay as before (pollinator lists); --classes adds the classes and their COL keys.
+    taxa = {"orders": groups} if rank == "order" else {"classes": groups, "gbif_scope": scope}
+    meta = {"regions": "none (every mapped name)" if args.every_mapped_name else regions or "world", **taxa,
+            "min_occurrences": None if args.every_mapped_name else args.min_occurrences,
             "species": len(rows), "occurrence_status": OCCURRENCE_STATUS,
             "basis_of_record_excluded": list(EXCLUDED_BASIS), "gbif_checklist_key": COL_XR,
             "mapping": mapping_record,
             **({"extinct_left_out": extinct_record} if extinct_record else {}),
             "gbif_col_release": col_release, "date": date.today().isoformat()}
     args.out.with_suffix(".json").write_text(json.dumps(meta, indent=2))
-    per_order = {o: sum(1 for m in rows if m["bioclip_order"] == o) for o in orders}
-    print(f"wrote {args.out}: {len(rows)} species {per_order}")
+    per_group = {g: sum(1 for m in rows if m[f"bioclip_{rank}"] == g) for g in groups}
+    print(f"wrote {args.out}: {len(rows)} species {per_group}")
     return 0
 
 

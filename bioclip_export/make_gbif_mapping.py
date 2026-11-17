@@ -28,6 +28,12 @@ of the same dataset) in the same way; his script and pybioclip know only the Bio
 three of his script's settings are set here for that run (the names file, the model name it
 records, and the dataset the file is in).
 
+--phylum Chordata maps the chordates instead of the arthropods (57,900 names of the BioCLIP 2 file
+in November 2026, among them the 17,130 mammals and birds of the mammals-and-birds packs): his
+script's PHYLUM_FILTER constant, which also names the output file
+(bioclip_gbif_species_mapping_Chordata.csv). Its matching does not depend on the phylum: GBIF is
+asked with the name and kingdom, and the TreeOfLife phylum only checks the answer.
+
 Credit: Sittinger, M. (2026). Software for post-processing of data captured with the Insect Detect
 camera trap. Zenodo. https://doi.org/10.5281/zenodo.21822140 (AGPL-3.0;
 https://github.com/maxsitt/insect-detect-post).
@@ -55,6 +61,8 @@ def main() -> int:
     ap.add_argument("--clone", type=Path, required=True, help="local clone of insect-detect-post")
     ap.add_argument("--out", type=Path, required=True, help="folder for the mapping CSV and its .json")
     ap.add_argument("--model", choices=sorted(MODELS), default="bioclip-2", help="whose TreeOfLife names file")
+    ap.add_argument("--phylum", default="Arthropoda",
+                    help="TreeOfLife phylum to map (his PHYLUM_FILTER; default Arthropoda, his own setting)")
     ap.add_argument("--workers", type=int, default=None,
                     help="parallel GBIF requests (his default 64; 8 keeps a home connection usable, about 8 times slower)")
     args = ap.parse_args()
@@ -67,7 +75,10 @@ def main() -> int:
     import build_bioclip_gbif_species_mapping as his  # needs his environment (polars, pygbif, pybioclip)
 
     args.out.mkdir(parents=True, exist_ok=True)
-    his.OUTPUT_CSV = args.out / his.OUTPUT_CSV.name
+    # PHYLUM_FILTER and _scope are read when his module is imported: the filter of the names, the
+    # output file name and the "phylum_filter" of his provenance record.
+    his.PHYLUM_FILTER = his._scope = args.phylum
+    his.OUTPUT_CSV = args.out / f"bioclip_gbif_species_mapping_{args.phylum}.csv"
     his.OUTPUT_JSON = his.OUTPUT_CSV.with_suffix(".json")
     names_file, model_name = MODELS[args.model]
     if names_file:
@@ -80,7 +91,7 @@ def main() -> int:
         return 1
     run = {"made_with": "insect-detect-post, filters/build_bioclip_gbif_species_mapping.py, run by make_gbif_mapping.py",
            "insect_detect_post_commit": commit, "insect_detect_post_changed_files": changed,
-           "model": args.model, "workers": his.MAX_WORKERS, "date": date.today().isoformat()}
+           "model": args.model, "phylum": args.phylum, "workers": his.MAX_WORKERS, "date": date.today().isoformat()}
     his.OUTPUT_CSV.with_suffix(".run.json").write_text(json.dumps(run, indent=2))
     print(f"wrote {his.OUTPUT_CSV} (+ .json, .run.json)")
     return 0

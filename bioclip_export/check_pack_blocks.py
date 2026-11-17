@@ -126,6 +126,16 @@ def check_pack(path: Path, same_as: Path | None = None, countries: tuple[str, ..
     if same_as is not None:
         old_hdr_bytes, old_payload = raw_parts(same_as)
         old, _ = read_fpack(same_as)
+        # add_pack_blocks.py --drop-sink: those sink rows are left out, every other row stays.
+        dropped = (hdr.get("built_with", {}).get("rows_and_vectors_from") or {}).get("sink_rows_left_out") or []
+        if dropped:
+            row_bytes = len(old_payload) // old["rows"]
+            gone = [i for i in range(old["rows"] - old["sink_rows"], old["rows"]) if old["labels"][i][6] in dropped]
+            assert len(gone) == len(dropped), f"{same_as.name} has no sink rows {dropped}"
+            old_payload = b"".join(old_payload[i * row_bytes:(i + 1) * row_bytes] for i in range(old["rows"]) if i not in gone)
+            old["labels"] = [l for i, l in enumerate(old["labels"]) if i not in gone]
+            old["rows"], old["sink_rows"] = old["rows"] - len(gone), old["sink_rows"] - len(gone)
+            print(f"  {same_as.name} without its sink rows {dropped} (rows {gone}):")
         assert payload == old_payload, "the vectors differ from the older pack"
         skip = {"gbif", "regions", "built_with", "pack_id", "source"}
         for k in sorted((set(hdr) | set(old)) - skip):

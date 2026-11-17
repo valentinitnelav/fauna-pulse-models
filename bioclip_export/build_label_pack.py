@@ -72,7 +72,10 @@ MODEL_HUB = {
 # Zenodo 10.5281/zenodo.8325384). BioCLIP and pybioclip have no such rows; embedding
 # negative prompts with the text tower next to the TreeOfLife names is FaunaPulse's
 # own use of the model. "arthropod" = flower-scene false positives, "mammal" =
-# camera-trap false positives of a MegaDetector "animal" box.
+# camera-trap false positives of a MegaDetector "animal" box. The mammal set had a "person" row
+# ("a photo of a person.") up to the v2 mammals-and-birds pack; since v3 humans are named by the
+# TreeOfLife row Homo sapiens, as every other mammal (owner, 2026-10-28), and the app sends
+# MegaDetector's "person" boxes to BioCLIP too.
 SINK_SETS = {
     "arthropod": [
         ("flower", "a photo of a flower."),
@@ -85,6 +88,14 @@ SINK_SETS = {
     "mammal": [
         ("vegetation", "a photo of vegetation with no animal."),
         ("ground", "a photo of bare ground, rocks or a path with no animal."),
+        ("vehicle", "a photo of a vehicle."),
+        ("shadow", "a photo of a shadow or a dark blurry shape."),
+        ("blurry", "a blurry photo with no animal."),
+    ],
+    # The set of the mammals-and-birds packs v1 and v2, to rebuild them as published.
+    "mammal-v2": [
+        ("vegetation", "a photo of vegetation with no animal."),
+        ("ground", "a photo of bare ground, rocks or a path with no animal."),
         ("person", "a photo of a person."),
         ("vehicle", "a photo of a vehicle."),
         ("shadow", "a photo of a shadow or a dark blurry shape."),
@@ -93,6 +104,20 @@ SINK_SETS = {
     "none": [],
 }
 SINK_PROMPTS = SINK_SETS["arthropod"]
+
+# --in-every-country: rows put on every country's list of the "regions" block, with the reason
+# written next to them in the header. GBIF holds few records of people and of domestic animals
+# (2026-11-17, at least 3 presence records: Homo sapiens in 68 countries, not in Nigeria or India;
+# the TreeOfLife row "Canis lupus" (common name Domestic Dog) in 79, Bos taurus in 123), as
+# observers rarely record them, yet a camera trap sees them everywhere; without this a person's box
+# would be forced onto another primate once the names are narrowed to a country.
+EVERY_COUNTRY_SETS = {
+    "people-and-domestic": (
+        ["Homo sapiens", "Canis lupus", "Felis catus", "Bos taurus", "Ovis aries", "Capra hircus", "Sus scrofa",
+         "Equus caballus", "Equus asinus", "Gallus gallus"],
+        "people and the most widespread domestic animals live in every country, but GBIF holds few records of them",
+    ),
+}
 
 
 def load_tol(model_key: str, cache_dir: Path | None, embeddings_dir: Path | None = None):
@@ -206,6 +231,12 @@ def read_species_csv(path: Path) -> tuple[set[str], dict[str, tuple[str, str | N
     return keep, gbif
 
 
+def taxa_of(d: dict) -> dict:
+    """The selection a species list, country list or block was made for: its orders (arthropods)
+    or classes (other phyla), to check that two files are for the same names."""
+    return {k: sorted(d[k]) for k in ("orders", "classes") if d.get(k)}
+
+
 def gbif_block(row_names: list[str], gbif: dict, sink_rows: int, species_csv: Path, names_sha256: str) -> dict:
     """The "gbif" header block (fpack.py): per pack row the COL species key and accepted name of its
     TreeOfLife name, joined by that name as insect-detect-post does, so both programs give a
@@ -223,32 +254,51 @@ def gbif_block(row_names: list[str], gbif: dict, sink_rows: int, species_csv: Pa
         "species_key": [k for k, _ in pairs],
         "species": [s for _, s in pairs],
         "source": {"species_csv": species_csv.name, "orders": meta.get("orders"),
+                   **({"classes": meta["classes"]} if meta.get("classes") else {}),
                    "gbif_checklist_key": meta.get("gbif_checklist_key"), "mapping": meta.get("mapping")},
     }
 
 
-def regions_block(keys: list, row_names: list[str], lists_path: Path, neighbours_path: Path, gbif_source: dict) -> dict:
+def regions_block(keys: list, row_names: list[str], lists_path: Path, neighbours_path: Path, gbif_source: dict,
+                  every_country: str | None = None, short_list_names: int | None = None) -> dict:
     """The "regions" header block (fpack.py): per country the pack rows whose GBIF species has at
     least min_occurrences records there (build_country_lists.py), as bits, and the neighbour table
-    (country_neighbours.py). Countries without any row of the pack are left out."""
+    (country_neighbours.py). Countries without any row of the pack are left out. [every_country]
+    (a key of EVERY_COUNTRY_SETS) puts its rows on every country's list, recorded in the block.
+    [short_list_names]: below this many names (country with its neighbours) the pack's lists count
+    as short, for an app that reads it (in November 2026 the app uses 5,000 for every pack, a number
+    fitted to the pollinator lists; a mammals-and-birds country has a few hundred to 4,000 names)."""
     lists = json.loads(lists_path.read_text())
     # names_in_country counts the names of the lists' orders, and the keys must come from the same
     # mapping table: both must be those of the species list.
-    if not gbif_source.get("orders") or not gbif_source.get("mapping"):
+    if not taxa_of(gbif_source) or not gbif_source.get("mapping"):
         raise SystemExit(f"no .json next to {gbif_source['species_csv']}: cannot check that {lists_path.name} "
                          "is for the same orders and mapping")
-    if sorted(lists["orders"]) != sorted(gbif_source["orders"]):
-        raise SystemExit(f"{lists_path} is for the orders {lists['orders']}, the species list for {gbif_source['orders']}")
+    if taxa_of(lists) != taxa_of(gbif_source):
+        raise SystemExit(f"{lists_path} is for {taxa_of(lists)}, the species list for {taxa_of(gbif_source)}")
     if lists["mapping"]["sha256"] != gbif_source["mapping"]["sha256"]:
         raise SystemExit(f"{lists_path} and {gbif_source['species_csv']} were made with different mapping tables")
     n = len(keys)
+    everywhere: list[int] = []
+    if every_country:
+        names, reason = EVERY_COUNTRY_SETS[every_country]
+        everywhere = [i for i, name in enumerate(row_names) if name in set(names)]
+        missing = set(names) - {row_names[i] for i in everywhere}
+        if missing:
+            raise SystemExit(f"--in-every-country {every_country}: no pack row for {sorted(missing)}")
+        keyless = sorted({row_names[i] for i in everywhere if keys[i] is None})
+        if keyless:  # a country's rows all carry a GBIF key (check_pack_blocks.py)
+            raise SystemExit(f"--in-every-country {every_country}: no GBIF species key for {keyless}")
     countries = {}
     for code, c in sorted(lists["countries"].items()):
         present = c["keys"]
-        rows = [i for i, k in enumerate(keys) if k is not None and k in present]
+        listed = {i for i, k in enumerate(keys) if k is not None and k in present}
+        rows = sorted(listed | set(everywhere))
         if rows:
+            # Names put on the list by [every_country] count as names of the country's list too.
+            added = len({row_names[i] for i in everywhere} - {row_names[i] for i in listed})
             countries[code] = {"rows": rows_to_bits(rows, n), "names": len({row_names[i] for i in rows}),
-                               "names_in_country": c["names_in_country"]}
+                               "names_in_country": c["names_in_country"] + added}
     nb_meta = json.loads(neighbours_path.with_suffix(".json").read_text())
     neighbours: dict[str, list[str]] = {}
     with open(neighbours_path, newline="", encoding="utf-8") as f:
@@ -264,9 +314,15 @@ def regions_block(keys: list, row_names: list[str], lists_path: Path, neighbours
         "countries": countries,
         "neighbours": {c: sorted(v) for c, v in sorted(neighbours.items())},
         "neighbours_rule": nb_meta["rule"],
+        **({"in_every_country": {"set": every_country, "names": EVERY_COUNTRY_SETS[every_country][0],
+                                 "rows": everywhere, "reason": EVERY_COUNTRY_SETS[every_country][1]}}
+           if every_country else {}),
+        **({"extinct_left_out": lists["extinct_left_out"]["rule"]} if lists.get("extinct_left_out") else {}),
+        **({"short_list_names": short_list_names} if short_list_names else {}),
         "source": {"gbif_query_date": lists["date"], "gbif_checklist_key": lists["gbif_checklist_key"],
                    **({"gbif_col_release": lists["gbif_col_release"]} if lists.get("gbif_col_release") else {}),
-                   "orders": lists["orders"], "mapping": lists["mapping"], "neighbours": nb_meta["source"],
+                   **({"orders": lists["orders"]} if "orders" in lists else {"classes": lists["classes"]}),
+                   "mapping": lists["mapping"], "neighbours": nb_meta["source"],
                    **({"neighbours_by_hand": nb_meta["manual_pairs"]} if nb_meta.get("manual_pairs") else {})},
     }
 
@@ -316,6 +372,11 @@ def main() -> int:
                          "country), so the app can narrow the pack to a country and its neighbours")
     ap.add_argument("--neighbours", type=Path, default=Path(__file__).with_name("country_neighbours.csv"),
                     help="neighbour table for --country-lists (default: country_neighbours.csv next to this script)")
+    ap.add_argument("--in-every-country", choices=sorted(EVERY_COUNTRY_SETS), default=None,
+                    help="with --country-lists: put these rows on every country's list (see EVERY_COUNTRY_SETS)")
+    ap.add_argument("--short-list-names", type=int, default=None,
+                    help="with --country-lists: below this many names a country with its neighbours counts as short "
+                         "(header regions.short_list_names; the app's own default without it: 5,000)")
     ap.add_argument("--out", type=Path, default=Path("out"))
     args = ap.parse_args()
 
@@ -432,7 +493,8 @@ def main() -> int:
               "have a GBIF species key")
     if args.country_lists:
         header["regions"] = regions_block(header["gbif"]["species_key"], row_names, args.country_lists,
-                                          args.neighbours, header["gbif"]["source"])
+                                          args.neighbours, header["gbif"]["source"], args.in_every_country,
+                                          args.short_list_names)
         reg = header["regions"]
         print(f"regions: {len(reg['countries'])} countries with rows, neighbours of {len(reg['neighbours'])}")
     args.out.mkdir(parents=True, exist_ok=True)
