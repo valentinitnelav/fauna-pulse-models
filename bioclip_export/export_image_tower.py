@@ -54,9 +54,10 @@ MODELS = {
     "bioclip-2": "hf-hub:imageomics/bioclip-2",
     "bioclip-2.5": "hf-hub:imageomics/bioclip-2.5-vith14",
     "bioclip-1": "hf-hub:imageomics/bioclip",
+    "biocap": "hf-hub:imageomics/biocap",  # benchmark comparison only (BioCAP, ViT-B/16, MIT)
 }
 # open_clip architecture of each model, for a checkpoint file already on disk (--weights)
-ARCH = {"bioclip-2": "ViT-L-14", "bioclip-2.5": "ViT-H-14", "bioclip-1": "ViT-B-16"}
+ARCH = {"bioclip-2": "ViT-L-14", "bioclip-2.5": "ViT-H-14", "bioclip-1": "ViT-B-16", "biocap": "ViT-B-16"}
 CLIP_MEAN = (0.48145466, 0.4578275, 0.40821073)
 CLIP_STD = (0.26862954, 0.26130258, 0.27577711)
 KEEP_FP32 = False
