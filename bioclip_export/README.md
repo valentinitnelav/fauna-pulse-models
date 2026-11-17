@@ -310,6 +310,24 @@ with its neighbours: United States 39,351 and 58,636; Germany 16,937 and 28,534;
 not in v4 and 551 are new (v3 keeps the rows of v2, counted in October with the older mapping;
 GBIF's name matching no longer finds the names with two genera in one row, 72 rows of v3).
 
+BioCLIP 2.5, the same selections (built 2026-11-17, not on Hugging Face), with its own mapping
+`out/mapping_col26.10xr_bioclip-2.5/` (`make_gbif_mapping.py --model bioclip-2.5`, run on the GPU
+workstation with `--workers 4`; 276,384 of 286,485 names with a key), in
+`out/packs_2026-11_bioclip-2.5/`. The first BioCLIP 2.5 packs with the `gbif` and `regions` blocks:
+
+| Pack id | Names | Size (header) | Rows in no country list | Opens in the app |
+|---|---|---|---|---|
+| `bioclip-2.5_pollinator-orders-world_v1` | 189,281 | 418.5 MB (30.8 MB) | 34,418 | no: for PC use |
+| `bioclip-2.5_pollinator-orders-europe_v3` | 35,017 | 77.5 MB (5.8 MB) | 457 | yes |
+| `bioclip-2.5_pollinator-orders-north-america_v1` | 56,396 | 124.7 MB (9.2 MB) | 407 | yes |
+| `bioclip-2.5_pollinator-orders-south-america_v1` | 23,121 | 51.1 MB (3.8 MB) | 540 | yes |
+| `bioclip-2.5_pollinator-orders-africa_v1` | 21,765 | 48.1 MB (3.6 MB) | 786 | yes |
+| `bioclip-2.5_pollinator-orders-asia_v1` | 37,199 | 82.3 MB (6.1 MB) | 909 | yes |
+| `bioclip-2.5_pollinator-orders-oceania_v1` | 22,995 | 50.9 MB (3.8 MB) | 62 | yes |
+
+`build_label_pack.py` exits non-zero after writing a pack the app cannot open (the world pack):
+a script that builds several packs must not stop there.
+
 v3 (2026-10-28, on Hugging Face since 2026-11-15): `bioclip-2_pollinator-orders-europe_v3`, the v2 Europe pack
 byte for byte (rows, names, vectors) plus the blocks `gbif` (every row has a key: 34,978 rows,
 34,974 distinct names, 34,336 distinct keys, synonyms share one) and `regions` (248 countries,
@@ -327,10 +345,9 @@ presence records there) and with its neighbours:
 | Malta | 310 (310) | 11,807 (IT) |
 
 The number in brackets is the country's whole list for the four orders: Cyprus shows that some
-of its species are not in a Europe pack (Asian species). The BioCLIP 2.5 and mammals-and-birds
-packs have no v3: BioCLIP 2.5 first needs a mapping of its own names file (`add_pack_blocks.py`
-refuses a species list whose mapping was made from another TreeOfLife names file; such a mapping
-would also close the gap of its 586 missing Europe names), and mammals and birds first need a key
+of its species are not in a Europe pack (Asian species). BioCLIP 2.5 got these blocks with the November
+packs above (its own mapping; `add_pack_blocks.py` refuses a species list whose mapping was made
+from another TreeOfLife names file). The mammals-and-birds packs have none: they first need a key
 mapping (GBIF name matching of their 17,130 names; insect-detect-post maps
 only arthropods).
 

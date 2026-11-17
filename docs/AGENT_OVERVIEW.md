@@ -143,7 +143,10 @@ and is not in `publish/hf_repos.json`): the four
 orders for the world (`..._world_v2`, 192,886 names, header 31 MB, so no app version opens it)
 and per GBIF continent (`europe_v4`, `north-america_v1`, `south-america_v1`, `africa_v1`,
 `asia_v1`, `oceania_v1`; all within the app's limits), with the mapping of COL26.10 XR in
-`out/mapping_col26.10xr/`; table in `bioclip_export/README.md` 3c.
+`out/mapping_col26.10xr/`; table in `bioclip_export/README.md` 3c. BioCLIP 2.5 has the same set
+(`out/packs_2026-11_bioclip-2.5/`, Europe v3, world v1, others v1; its own mapping
+`out/mapping_col26.10xr_bioclip-2.5/`; not on Hugging Face yet). GBIF bulk runs (the mapping)
+go to the GPU workstation with few workers, not the owner's home line.
 
 The MegaDetector file is also a GitHub release asset of the app (`v0.8.0-alpha.1`); that asset
 stays online forever. The owner's older HF repo `flower_visitor_order_detector` is unrelated.
