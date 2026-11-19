@@ -531,6 +531,31 @@ per crop: `crop_id`, `kind`, `seq_id`, `crop_px`, `new_filename`) takes one rand
 ID and one square per insect-free frame, so long tracks do not fill the sample. The ranks and
 the top-down answer come from `app_rules.py`, the Python copy of the app's rules.
 
+## 4b. Test packs on photos the model has not seen (GPU recommended, about 10 minutes for 40 species)
+
+```bash
+python photo_test.py --set photo_sets/mammals_birds_common.csv --work out/photo_tests/<run name> \
+  --pack out/packs_v2/bioclip-2_mammals-birds-world_v2.fpack \
+  --pack out/packs_2026-11/bioclip-2_mammals-birds-world_v4.fpack \
+  --detector MDV6-yolov10-c.pt --detector-class animal
+```
+
+A photo set (`photo_sets/*.csv`: `species` as the pack writes it, optional `inat_name`,
+`country`, `group`) names the species. For each, the script downloads research-grade
+iNaturalist photos of wild animals uploaded after `--uploaded-after` (default 2025-07-01).
+BioCLIP 2 was published in May 2025 and its training data holds GBIF's occurrence snapshot of
+2024-05-01 (TreeOfLife-200M card), so these photos cannot be in it. For another model, give a
+day after its own training data was collected. Each photo is cut two ways: the whole photo,
+and the best box of a detector (Ultralytics weights; MegaDetector for mammals and birds,
+another detector or none for other groups). Both are squared and padded as the app crops a
+box. Each pack is scored the way the app answers one crop (`app_rules.py`: top-down, stopped at
+the deepest rank with a 60 % share; `--tau`): over the whole pack, and for packs with country
+lists also over the set's country and its neighbours. Photos, cut-outs and embeddings are kept
+in the work folder, so `--offline` scores other packs again in seconds. The photos are only
+for testing: never commit or publish them (their licences and attributions are in
+`photos/manifest.csv`). The app pools several crops of a track ID; this test scores single
+photos, so it measures the pack and the model, not a whole session.
+
 ## 5. Copy the files to the phone and import them
 
 ```bash
@@ -627,6 +652,7 @@ References:
 | `country_neighbours.py` | Natural Earth borders -> `country_neighbours.csv` + `.json` (tracked neighbour table) |
 | `check_pack_blocks.py` | checks of a pack's `gbif` and `regions` blocks, the app's header limits, and v3 against v2 |
 | `verify_parity.py` | PyTorch vs `.tflite` comparison on real images |
+| `photo_test.py`, `photo_sets/` | packs scored as the app answers, on iNaturalist photos uploaded after the model's training data was collected |
 | `app_rules.py` | Python copy of the app's identification defaults and top-down answer (`verify_parity.py`, calibration scripts) |
 | `inspect_tflite.py` | ops, constant sizes and how each layer's weights are stored (fp16, int8, float32) |
 | `requirements.txt` | packages (version ranges; exact verified versions: `../requirements-lock.txt`) |
@@ -671,6 +697,9 @@ classification dataset (Sittinger, Uhler & Pink 2023, https://doi.org/10.5281/ze
 **Data:** GBIF occurrence facets and backbone taxonomy, https://www.gbif.org; Catalogue of
 Life, the release named in each list's `.json` (COL26.6 XR: https://doi.org/10.48580/dgy8b);
 country borders for the neighbour table: Natural Earth (public domain), https://www.naturalearthdata.com.
+Test photos of `photo_test.py`: iNaturalist (https://www.inaturalist.org), each under its
+observer's licence (CC0, CC BY or CC BY-NC), used for testing only and not redistributed;
+MegaDetector V6 (Microsoft AI for Good Lab, https://github.com/microsoft/MegaDetector) for the cut-outs.
 
 ## Licenses and citation
 
