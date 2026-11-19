@@ -260,14 +260,11 @@ def gbif_block(row_names: list[str], gbif: dict, sink_rows: int, species_csv: Pa
 
 
 def regions_block(keys: list, row_names: list[str], lists_path: Path, neighbours_path: Path, gbif_source: dict,
-                  every_country: str | None = None, short_list_names: int | None = None) -> dict:
+                  every_country: str | None = None) -> dict:
     """The "regions" header block (fpack.py): per country the pack rows whose GBIF species has at
     least min_occurrences records there (build_country_lists.py), as bits, and the neighbour table
     (country_neighbours.py). Countries without any row of the pack are left out. [every_country]
-    (a key of EVERY_COUNTRY_SETS) puts its rows on every country's list, recorded in the block.
-    [short_list_names]: below this many names (country with its neighbours) the pack's lists count
-    as short, for an app that reads it (in November 2026 the app uses 5,000 for every pack, a number
-    fitted to the pollinator lists; a mammals-and-birds country has a few hundred to 4,000 names)."""
+    (a key of EVERY_COUNTRY_SETS) puts its rows on every country's list, recorded in the block."""
     lists = json.loads(lists_path.read_text())
     # names_in_country counts the names of the lists' orders, and the keys must come from the same
     # mapping table: both must be those of the species list.
@@ -318,7 +315,6 @@ def regions_block(keys: list, row_names: list[str], lists_path: Path, neighbours
                                  "rows": everywhere, "reason": EVERY_COUNTRY_SETS[every_country][1]}}
            if every_country else {}),
         **({"extinct_left_out": lists["extinct_left_out"]["rule"]} if lists.get("extinct_left_out") else {}),
-        **({"short_list_names": short_list_names} if short_list_names else {}),
         "source": {"gbif_query_date": lists["date"], "gbif_checklist_key": lists["gbif_checklist_key"],
                    **({"gbif_col_release": lists["gbif_col_release"]} if lists.get("gbif_col_release") else {}),
                    **({"orders": lists["orders"]} if "orders" in lists else {"classes": lists["classes"]}),
@@ -374,9 +370,6 @@ def main() -> int:
                     help="neighbour table for --country-lists (default: country_neighbours.csv next to this script)")
     ap.add_argument("--in-every-country", choices=sorted(EVERY_COUNTRY_SETS), default=None,
                     help="with --country-lists: put these rows on every country's list (see EVERY_COUNTRY_SETS)")
-    ap.add_argument("--short-list-names", type=int, default=None,
-                    help="with --country-lists: below this many names a country with its neighbours counts as short "
-                         "(header regions.short_list_names; the app's own default without it: 5,000)")
     ap.add_argument("--out", type=Path, default=Path("out"))
     args = ap.parse_args()
 
@@ -493,8 +486,7 @@ def main() -> int:
               "have a GBIF species key")
     if args.country_lists:
         header["regions"] = regions_block(header["gbif"]["species_key"], row_names, args.country_lists,
-                                          args.neighbours, header["gbif"]["source"], args.in_every_country,
-                                          args.short_list_names)
+                                          args.neighbours, header["gbif"]["source"], args.in_every_country)
         reg = header["regions"]
         print(f"regions: {len(reg['countries'])} countries with rows, neighbours of {len(reg['neighbours'])}")
     args.out.mkdir(parents=True, exist_ok=True)

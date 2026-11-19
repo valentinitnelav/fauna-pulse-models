@@ -290,13 +290,13 @@ python build_country_lists.py --species-csv $P/species_mammals-birds_keys.csv --
   --leave-out-extinct --leave-out-iucn-extinct --leave-out-pbdb-extinct --mdd-csv MDD_v2.5_6904species.csv \
   --out $P/countries_mammals-birds.json
 python add_pack_blocks.py bioclip-2_mammals-birds-world_v2.fpack --species-csv $P/species_mammals-birds_keys.csv \
-  --country-lists $P/countries_mammals-birds.json --in-every-country people-and-domestic --short-list-names 300 \
+  --country-lists $P/countries_mammals-birds.json --in-every-country people-and-domestic \
   --drop-sink person --pack-id bioclip-2_mammals-birds-world_v3 --out $P
 # v4: v3 without its extinct and fossil rows
 python list_fossil_rows.py $P/bioclip-2_mammals-birds-world_v3.fpack --extinct-csv $P/countries_mammals-birds_extinct_left_out.csv \
   --mdd-csv MDD_v2.5_6904species.csv --out $P/fossil_rows_mammals-birds.csv
 python add_pack_blocks.py bioclip-2_mammals-birds-world_v2.fpack --species-csv $P/species_mammals-birds_keys.csv \
-  --country-lists $P/countries_mammals-birds.json --in-every-country people-and-domestic --short-list-names 300 \
+  --country-lists $P/countries_mammals-birds.json --in-every-country people-and-domestic \
   --drop-sink person --drop-rows $P/fossil_rows_mammals-birds.csv --pack-id bioclip-2_mammals-birds-world_v4 --out $P
 ```
 
@@ -317,9 +317,8 @@ Domestic Dog, in 78), so `--in-every-country people-and-domestic` puts ten rows 
 list (humans, dog, cat, cattle, sheep, goat, pig, horse, donkey, chicken; `EVERY_COUNTRY_SETS` in
 `build_label_pack.py`, recorded in the header). Since v3 the `mammal` sink set has no "person" row:
 the app sends MegaDetector's "person" boxes to BioCLIP, and the *Homo sapiens* row names them.
-`--short-list-names` records below how many names a country with its neighbours counts as short
-for this pack (`regions.short_list_names`); the app's own rule (5,000 names) fits the pollinator
-lists, while a mammals-and-birds country with its neighbours has 25 to 4,751 names.
+The published v3 and v4 packs also carry `regions.short_list_names: 300`, from an option since
+removed; no app reads it.
 
 Since v4 the extinct and fossil species are not rows of the pack at all (owner's decision of
 2026-11-17): on the country lists alone they still competed whenever the app used the whole list,

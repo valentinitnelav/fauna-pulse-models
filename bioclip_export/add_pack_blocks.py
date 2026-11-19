@@ -24,11 +24,11 @@ rows left out are written into the header (built_with) with their reasons. Owner
 was named Homo neanderthalensis when the app used the whole list).
 
     python add_pack_blocks.py bioclip-2_mammals-birds-world_v2.fpack --species-csv species_mammals-birds_keys.csv \
-        --country-lists countries_mammals-birds.json --in-every-country people-and-domestic --short-list-names 300 --drop-sink person \
+        --country-lists countries_mammals-birds.json --in-every-country people-and-domestic --drop-sink person \
         --pack-id bioclip-2_mammals-birds-world_v3 --out out/packs_2026-11
 
     python add_pack_blocks.py bioclip-2_mammals-birds-world_v2.fpack --species-csv species_mammals-birds_keys.csv \
-        --country-lists countries_mammals-birds.json --in-every-country people-and-domestic --short-list-names 300 --drop-sink person \
+        --country-lists countries_mammals-birds.json --in-every-country people-and-domestic --drop-sink person \
         --drop-rows fossil_rows_mammals-birds.csv --pack-id bioclip-2_mammals-birds-world_v4 --out out/packs_2026-11
 
     python add_pack_blocks.py out/packs_v2/bioclip-2_pollinator-orders-europe_v2.fpack \
@@ -106,8 +106,6 @@ def main() -> int:
     ap.add_argument("--neighbours", type=Path, default=Path(__file__).with_name("country_neighbours.csv"))
     ap.add_argument("--in-every-country", choices=sorted(EVERY_COUNTRY_SETS), default=None,
                     help="with --country-lists: put these rows on every country's list (see build_label_pack.py)")
-    ap.add_argument("--short-list-names", type=int, default=None,
-                    help="with --country-lists: the pack's own short-list threshold (see build_label_pack.py)")
     ap.add_argument("--drop-sink", action="append", default=[], metavar="KEY",
                     help="leave out this 'none of these' row (e.g. person); may be given more than once")
     ap.add_argument("--drop-rows", type=Path, default=None, metavar="CSV",
@@ -161,8 +159,7 @@ def main() -> int:
     hdr.pop("regions", None)  # an old block would not match the new keys and date
     if args.country_lists:
         hdr["regions"] = regions_block(hdr["gbif"]["species_key"], row_names, args.country_lists,
-                                       args.neighbours, hdr["gbif"]["source"], args.in_every_country,
-                                       args.short_list_names)
+                                       args.neighbours, hdr["gbif"]["source"], args.in_every_country)
         print(f"regions: {len(hdr['regions']['countries'])} countries with rows, "
               f"neighbours of {len(hdr['regions']['neighbours'])}")
     hdr["built_with"] = {"script": "add_pack_blocks.py", "date": date.today().isoformat(),

@@ -14,9 +14,8 @@ pack given, with the app's answer (app_rules.py): one softmax over the rows that
 top-down (best order, best family inside it, ...), stopping at the deepest rank whose share
 reaches --tau (the app's 60 %). Two ways of narrowing are scored:
   - "whole": every row of the pack;
-  - "country": the set's country and its neighbours, as when that country is chosen in the
-    app (the app's automatic default uses the country only when its list is not "short": a
-    fixed 5,000 names today). The "none of these" rows keep their share of the softmax over
+  - "country": the set's country and its neighbours, the app's default when the session's
+    country is known. The "none of these" rows keep their share of the softmax over
     the whole pack and the listed names share the rest, as in the app (track_fusion.dart).
     Only for packs with a regions block, and only for species that have a country in the set.
 
