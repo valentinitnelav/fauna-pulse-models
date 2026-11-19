@@ -32,7 +32,7 @@
         "url": "https://huggingface.co/Valen-Peregrine/flatbug-tflite/resolve/0ab3ca4374c6a6cf166591ca8f304a77def5aeeb/LICENSE"
       }
     },
-    "card_commit": "22cfac625e8533e29e4c8601b2e0072ed25a42bc"
+    "card_commit": "34267b0126cc6d28487ae110b6ea596376bce5d0"
   },
   "Valen-Peregrine/insectdct-v8-tflite": {
     "files": {
@@ -56,7 +56,7 @@
         "url": "https://huggingface.co/Valen-Peregrine/insectdct-v8-tflite/resolve/f5ac1bb18bb9dac2f21d2a35341de9941153224c/LICENSE"
       }
     },
-    "card_commit": "97e4376b731039cb6f6a3ba4d0f84b7ada68aded"
+    "card_commit": "20f12c76152adced1eeb85d0b9dcd2c7a8b4826e"
   },
   "Valen-Peregrine/mdv6-tflite": {
     "files": {
@@ -74,7 +74,7 @@
         "url": "https://huggingface.co/Valen-Peregrine/mdv6-tflite/resolve/009a5a95c07ad60c71226c668b437af7a6213c3c/LICENSE"
       }
     },
-    "card_commit": "39031aa24864270c4852f7b9e296a5b2e7e8f713"
+    "card_commit": "a1adb9329cb7973106751e65cc43f775a6d0ebfe"
   },
   "Valen-Peregrine/bioclip-2-tflite": {
     "files": {
@@ -170,9 +170,15 @@
         "bytes": 39542463,
         "sha256": "c3452df9417036ad9fed6393e79f832f3e89cfe59cf1be9ecf812a9bbf3d288a",
         "url": "https://huggingface.co/Valen-Peregrine/bioclip-2-tflite/resolve/9ea38108bc99d66d1441db208624461ec21c94ba/bioclip-2_pollinator-orders-oceania_v1.fpack"
+      },
+      "bioclip-2_mammals-birds-world_v4.fpack": {
+        "commit": "3007eade814a9124e44389c59d0d56f4839654fb",
+        "bytes": 26455122,
+        "sha256": "f12ad9a5c5cca37f00fe2a19a085df8b6e60882e1b8f113bcb947d7d36d3af43",
+        "url": "https://huggingface.co/Valen-Peregrine/bioclip-2-tflite/resolve/3007eade814a9124e44389c59d0d56f4839654fb/bioclip-2_mammals-birds-world_v4.fpack"
       }
     },
-    "card_commit": "92a4040d924958715da52e71d0b6e05654ebfb70"
+    "card_commit": "3007eade814a9124e44389c59d0d56f4839654fb"
   },
   "Valen-Peregrine/insectdct-cls-v7-tflite": {
     "files": {
@@ -202,7 +208,7 @@
         "url": "https://huggingface.co/Valen-Peregrine/insectdct-cls-v7-tflite/resolve/8ded6d9266e3af0f5bbf6a6b56fd570fa339056c/LICENSE"
       }
     },
-    "card_commit": "4071edce7f812d63345607ad35d0450dd3b37e59"
+    "card_commit": "bee1941819b88352b74c8404c762424e8b6cda21"
   },
   "Valen-Peregrine/bioclip-2.5-tflite": {
     "files": {
@@ -282,6 +288,6 @@
         "url": "https://huggingface.co/Valen-Peregrine/bioclip-2.5-tflite/resolve/40b7b0f0abd3dc536c2759e44780d20030c98747/bioclip-2.5_pollinator-orders-oceania_v1.fpack"
       }
     },
-    "card_commit": "40b7b0f0abd3dc536c2759e44780d20030c98747"
+    "card_commit": "ff9ee9ed7151a7758165897ecfbb565bd991d655"
   }
 }
