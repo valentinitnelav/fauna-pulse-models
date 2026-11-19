@@ -49,6 +49,7 @@
         {"name": "bioclip-2_pollinator-orders-africa_v1.fpack", "local": "bioclip_export/out/packs_2026-11/bioclip-2_pollinator-orders-africa_v1.fpack", "role": "label pack"},
         {"name": "bioclip-2_pollinator-orders-asia_v1.fpack", "local": "bioclip_export/out/packs_2026-11/bioclip-2_pollinator-orders-asia_v1.fpack", "role": "label pack"},
         {"name": "bioclip-2_pollinator-orders-oceania_v1.fpack", "local": "bioclip_export/out/packs_2026-11/bioclip-2_pollinator-orders-oceania_v1.fpack", "role": "label pack"},
+        {"name": "bioclip-2_mammals-birds-world_v4.fpack", "local": "bioclip_export/out/packs_2026-11/bioclip-2_mammals-birds-world_v4.fpack", "role": "label pack"},
         {"name": "bioclip-2_mammals-birds-world_v2.fpack", "local": "bioclip_export/out/packs_v2/bioclip-2_mammals-birds-world_v2.fpack", "role": "label pack"},
         {"name": "bioclip-2_pollinator-orders-europe_v3.fpack", "local": "bioclip_export/out/packs_v3/bioclip-2_pollinator-orders-europe_v3.fpack", "role": "label pack"},
         {"name": "bioclip-2_pollinator-orders-europe_v2.fpack", "local": "bioclip_export/out/packs_v2/bioclip-2_pollinator-orders-europe_v2.fpack", "role": "label pack"},

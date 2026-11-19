@@ -53,10 +53,11 @@ Imageomics Institute.
 - `.fpack`: label packs. Each row is a species name with its taxonomy and, where one exists, a
   common name (English where available, otherwise another language), and the BioCLIP 2 text
   embedding of that name, pre-computed by the BioCLIP 2 authors (TreeOfLife-200M); stored here as
-  float16, re-normalised, a subset of their 867,455 rows. Six "none of these" rows were added
-  for FaunaPulse, embedded with the BioCLIP 2 text tower (arthropod packs: flower, leaf, shadow,
-  debris, blurry, spider web; mammals and birds pack: camera-trap scenes such as bare ground,
-  vegetation, a person or a vehicle).
+  float16, re-normalised, a subset of their 867,455 rows. "None of these" rows were added for
+  FaunaPulse, embedded with the BioCLIP 2 text tower: six in the arthropod packs (flower, leaf,
+  shadow, debris, blurry, spider web), five in mammals and birds v4 (vegetation, bare ground, a
+  vehicle, a shadow, a blurry photo). The earlier mammals and birds packs also had a person; v4
+  names people *Homo sapiens*, like any other mammal.
   **Current packs** (use these):
   - `bioclip-2_pollinator-orders-europe_v4.fpack`, `bioclip-2_pollinator-orders-north-america_v1.fpack`,
     `bioclip-2_pollinator-orders-south-america_v1.fpack`, `bioclip-2_pollinator-orders-africa_v1.fpack`,
@@ -81,9 +82,21 @@ Imageomics Institute.
     continent's pack (for example Indonesia: 4,665 of its 5,523 names are in the Asia pack, 2,191
     in the Oceania pack). Use the pack that holds the most species of your study area; a single
     world pack is planned once the app can load only the names of the chosen countries.
-  - `bioclip-2_mammals-birds-world_v2.fpack`: mammals and birds of the world (17,130 names).
+  - `bioclip-2_mammals-birds-world_v4.fpack`: living mammals and birds of the world (15,326
+    names): the names and vectors of v2 without its 1,804 extinct and fossil species. Like the
+    continent packs, it holds the GBIF species of each name (15,237 have one) and per-country
+    lists with neighbours (GBIF queried 17 November 2026). People and ten widespread domestic
+    animals are on every country's list, since GBIF holds few records of them. Left out as
+    extinct (each row with its reason is listed in the pack header): species marked extinct by
+    the Catalogue of Life (with no observation of a living individual), by the IUCN Red List, or,
+    for rarely observed species, by the Paleobiology Database; and names without a GBIF species
+    that the Paleobiology Database knows only as extinct (for example *Archaeopteryx*, moas,
+    *Smilodon* and the extinct *Homo* species). A species that the Mammal Diversity Database
+    lists as living always stays.
 
   **Older versions** (kept unchanged because installed apps pin them; not for new work):
+  - `bioclip-2_mammals-birds-world_v2.fpack`: replaced by v4 (17,130 names, extinct and fossil
+    species included; no GBIF species and no country lists).
   - `bioclip-2_pollinator-orders-europe_v3.fpack`: replaced by Europe v4. The v2 Europe list
     (same 34,978 names, same vectors) plus the GBIF species of every name (as `insect-detect-post`
     v1.1.0 gives them, Catalogue of Life release COL26.6 XR) and per-country lists (GBIF queried
@@ -122,11 +135,11 @@ epithet". In the v2 and later packs (and the continent packs) the app uses such 
 | the species field is not one plain epithet (authors, years, codes, subspecies, placeholders such as "spec") | 347389: Parulidae, Basileuterus, "tristriatus sanlucasensis" | genus |
 
 Rows per pack (Metazoa / two genera / species field): Europe 37 / 72 / 0, mammals and birds
-41 / 571 / 1. Each pack lists these rows in its header (`name_rules.rows`: the row of the source
+v4 41 / 16 / 1 (v2: 41 / 571 / 1; most of those rows were fossil species). Each pack lists these rows in its header (`name_rules.rows`: the row of the source
 file and its names as published), so every change can be checked and undone;
 `source.names_file_sha256` names the source file. The rules look only at the form of a row, so a
 plain row keeps whatever placement the source gives it, and a row with an empty order or family
-(343 rows of the mammals and birds pack) counts only down to the rank above the gap.
+(18 rows of mammals and birds v4, 343 of v2) counts only down to the rank above the gap.
 
 To cite the names of a v2 or later pack: "TreeOfLife-200M (https://doi.org/10.57967/hf/8980), names file
 `embeddings/txt_emb_species.json` (SHA-256 4648928b...), names used as published. The dataset
@@ -177,6 +190,12 @@ pack header."
   COL26.6 XR); a key can be a different one in a later release although the name stays.
   Extinct species: the Catalogue of Life's extinct mark (ChecklistBank), kept when GBIF holds a
   human or machine observation of the species.
+- **Mammals and birds v4**: the same method on 17 November 2026, with a TreeOfLife-to-GBIF key
+  table for all chordates made by the same unchanged mapping script (his published table covers
+  only arthropods). Extinct species: the Catalogue of Life's mark as above; IUCN Red List
+  categories as GBIF's name matching gives them; The Paleobiology Database
+  (https://paleobiodb.org, CC BY 4.0, queried 17 November 2026); the Mammal Diversity Database
+  v2.5 (CC BY 4.0) for the names of living and extinct mammal species.
 
 ## What it is
 
@@ -194,7 +213,7 @@ pack header."
 Home screen menu, **Download & import models**: the app downloads the model and a label pack
 from links pinned to one commit of this repository and checks each file's SHA-256 (FaunaPulse
 versions after v0.8.0-alpha.1; with any version you can also download the files here and import
-them by hand). Download on Wi-Fi (610 MB for the model, plus 28 to 96 MB for a label pack).
+them by hand). Download on Wi-Fi (610 MB for the model, plus 26 to 96 MB for a label pack).
 
 ## How it was made
 
@@ -203,7 +222,8 @@ them by hand). Download on Wi-Fi (610 MB for the model, plus 28 to 96 MB for a l
 (CPU only): `export_image_tower.py --model bioclip-2 --precision fp16` for the image tower,
 `build_label_pack.py` for the label packs (with `build_region_species_list.py` for the Europe
 list; for v3, `build_country_lists.py`, `country_neighbours.py` and `add_pack_blocks.py`; for
-the continent lists also `make_gbif_mapping.py`),
+the continent lists also `make_gbif_mapping.py`; for mammals and birds v4 also
+`list_fossil_rows.py`),
 `verify_parity.py` for the PyTorch vs `.tflite` comparison.
 
 ## Limitations
@@ -217,10 +237,13 @@ the continent lists also `make_gbif_mapping.py`),
   synonym. The v1 packs also use the rows described in [Names](#names) as published (for
   example the species answer "Bombus spec" in the 32-family demo pack); the later packs use them
   only down to genus or family.
-- The country lists of the v3, v4 and continent packs show where GBIF holds records, which depends on how well a
+- The country lists show where GBIF holds records, which depends on how well a
   country is recorded (well in Europe, much less in many tropical countries), and species do not
   follow borders: a country list is a practical narrowing, not a range map. The whole pack is
   always available.
+- Mammals and birds v4 leaves out what its sources mark as extinct. A fossil species that no
+  source knows can stay (89 names without a GBIF species stay because nothing marks them
+  extinct), and a recently extinct species stays when a source still lists it as living.
 - This file has not yet been tested at scale in FaunaPulse, so how accurate it is there is not
   known yet. The app can run it, but the results depend on many factors: the quality of each
   crop (focus, motion blur, light, resolution, video compression), how large and how complete
@@ -238,11 +261,13 @@ the continent lists also `make_gbif_mapping.py`),
   come from TreeOfLife-200M, which the BioCLIP authors release as a compilation under CC0 1.0
   (see its dataset card, "Licensing Information"). The common names in it come from the GBIF
   Backbone Taxonomy (CC BY 4.0, https://doi.org/10.15468/39omei), so please credit GBIF when you
-  reuse them. The six "none of these" rows of each pack (short descriptions such as a leaf or
+  reuse them. The "none of these" rows of each pack (short descriptions such as a leaf or
   bare ground, embedded with the BioCLIP 2 text tower) were added for FaunaPulse on the same
-  CC0 1.0 terms. The GBIF keys and accepted names in the v3, v4 and continent packs come from the Catalogue of Life
-  (CC BY 4.0, please cite it as below); its country lists are derived from GBIF.org occurrence
-  counts and Natural Earth borders (public domain).
+  CC0 1.0 terms. The GBIF keys and accepted names in the packs that have them come from the Catalogue of Life
+  (CC BY 4.0, please cite it as below); the country lists are derived from GBIF.org occurrence
+  counts and Natural Earth borders (public domain). The Paleobiology Database and the Mammal
+  Diversity Database (both CC BY 4.0) only decided which species mammals and birds v4 leaves
+  out; please cite them as below.
 
 ## Citation
 
@@ -277,10 +302,14 @@ For the label packs:
   Europe list; the keys and accepted names in v3)
 - Bánki, O., Roskov, Y., Döring, M., et al. (2026). Catalogue of Life (2026-10-16 XR).
   Catalogue of Life Foundation. https://doi.org/10.48580/dgzlf (COL26.10 XR: the species
-  counting, keys and accepted names of the continent packs)
+  counting, keys and accepted names of the continent packs and mammals and birds v4)
 - GBIF.org (2026). GBIF Occurrence Search, https://www.gbif.org (queried 26 October 2026 for the
   v2 Europe list, 28 October 2026 for the v3 country lists and 17 November 2026 for the
-  continent packs)
+  continent packs and mammals and birds v4)
+- The Paleobiology Database, https://paleobiodb.org (queried 17 November 2026; mammals and birds
+  v4)
+- Mammal Diversity Database (2026). Mammal Diversity Database (Version v2.5) [Data set]. Zenodo.
+  https://doi.org/10.5281/zenodo.21654811 (mammals and birds v4)
 - Country borders of the neighbour tables: Made with Natural Earth (public domain),
   https://www.naturalearthdata.com
 
