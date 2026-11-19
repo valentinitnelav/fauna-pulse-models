@@ -80,7 +80,7 @@ Face (table below) and the source models from their authors' links (model cards)
 ## Published on Hugging Face
 
 All six PUBLIC since 2026-10-16 (code commit `27c23bd`, HF commits in the table; public collection
-https://huggingface.co/collections/Valen-Peregrine/faunapulse-6ad22f04766aed6641688544);
+https://huggingface.co/collections/Valen-Peregrine/faunapulse);
 `publish_hf.py --verify` (anonymous: size and SHA-256 at the pinned commit) passes for every
 file. Pinned links: `publish/published.json`. Layout:
 one public repo per model family under `Valen-Peregrine`, named after the app's model id

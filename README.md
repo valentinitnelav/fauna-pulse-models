@@ -1,9 +1,9 @@
 # AI-model quantisation tools for the FaunaPulse app
 
 <p align="center">
-  <a href="https://doi.org/10.5281/zenodo.23436564"><img src="https://zenodo.org/badge/DOI/10.5281/zenodo.23436564.svg" alt="DOI"></a>
+  <a href="https://doi.org/10.5281/zenodo.23436563"><img src="https://zenodo.org/badge/DOI/10.5281/zenodo.23436563.svg" alt="DOI"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-AGPL%20v3-blue.svg" alt="License: AGPL v3"></a>
-  <a href="https://huggingface.co/collections/Valen-Peregrine/faunapulse-6ad22f04766aed6641688544"><img src="https://img.shields.io/badge/Hugging%20Face-models-blue?logo=huggingface" alt="Models on Hugging Face"></a>
+  <a href="https://huggingface.co/collections/Valen-Peregrine/faunapulse"><img src="https://img.shields.io/badge/Hugging%20Face-models-blue?logo=huggingface" alt="Models on Hugging Face"></a>
 </p>
 
 PC-side tools that turn detection and identification models into LiteRT files (`.tflite`)
@@ -12,7 +12,7 @@ tracks and identifies flower visitors (and other animals) on the phone itself.
 This repository holds the conversion and quantisation code and the model cards.
 
 The converted model files themselves are published on Hugging Face
-([Valen-Peregrine/FaunaPulse](https://huggingface.co/collections/Valen-Peregrine/faunapulse-6ad22f04766aed6641688544)),
+([Valen-Peregrine/FaunaPulse](https://huggingface.co/collections/Valen-Peregrine/faunapulse)),
 where the app's "Download & import models" screen fetches them.
 
 ## Layout
@@ -148,7 +148,7 @@ repository `fauna-pulse` at commit `c4c367d` (2026-10-15), where their history r
 
 ## Citation
 
-<a href="https://doi.org/10.5281/zenodo.23436564"><img src="https://zenodo.org/badge/DOI/10.5281/zenodo.23436564.svg" alt="DOI"></a>
+<a href="https://doi.org/10.5281/zenodo.23436563"><img src="https://zenodo.org/badge/DOI/10.5281/zenodo.23436563.svg" alt="DOI"></a>
 
 If you use this repository in your research, please cite it using the metadata in [`CITATION.cff`](CITATION.cff).
 GitHub renders a ready-made "Cite this repository" button from that file (top-right of the repository page).
@@ -160,4 +160,4 @@ Example:
 Every release is archived on Zenodo. The concept DOI (https://doi.org/10.5281/zenodo.23436563) always resolves to the newest version.
 Each release also carries its own version DOI, listed on its Zenodo page and in `CITATION.cff`.
 
-If you need to cite the FaunaPulse app, then check it's own page at https://github.com/valentinitnelav/fauna-pulse (section [Citation](https://github.com/valentinitnelav/fauna-pulse#citation)).
+If you need to cite the FaunaPulse app, then check its own page at https://github.com/valentinitnelav/fauna-pulse (section [Citation](https://github.com/valentinitnelav/fauna-pulse#citation)).
