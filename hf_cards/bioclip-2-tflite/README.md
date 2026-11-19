@@ -11,7 +11,7 @@ tags:
   - litert
   - android
   - on-device
-  - mobile-sensing
+  - edge-ai
   - faunapulse
   - camera-traps
   - biodiversity

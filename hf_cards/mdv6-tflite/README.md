@@ -7,7 +7,7 @@ tags:
   - litert
   - android
   - on-device
-  - mobile-sensing  
+  - edge-ai
   - faunapulse
   - megadetector
   - camera-traps

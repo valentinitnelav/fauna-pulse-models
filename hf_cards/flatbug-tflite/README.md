@@ -7,7 +7,7 @@ tags:
   - litert
   - android
   - on-device
-  - mobile-sensing
+  - edge-ai
   - faunapulse
   - insects
   - pollinators
