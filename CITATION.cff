@@ -29,8 +29,8 @@ type: software
 license: AGPL-3.0-only
 repository-code: "https://github.com/valentinitnelav/fauna-pulse-models"
 repository-artifact: "https://huggingface.co/collections/Valen-Peregrine/faunapulse"
-version: "0.2.0"
-date-released: "2026-11-19"
+version: "0.3.0"
+date-released: "2026-11-20"
 keywords:
   - FaunaPulse
   - on-device AI
