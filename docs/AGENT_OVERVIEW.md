@@ -95,7 +95,7 @@ SHA-256-checked 2026-10-16).
 
 | HF repo | Files (published name) | Catalogue name today | Licence | Status |
 |---|---|---|---|---|
-| `mdv6-tflite` | `mdv6-yolov10c_256_w8a32.tflite`; 2026-11: `mdv6-yolov10{c,e}_{320,640}_fp16.tflite` (+ `.json`) | `MDV6-yolov10-c_int8_256.tflite`; 2026-11 none yet | AGPL-3.0 | public, `009a5a9` |
+| `mdv6-tflite` | `mdv6-yolov10c_256_w8a32.tflite`; 2026-11: `mdv6-yolov10{c,e}_{320,640}_fp16.tflite` (+ `.json`) | `MDV6-yolov10-c_int8_256.tflite`; 2026-11 none yet | AGPL-3.0 | public, `009a5a9`; 2026-11 `8e06c91` |
 | `flatbug-tflite` | `flatbug-n_640_fp16.tflite` (+ `.json`), `flatbug-s_640_fp16.tflite` (+ `.json`; new, gets a catalogue file when the links go in) | same / none | MIT | public, `0ab3ca4` |
 | `insectdct-v8-tflite` | `insectdct-v8s_640_fp16.tflite` (+ `.json`) | `insectdct-v8-s_640_fp16.tflite` | GPL-3.0 | public, `f5ac1bb` |
 | `insectdct-cls-v7-tflite` | `insectdct-cls-v7-eff2s_224_fp16.tflite`, `.fpack` (+ `.json`) | `insectdct-cls-v7_eff2s_fp16.*` | GPL-3.0 | public, `8ded6d9` |
