@@ -32,18 +32,16 @@ made by Jianyang Gu, Samuel Stevens, Elizabeth G. Campolongo et al., and release
 See [Original work](#original-work) below. These files are not provided or endorsed by them or by
 the Imageomics Institute.
 
-> I did not train BioCLIP 2.5. It is a general model for the whole tree of
-> life, not made specifically for FaunaPulse, and it has not yet been tested at scale in
-> FaunaPulse, so how accurate it is there is not known yet: treat its answers as suggestions to
-> check. It is slow: on the tested phone (7.4 GB memory) it ran on the CPU only, about 5.5 s per
-> crop, so it suits analysing pictures afterwards;
-> [BioCLIP 2](https://huggingface.co/Valen-Peregrine/bioclip-2-tflite) is the model FaunaPulse
-> is meant to use for now. Each label pack here narrows the authors' name list
-> (TreeOfLife-200M, 794,878 names) to certain groups of taxa: the BioCLIP software documentation
-> notes that limiting the possible names to the taxa that can be expected "may improve the
-> accuracy of the predictions"
-> ([pybioclip](https://imageomics.github.io/pybioclip/geo-restricted-taxa/)). Packs for other
-> groups of species in that list can be built with
+> BioCLIP 2.5 is a general model for the whole tree of life, not made specifically for FaunaPulse.
+> Treat its answers as suggestions to check. On our test phone (7.4 GB memory) it ran on the CPU
+> only, about 5.5 s per crop, so there it suited analysing pictures afterwards;
+> [BioCLIP 2](https://huggingface.co/Valen-Peregrine/bioclip-2-tflite) is the identification model
+> FaunaPulse is meant to use for now. Each label pack (name list) here holds the taxonomic names
+> BioCLIP 2.5 may answer with, and narrows the authors' name list (TreeOfLife-200M, 794,878 names)
+> to certain groups of taxa. The BioCLIP software documentation notes that limiting
+> the possible names to the taxa that can be expected "may improve the accuracy of the predictions"
+> ([pybioclip](https://imageomics.github.io/pybioclip/geo-restricted-taxa/)).
+> Packs for other groups of species in that list can be built with
 > `bioclip_export/build_label_pack.py` of
 > [fauna-pulse-models](https://github.com/valentinitnelav/fauna-pulse-models).
 

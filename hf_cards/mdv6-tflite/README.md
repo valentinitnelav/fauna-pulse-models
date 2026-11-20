@@ -27,28 +27,24 @@ These files are not provided or endorsed by Microsoft or the MegaDetector author
 
 > **FaunaPulse is in beta.** Tests are ongoing; no large-scale test of these files in the app has been
 > carried out yet.
-> I did not train this model. It was trained on camera-trap pictures to find animals, people and
-> vehicles; its authors say it works best on large mammals. For insects on flowers, prefer the
-> insect detectors of the FaunaPulse collection.
+> MegaDetector was trained on camera-trap pictures to find animals, people and vehicles; its
+> authors say it works best on large mammals. For insects on flowers, prefer the insect
+> detectors of the FaunaPulse collection.
 > See [Limitations](#limitations).
 
 ## Files
 
 {{FILES_TABLE}}
 
-- **c** (`MDV6-yolov10-c`, 2.3 million parameters, 4.7 MiB): `320` pixels (px) for live use on
-  most phones. `640` px: try it for smaller or more distant animals; live on phones with a fast
-  GPU, otherwise for analysing videos afterwards.
-- **e** (`MDV6-yolov10-e`, 29.5 million parameters, 57 MiB): the authors' larger model, about
-  10 to 20 times slower than c at the same input size. `320` px: live on phones with a fast GPU,
-  otherwise for analysing videos afterwards; `640` px: mainly for analysing videos afterwards.
-  More modern phones could deliver it faster (untested).
+- **c** (`MDV6-yolov10-c`, 2.3 million parameters, 4.7 MiB): `320` pixels (px) for live use.
+  `640` px: try it for smaller or more distant animals.
+- **e** (`MDV6-yolov10-e`, 29.5 million parameters, 57 MiB): the authors' larger model.
 - `mdv6-yolov10c_256_w8a32.tflite`: the first file of this repository (August 2026), kept for
   older app versions. It does not run on phone GPUs (see [What it is](#what-it-is)).
 - `.json`: export manifest of each new file (source weights and their SHA-256, sizes).
 - `LICENSE`: the AGPL-3.0 text.
 
-Phone speed, model time only, ms per picture (GPU / CPU):
+Speed on our three test phones (November 2026), model time only, ms per picture (GPU / CPU):
 
 | File | Xiaomi 11T Pro (Snapdragon 888) | Redmi Note 9S (Snapdragon 720G) | Galaxy M12 (Exynos 850) |
 |---|---|---|---|
@@ -58,7 +54,14 @@ Phone speed, model time only, ms per picture (GPU / CPU):
 | e 640 | 137 / 795 | 663 / 1,088 | 2,773 / 1,950 |
 | c 256 w8a32 | no GPU / 8 | no GPU / 14 | no GPU / 31 |
 
-CPU: 4 threads on the Xiaomi, 8 on the others; fp16 files with 16-bit maths. Measured with the app's engine benchmark; the app adds its own work per frame.
+Measured with the app's engine benchmark (CPU: 4 threads on the Xiaomi, 8 on the others; fp16
+files with 16-bit maths); the app adds its own work per frame. On these three phones, c at 640 px
+was about 2.5 to 4 times slower than c at 320 px, and e about 7 to 21 times slower than c at the
+same input size. Other phones, settings and app versions give other times. Live, the app checks
+fewer pictures per second with a slower file; videos analysed afterwards only take longer. The
+authors give approximate speeds of c and e on a desktop GPU, and of c on a computer's CPU, in
+the [MegaDetector Model Zoo](https://microsoft.github.io/MegaDetector/model_zoo/) (Performance
+Benchmarks).
 
 ## Original work
 

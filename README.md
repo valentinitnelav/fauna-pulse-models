@@ -55,7 +55,7 @@ minutes for YOLO n/s. Full INT8 needs a few hundred representative, unlabelled i
 | Model | Tool | Calibration images? |
 |---|---|---|
 | Ultralytics YOLO detector (`.pt`), fp16 (default) or w8a32 | `detector_export/export_detector.py` | no |
-| Ultralytics YOLO detector, full INT8 (fastest on phone CPUs) | `detector_export/export_detector.py --quantize int8 --data data.yaml` | yes, about 200 to 500 of your own images |
+| Ultralytics YOLO detector, full INT8 (for phone CPUs) | `detector_export/export_detector.py --quantize int8 --data data.yaml` | yes, about 200 to 500 of your own images |
 | insectDCT classifier V7 | `classifier_export/export_insectdct_cls.py` | no |
 | BioCLIP image tower | `bioclip_export/export_image_tower.py` | no |
 | Label pack (names the phone can answer with) | `bioclip_export/build_label_pack.py` | no |

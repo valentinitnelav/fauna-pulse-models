@@ -54,13 +54,22 @@ def git_blob_id(path: Path) -> str:
 
 
 def catalogue_files(catalogue: Path) -> dict:
-    """name -> {name, bytes, sha256} of every file the app's catalogue offers."""
+    """name -> {name, bytes, sha256, former} of every file in the app's catalogue.
+
+    A model offers one "file" or several "files" (app round 390); "former_files" and
+    "former_name_lists" are no longer offered but keep their links and checksums for older app
+    versions, so they are checked too (former=True), as the app's update_catalogue.py reads them."""
     cat = json.loads(catalogue.read_text(encoding="utf-8"))
     out = {}
     for model in cat.get("models", []):
-        entries = [model.get("file")] + [nl.get("file") for nl in model.get("name_lists") or []]
-        for f in filter(None, entries):
-            out[f["name"]] = {"name": f["name"], "bytes": f.get("bytes"), "sha256": f.get("sha256")}
+        offered = [model.get("file"), *(model.get("files") or []),
+                   *(nl.get("file") for nl in model.get("name_lists") or [])]
+        former = [*(model.get("former_files") or []),
+                  *(nl.get("file") for nl in model.get("former_name_lists") or [])]
+        for is_former, entries in ((False, offered), (True, former)):
+            for f in filter(None, entries):
+                out[f["name"]] = {"name": f["name"], "bytes": f.get("bytes"), "sha256": f.get("sha256"),
+                                  "former": is_former}
     return out
 
 
@@ -112,10 +121,11 @@ def check_repo(name: str, cfg: dict, offered: dict) -> list[dict]:
                 state = f"DIFFERS from the app catalogue's {same['name']} (same SHA-256, other size)"
                 ok = False
             else:
-                state = f"same bytes as the app catalogue's {same['name']} (published under the new name)"
+                state = (f"same bytes as the app catalogue's {same['name']} (published under the new name"
+                         + ("; former file, no longer offered)" if same["former"] else ")"))
                 info["catalogue_name"] = same["name"]
         elif (want["bytes"], want["sha256"]) == (info["bytes"], info["sha256"]):
-            state = "matches the app catalogue"
+            state = "matches the app catalogue" + (" (former file, no longer offered)" if want["former"] else "")
             info["catalogue_name"] = want["name"]
         else:
             state = f"DIFFERS from the app catalogue ({want['bytes']} bytes, {str(want['sha256'])[:12]}...)"

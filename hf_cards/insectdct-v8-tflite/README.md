@@ -27,8 +27,8 @@ provided or endorsed by the insectDCT authors.
 
 > **FaunaPulse is in beta.** Tests are ongoing; no large-scale test of this file in the app has been
 > carried out yet.
-> I did not train this model, and its authors did not make it for FaunaPulse. It is converted to
-> `tflite` so that FaunaPulse can be tried with a ready-made detector. It was trained on whole
+> The insectDCT detector was not made specifically for FaunaPulse. It is converted to `tflite`
+> so that FaunaPulse can be tried with a ready-made detector. It was trained on whole
 > pictures from fixed time-lapse camera traps (resized to 1920 × 1080 pixels); FaunaPulse runs
 > it on live phone video at 640 px, often of insects flying to and visiting flowers on natural
 > backgrounds.

@@ -95,11 +95,11 @@ SHA-256-checked 2026-10-16).
 
 | HF repo | Files (published name) | Catalogue name today | Licence | Status |
 |---|---|---|---|---|
-| `mdv6-tflite` | `mdv6-yolov10c_256_w8a32.tflite`; 2026-11: `mdv6-yolov10{c,e}_{320,640}_fp16.tflite` (+ `.json`) | `MDV6-yolov10-c_int8_256.tflite`; 2026-11 none yet | AGPL-3.0 | public, `009a5a9`; 2026-11 `8e06c91` |
-| `flatbug-tflite` | `flatbug-n_640_fp16.tflite` (+ `.json`), `flatbug-s_640_fp16.tflite` (+ `.json`; new, gets a catalogue file when the links go in) | same / none | MIT | public, `0ab3ca4` |
+| `mdv6-tflite` | `mdv6-yolov10c_256_w8a32.tflite`; 2026-11: `mdv6-yolov10{c,e}_{320,640}_fp16.tflite` (+ `.json`) | same (256: a former file) | AGPL-3.0 | public, `009a5a9`; 2026-11 `8e06c91` |
+| `flatbug-tflite` | `flatbug-n_640_fp16.tflite` (+ `.json`), `flatbug-s_640_fp16.tflite` (+ `.json`) | same | MIT | public, `0ab3ca4` |
 | `insectdct-v8-tflite` | `insectdct-v8s_640_fp16.tflite` (+ `.json`) | `insectdct-v8-s_640_fp16.tflite` | GPL-3.0 | public, `f5ac1bb` |
 | `insectdct-cls-v7-tflite` | `insectdct-cls-v7-eff2s_224_fp16.tflite`, `.fpack` (+ `.json`) | `insectdct-cls-v7_eff2s_fp16.*` | GPL-3.0 | public, `8ded6d9` |
-| `bioclip-2-tflite` | `bioclip-2_224_fp16.tflite` (+ `.json`), `bioclip-2_pollinator-orders-europe_v1.fpack`, `bioclip-2_flower-visitors-32fam_v1.fpack`, `bioclip-2_mammals-birds-world_v1.fpack`; v2: `bioclip-2_pollinator-orders-europe_v2.fpack`, `bioclip-2_mammals-birds-world_v2.fpack`; v3: `bioclip-2_pollinator-orders-europe_v3.fpack`; continents: `bioclip-2_pollinator-orders-europe_v4.fpack`, `-north-america_v1`, `-south-america_v1`, `-africa_v1`, `-asia_v1`, `-oceania_v1` | `bioclip-2_image_fp16_4d.tflite`, `bioclip2_*_v1.fpack`; v2, v3, continents same | MIT (packs CC0-1.0, common names GBIF CC BY 4.0) | public, `cbf9b26`; v2 `6a2961e`; v3 `c8c69a0`; continents `9ea3810` |
+| `bioclip-2-tflite` | `bioclip-2_224_fp16.tflite` (+ `.json`), `bioclip-2_pollinator-orders-europe_v1.fpack`, `bioclip-2_flower-visitors-32fam_v1.fpack`, `bioclip-2_mammals-birds-world_v1.fpack`; v2: `bioclip-2_pollinator-orders-europe_v2.fpack`, `bioclip-2_mammals-birds-world_v2.fpack`; v3: `bioclip-2_pollinator-orders-europe_v3.fpack`; continents: `bioclip-2_pollinator-orders-europe_v4.fpack`, `-north-america_v1`, `-south-america_v1`, `-africa_v1`, `-asia_v1`, `-oceania_v1`; `bioclip-2_mammals-birds-world_v4.fpack` | `bioclip-2_image_fp16_4d.tflite`, `bioclip2_*_v1.fpack`; v2, v3, continents, mammals v4 same | MIT (packs CC0-1.0, common names GBIF CC BY 4.0) | public, `cbf9b26`; v2 `6a2961e`; v3 `c8c69a0`; continents `9ea3810`; mammals v4 `3007ead` |
 | `bioclip-2.5-tflite` | `bioclip-2.5_224_fp16.tflite` (+ `.json`), `bioclip-2.5_pollinator-orders-europe_v1.fpack`, `bioclip-2.5_flower-visitors-32fam_v1.fpack`; v2: `bioclip-2.5_pollinator-orders-europe_v2.fpack`; continents: `bioclip-2.5_pollinator-orders-europe_v3.fpack`, `-north-america_v1`, `-south-america_v1`, `-africa_v1`, `-asia_v1`, `-oceania_v1` | `bioclip-25_image_fp16.tflite`, `bioclip25_*_v1.fpack`; v2, continents same | MIT (packs CC0-1.0, common names GBIF CC BY 4.0) | public, `dd1f5b7`; v2 `2f54024`; continents `40b7b0f` |
 
 Label packs v2 (2026-10-26; SSD `bioclip_export/out/packs_v2/`): Europe for BioCLIP 2 and 2.5,
@@ -157,8 +157,8 @@ go to the GPU workstation with few workers, not the owner's home line.
 
 Mammals and birds v3 (built 2026-11-17, not published; SSD `out/packs_2026-11/` once copied, until
 then on the workstation): v2 without the "person" sink row, plus `gbif` and `regions` (chordate mapping
-`out/mapping_col26.10xr_chordata/`; README 3b, 3c). v4 (same day): v3 without 1,804 extinct and
-fossil rows (`list_fossil_rows.py`).
+`out/mapping_col26.10xr_chordata/`; README 3b, 3c). v4 (same day, published, in the app's
+catalogue): v3 without 1,804 extinct and fossil rows (`list_fossil_rows.py`).
 
 The MegaDetector file is also a GitHub release asset of the app (`v0.8.0-alpha.1`); that asset
 stays online forever. The owner's older HF repo `flower_visitor_order_detector` is unrelated.
@@ -170,7 +170,8 @@ stays online forever. The owner's older HF repo `flower_visitor_order_detector` 
 - No accuracy claims for the converted files: say that no large-scale test in FaunaPulse has
   been carried out yet and what results depend on (image quality, size of the insect in the
   picture, background, phone, app settings). Do not publish agreement-check results. Phone
-  speeds and the authors' own published results are fine.
+  speeds (phones and date named; comparisons only as measured on them, `AGENTS.md`) and the
+  authors' own published results (point to their comparisons) are fine.
 - Do not cast doubt on the authors' models: "not yet tested at scale in FaunaPulse", not "how it
   does on X is not known".
 - Licences: the original `LICENSE` verbatim in each repo. Ultralytics-trained models: quote
@@ -185,7 +186,9 @@ stays online forever. The owner's older HF repo `flower_visitor_order_detector` 
 
 - Catalogue `$APP/assets/model_downloads.json` is **bundled in the APK** (not fetched): new links
   reach users only with a new app release. Ask before reading the app's `assets/`.
-- Schema: `base_url` (required, ends `/`) + per-file optional `url`, `name`, `bytes`, `sha256`;
+- Schema: `base_url` (required, ends `/`) + per-file optional `url`, `name`, `bytes`, `sha256`; a
+  detection model has one `file` or several `files` (round 390); files no longer offered sit in
+  `former_files` / `former_name_lists` (`publish_hf.py` checks them too);
   parser `$APP/lib/fauna_pulse/models/model_downloads.dart`; spec + upload table
   `$APP/tool/model_downloads/README.md`; sizes/checksums refreshed by
   `$APP/tool/model_downloads/update_catalogue.py`; rules tested by

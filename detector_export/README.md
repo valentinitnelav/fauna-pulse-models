@@ -37,9 +37,9 @@ What happens, per model:
    weights (half the float32 size; the float32 file is cast by
    `../bioclip_export/quantise_tflite.py` and the Ultralytics metadata copied over).
    fp16 stays closest to the original and is the phone GPU's own format. `--quantize
-   w8a32` (8-bit weights, Ultralytics' default Android export, a quarter of the size) is
-   faster on a phone CPU but rounds more, so it can change boxes near the confidence
-   threshold: check it on your own pictures.
+   w8a32` (8-bit weights, Ultralytics' default Android export, a quarter of the size) was
+   faster on the CPU of our test phone (section 3) but rounds more, so it can change boxes
+   near the confidence threshold: check it on your own pictures.
 4. Agreement check: every phone file against the PyTorch model on `--check-images`
    (boxes matched by overlap; missed/extra boxes, mean overlap, largest confidence
    difference, PC time per image). Two files of the same model should agree; this is not
@@ -60,8 +60,9 @@ flat-bug was trained on 1024 px tiles; insectDCT v8 on whole 1920 px camera-trap
 A model runs at any size that is a multiple of 32, but insects then appear at other pixel
 sizes than in training. FaunaPulse feeds the square area of interest (ROI) around a flower,
 which enlarges insects compared with a whole camera-trap picture, so a smaller size can
-work; compare sizes on your own footage before choosing. Rule of thumb: 640 or less for
-live detection, 1024 for analysing videos afterwards.
+work; compare sizes on your own footage before choosing. On the test phone of section 3,
+640 px or less suited live detection and 1024 px analysing videos afterwards; time the sizes
+on your own phone.
 
 ## 3. Models exported so far
 
@@ -82,14 +83,16 @@ Round 264 (2026-10-01), the authors' weights (see Licences). Phone speed: Xiaomi
 
 - Every file compiled and ran on the phone's GPU.
 - Removing flat-bug's outline branch leaves its box and class layers untouched.
-- On this phone's GPU even the "s" models at 1024 px take 70 to 80 ms per picture (about
+- On this phone's GPU even the "s" models at 1024 px took 70 to 80 ms per picture (about
   13 per second, model time only), fine for analysing videos afterwards and possibly for
-  live use; at 640 px they take 34 ms. Long runs heat the phone, so check the frame rate
-  over minutes before relying on it live. A phone without a usable GPU needs seconds per
-  picture for these files (live use impossible there).
-- On the CPU, w8a32 (8-bit maths) was 2.3 times faster than fp16 for flat-bug n; on the
-  GPU the two are equal. So fp16 for GPU phones and for analysing afterwards; w8a32 or a
-  calibrated int8 only where a phone must run on its CPU, after checking its boxes.
+  live use; at 640 px they took 34 ms. Long runs can heat a phone, so check the frame rate
+  over minutes before relying on it live. On its CPU (2 threads) the fp16 files took 0.65
+  to 5 s per picture.
+- On this phone's CPU, w8a32 (8-bit maths) was 2.3 times faster than fp16 for flat-bug n
+  (278 against 653 ms); on its GPU the two took about the same time (17 and 19 ms). So fp16
+  for phones that run the model on the GPU and for analysing afterwards; w8a32 or a
+  calibrated int8 only where a phone must run it on its CPU, after checking its boxes and
+  timing it on that phone.
 - None of these files has been tested at scale for accuracy, in FaunaPulse or elsewhere;
   conversion and fewer bits can change a model's outputs. Choose between models and sizes on
   your own field footage.
@@ -98,10 +101,10 @@ Round 264 (2026-10-01), the authors' weights (see Licences). Phone speed: Xiaomi
 
 | Technique | What it does | Needs training? | Effect | Status here |
 |---|---|---|---|---|
-| **Lower input size** | fewer pixels per picture | no | cost falls with the square of the size (measured above: 1024 px about 2 to 3 times 640 px) | `--imgsz` |
+| **Lower input size** | fewer pixels per picture | no | the number of operations falls with the square of the size; on the phone above, 1024 px took about 2 to 3 times as long as 640 px | `--imgsz` |
 | **fp16** | 16-bit weights | no | half the size, same boxes; the phone GPU computes in 16 bits anyway | default |
-| **w8a32** (dynamic range) | 8-bit weights; on the CPU the values between layers are also turned into 8 bits on the fly | no | a quarter of the size; 2.3 times faster on the phone CPU for flat-bug n; boxes near the threshold moved | `--quantize w8a32` |
-| **int8** (full, static) | 8-bit weights and maths with fixed ranges | no training, but a few hundred calibration pictures of your own | the usual choice for phone CPUs and NPUs; accuracy depends on the calibration pictures | `--quantize int8 --data`; tried once (2026-10-15, flat-bug N, 32 calibration frames, CPU, 37 s): weights and maths 8-bit as intended; boxes not yet compared with PyTorch or timed on the phone |
+| **w8a32** (dynamic range) | 8-bit weights; on the CPU the values between layers are also turned into 8 bits on the fly | no | a quarter of the size; on the CPU of the phone above 2.3 times faster than fp16 for flat-bug n; boxes near the threshold moved | `--quantize w8a32` |
+| **int8** (full, static) | 8-bit weights and maths with fixed ranges | no training, but a few hundred calibration pictures of your own | for CPUs and integer-only chips; LiteRT's own [summary](https://ai.google.dev/edge/litert/models/post_training_quantization) gives "3x+ speedup" on CPUs (no hardware named; dynamic range: "2x-3x"); accuracy depends on the calibration pictures | `--quantize int8 --data`; tried once (2026-10-15, flat-bug N, 32 calibration frames, CPU, 37 s): weights and maths 8-bit as intended; boxes not yet compared with PyTorch or timed on the phone |
 | **Head surgery** | remove outputs the app does not use | no | flat-bug: the outline branch skipped, boxes identical | automatic |
 | **Smaller architecture** | n instead of s | yes (or use a published n) | about 3 times fewer operations; flat-bug publishes n | exported |
 | **Pruning** | remove the channels that matter least, then fine-tune | yes: fine-tuning on the training data | removes part of the computation for a small loss only when fine-tuned afterwards; without it accuracy drops sharply | not done: needs the training data (flat-bug's is on Zenodo), a GPU and a new validation; tool: Torch-Pruning (Fang et al. 2023, DepGraph, CVPR) |

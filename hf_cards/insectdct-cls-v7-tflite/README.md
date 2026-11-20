@@ -29,8 +29,8 @@ provided or endorsed by the insectDCT authors.
 
 > **FaunaPulse is in beta.** Tests are ongoing; no large-scale test of this file in the app has been
 > carried out yet.
-> I did not train this classifier, and its authors did not make it for FaunaPulse. They trained
-> it on crops from their own camera traps, mostly of Northern and Central European flower
+> The insectDCT classifier was not made specifically for FaunaPulse. Its authors trained it on
+> crops from their own camera traps, mostly of Northern and Central European flower
 > visitors; FaunaPulse crops come from phone video and other cameras and places, often of small
 > insects or insects in flight. Treat its answers as suggestions to check. For identification,
 > FaunaPulse is meant to use [BioCLIP 2](https://huggingface.co/Valen-Peregrine/bioclip-2-tflite)

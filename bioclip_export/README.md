@@ -140,7 +140,7 @@ On the phone: the app's [`docs/IDENTIFICATION.md`](https://github.com/valentinit
 5.3 to 5.6 s per crop).
 
 int8 was tried too (`--precision int8`, 639 MB): it changed the outputs more than fp16, and on
-the phone's CPU it was slower than fp16 (9.2 s against 5.6 s per crop). fp16 stays the choice.
+the CPU of the same test phone it was slower than fp16 (9.2 s against 5.6 s per crop). fp16 stays the choice.
 
 ## 3. Build a label pack (about 5 minutes plus the download)
 

@@ -28,8 +28,8 @@ flat-bug authors.
 
 > **FaunaPulse is in beta.** Tests are ongoing; no large-scale test of these files in the app has been
 > carried out yet.
-> I did not train this model, and its authors did not make it for FaunaPulse. It is converted to
-> `tflite` so that FaunaPulse can be tried with a ready-made detector. It was not trained for live
+> flat-bug was not made specifically for FaunaPulse. It is converted to `tflite` so that
+> FaunaPulse can be tried with a ready-made detector. It was not trained for live
 > use on natural backgrounds, with insects flying to and visiting flowers.
 > See also [Limitations](#limitations).
 
@@ -37,9 +37,10 @@ flat-bug authors.
 
 {{FILES_TABLE}}
 
-- `flatbug-n_640_fp16.tflite`: flat-bug N (nano), the faster one. `flatbug-s_640_fp16.tflite`:
-  flat-bug S (small), about 3.5 times larger. On a test phone it took about 1.8 times as long on
-  the GPU and 2.6 times as long on the CPU (see [Checks](#checks)).
+- `flatbug-n_640_fp16.tflite`: flat-bug N (nano). `flatbug-s_640_fp16.tflite`: flat-bug S
+  (small), about 3.5 times larger. On our test phone S took about 1.8 times as long as N on
+  the GPU and 2.6 times as long on the CPU (see [Checks](#checks)); other phones give other
+  times.
 - `.json`: the export manifest of each file: source weights and their SHA-256, the Ultralytics
   version saved in the source checkpoint (8.3.15) and file sizes. Its
   `script` field, `tool/detector_export/export_detector.py`, is where the export script lived

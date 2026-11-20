@@ -71,6 +71,13 @@ use placeholders such as `/path/to/...` or `<user>@<workstation>` in tracked fil
   first and only search by keyword, never read whole files.
 - Ask before reading anything under the app's `assets/` folder.
 
+Measurements in public text (model cards, READMEs, docs): name what was measured and on what
+(the test phones, date, settings, for example "model time only"). Compare files or models only as
+measured there: "on our three test phones, c at 640 px was about 2.5 to 4 times slower than at
+320 px", never as a general rule ("3 times slower", "for most phones", "phones with a fast GPU"),
+because other phones, settings and study designs give other numbers. Where the authors publish
+their own comparison, point to it.
+
 **Git related:**
 
 - Do not perform destructive Git operations without explicit approval.

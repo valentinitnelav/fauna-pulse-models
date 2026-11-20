@@ -125,9 +125,9 @@ GPU even on the 3.9 GB Samsung test phone (ConvNeXt needs about 0.8 GB to set up
   its layer norms: on test crops, values there reach about 200 (squared differences up
   to 42,000, below the 16-bit limit of 65,504), and dividing every layer norm's input by 32
   (exact, same scores) changed nothing on the phone. Finding it would take a layer-by-layer
-  comparison on the phone. EfficientNetV2-S and ResNet50 run on the GPU with the same 104
-  classes, about 35 times faster than ConvNeXt on the CPU, but they are different networks
-  with their own answers (next point).
+  comparison on the phone. On this phone EfficientNetV2-S and ResNet50 ran on the GPU with
+  the same 104 classes, about 35 times faster than ConvNeXt on its CPU (0.02 against 0.7 s
+  per crop), but they are different networks with their own answers (next point).
 - Which network names this project's pollinators best can only be decided on labelled
   crops (for example the owner's expert-labelled Zenodo crops).
 

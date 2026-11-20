@@ -87,8 +87,9 @@ first as it is (GPU), then with `--dart-define=SAM3_CPU=true`. To bring the bran
 
 1. Find the operation the Adreno GPU gets wrong: run picture part 1 in smaller pieces on the
    phone and compare each with the PC (its first steps are the "safe layer norm": scaling, sums
-   over 1024 channels, square root). Ask the conversion's author whether Adreno was tested. The
-   GPU would be about 20 times faster than the CPU route.
+   over 1024 channels, square root). Ask the conversion's author whether Adreno was tested. On the
+   Xiaomi, a working GPU route would take about 10 to 17 s per picture against 3.2 to 3.5 min
+   for the CPU route (estimate from the table above, see Verdict).
 2. Speed up the CPU route: run each part over several pictures before loading the next (saves
    most of the 80 s of reloading), or let the CPU library keep its rearranged weights in a file
    (XNNPACK weight cache; needs a guard against a half-written file).

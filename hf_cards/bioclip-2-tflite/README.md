@@ -31,16 +31,14 @@ Jianyang Gu, Samuel Stevens, Elizabeth G. Campolongo et al. and released by the 
 See [Original work](#original-work) below. These files are not provided or endorsed by them or by the
 Imageomics Institute.
 
-> I did not train BioCLIP 2. It is a general model for the whole tree of
-> life, not made specifically for FaunaPulse, and it has not yet been tested at scale in
-> FaunaPulse, so how accurate it is there is not known yet: treat its answers as suggestions to
-> check. It is the identification model FaunaPulse is meant to use for now, with label packs
-> (the names it may answer with). Each pack here narrows the authors' name list
-> (TreeOfLife-200M, 867,455 names) to certain groups of taxa: the BioCLIP software documentation
-> notes that limiting the possible names to the taxa that can be expected "may improve the
-> accuracy of the predictions"
-> ([pybioclip](https://imageomics.github.io/pybioclip/geo-restricted-taxa/)). Packs for other
-> groups of species in that list can be built with
+> BioCLIP 2 is a general model for the whole tree of life, not made specifically for FaunaPulse.
+> Treat its answers as suggestions to check. It is the identification model FaunaPulse
+> is meant to use for now, with various name lists / label packs (the taxonomic names it may answer with).
+> Each pack here narrows the authors' name list (TreeOfLife-200M, 867,455 names)
+> to certain groups of taxa. The BioCLIP software documentation notes that limiting
+> the possible names to the taxa that can be expected "may improve the accuracy of the predictions"
+> ([pybioclip](https://imageomics.github.io/pybioclip/geo-restricted-taxa/)).
+> Packs for other groups of species in that list can be built with
 > `bioclip_export/build_label_pack.py` of
 > [fauna-pulse-models](https://github.com/valentinitnelav/fauna-pulse-models).
 

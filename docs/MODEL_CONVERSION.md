@@ -49,7 +49,8 @@ input size and checks every file against PyTorch on your pictures
 ([`detector_export/README.md`](../detector_export/README.md), with phone timings of flat-bug n/s and insectDCT v8-s).
 Its default is fp16 weights, not w8a32: fp16 stays closest to the original, while w8a32
 rounds more and can change boxes near the confidence threshold; on the
-Xiaomi's GPU both run equally fast, on its CPU w8a32 was 2.3 times faster. So w8a32 stays a
+GPU of the Xiaomi 11T Pro test phone both took about the same time for flat-bug n, on its CPU
+w8a32 was 2.3 times faster. So w8a32 stays a
 good choice for CPU-bound phones, after checking its boxes.
 
 Classifiers (not detectors) such as insectDCT's hierarchical classifier have their own
@@ -69,7 +70,7 @@ yolo export model=your_model.pt format=tflite
 # Float16 ("half") - no dataset needed, half the size:
 yolo export model=your_model.pt format=tflite half=True
 
-# Full INT8 - smallest & fastest on CPU, needs a calibration dataset (see below):
+# Full INT8 - smallest; LiteRT gives it the largest CPU speed-up; needs a calibration dataset (see below):
 yolo export model=your_model.pt format=tflite int8=True data=your_data.yaml
 ```
 
@@ -94,17 +95,18 @@ file, count the 8-bit tensors that operations produce: a w8a32 file has none.
 2. **w8a32, fp32 and fp16 exports do not need calibration images**, just the `.pt` file.
 3. An ONNX export is a float model too, and converting it wouldn't dodge anything.
 
-#### Why full INT8 still matters (low-end phones)
+#### Why full INT8 still matters (when the GPU cannot run the model)
 
-On phones whose GPU can't run a given model, everything runs on the CPU, and there
-full INT8 is faster than the float-activation formats (w8a32 included).
+On phones whose GPU can't run a given model, everything runs on the CPU. There, LiteRT's own
+[summary](https://ai.google.dev/edge/litert/models/post_training_quantization) gives full INT8 a "3x+ speedup" and dynamic range
+(w8a32) "2x-3x" (it names no hardware).
 For example, measured in FaunaPulse on my slower test phone (Samsung Galaxy M12 class),
 an INT8 YOLO26-nano model (see asset `yolo26n_int8.tflite` in 
 [v0.3.5 of ultralytics/yolo-flutter-app](https://github.com/ultralytics/yolo-flutter-app/releases?page=2#release-v0.3.5)) 
 allowed a 2-3 fps and that is already rather slow for accurate tracking. 
-Therefore, on low-end or older phones, full INT8 might be the only practical option.
+So on phones whose GPU cannot run the model, full INT8 might be the only practical option.
 
-Nuance for stronger phones: whether a model runs on the GPU is decided by whether the
+Nuance for phones with a GPU: whether a model runs on the GPU is decided by whether the
 GPU backend can compile the model's operations *not* by its float precision. INT8 models
 can and do run on the GPU too, and fp16 is perfectly fine there. So when in doubt,
 export w8a32 plus a full-INT8 variant. The FaunaPulse app has a built-in benchmark
@@ -139,7 +141,7 @@ prefer the `.pt` route.
 
 1. Preferably share the `.pt`; otherwise run the exports yourself and share `.tflite`.
 2. Export **w8a32** (`format=litert quantize=w8a32`, one command, no dataset). Add a
-   full-INT8 variant (calibrated on your own data) when low-end phones matter.
+   full-INT8 variant (calibrated on your own data) when the model must run on phone CPUs.
 3. Keep the input size modest (640 or smaller, e.g. 480/416/320 px) because preprocessing and
-   inference cost scale with input size squared, and phones throttle with heat.
+   inference cost scale with input size squared, and phones can slow down when hot.
 4. Only bother with `format=qnn` if it targets a specific Snapdragon phone.
