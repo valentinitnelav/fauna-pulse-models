@@ -66,6 +66,9 @@ identifiers:
   - type: doi
     value: "10.5281/zenodo.24380997"
     description: "Version DOI: fauna-pulse-models v0.2.0"
+  - type: doi
+    value: "10.5281/zenodo.24404556"
+    description: "Version DOI: fauna-pulse-models v0.3.0"
 
 # Model authors and citations live on the model cards only (one place to keep correct;
 # Zenodo does not read references anyway).
