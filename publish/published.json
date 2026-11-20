@@ -32,7 +32,7 @@
         "url": "https://huggingface.co/Valen-Peregrine/flatbug-tflite/resolve/0ab3ca4374c6a6cf166591ca8f304a77def5aeeb/LICENSE"
       }
     },
-    "card_commit": "adb799259e3b0c9f48046bcb36070bbda305dec5"
+    "card_commit": "05f655e67fa0c658e707bd3bf40b16762a5e3f66"
   },
   "Valen-Peregrine/insectdct-v8-tflite": {
     "files": {
@@ -56,7 +56,7 @@
         "url": "https://huggingface.co/Valen-Peregrine/insectdct-v8-tflite/resolve/f5ac1bb18bb9dac2f21d2a35341de9941153224c/LICENSE"
       }
     },
-    "card_commit": "a8969736a2c0ec851dd7617f535199c5336aabc3"
+    "card_commit": "99ea476aee311ff21ba34339bf093a152d055129"
   },
   "Valen-Peregrine/mdv6-tflite": {
     "files": {
@@ -122,7 +122,7 @@
         "url": "https://huggingface.co/Valen-Peregrine/mdv6-tflite/resolve/8e06c919a320806147c008933ef51be32052614e/mdv6-yolov10e_640_fp16.json"
       }
     },
-    "card_commit": "8e06c919a320806147c008933ef51be32052614e"
+    "card_commit": "b3f30dd3b6953216f7cc311d5aea11a5400eacde"
   },
   "Valen-Peregrine/bioclip-2-tflite": {
     "files": {
@@ -226,7 +226,7 @@
         "url": "https://huggingface.co/Valen-Peregrine/bioclip-2-tflite/resolve/3007eade814a9124e44389c59d0d56f4839654fb/bioclip-2_mammals-birds-world_v4.fpack"
       }
     },
-    "card_commit": "3007eade814a9124e44389c59d0d56f4839654fb"
+    "card_commit": "1d5b1354c8fad3f502b21423ba2fd7c509754cc2"
   },
   "Valen-Peregrine/insectdct-cls-v7-tflite": {
     "files": {
@@ -256,7 +256,7 @@
         "url": "https://huggingface.co/Valen-Peregrine/insectdct-cls-v7-tflite/resolve/8ded6d9266e3af0f5bbf6a6b56fd570fa339056c/LICENSE"
       }
     },
-    "card_commit": "a15f7f4adc4d9e661681a1eb2d3d83a79ad8e557"
+    "card_commit": "bec31a85256fc1752a74456c2f2f2b031a4df851"
   },
   "Valen-Peregrine/bioclip-2.5-tflite": {
     "files": {
@@ -336,6 +336,6 @@
         "url": "https://huggingface.co/Valen-Peregrine/bioclip-2.5-tflite/resolve/40b7b0f0abd3dc536c2759e44780d20030c98747/bioclip-2.5_pollinator-orders-oceania_v1.fpack"
       }
     },
-    "card_commit": "ff9ee9ed7151a7758165897ecfbb565bd991d655"
+    "card_commit": "d8308c212441ba989b9cb07c768942caeff415e4"
   }
 }
