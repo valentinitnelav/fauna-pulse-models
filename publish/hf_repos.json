@@ -8,6 +8,14 @@
     "mdv6-tflite": {
       "card": "hf_cards/mdv6-tflite/README.md",
       "files": [
+        {"name": "mdv6-yolov10c_320_fp16.tflite", "local": "detector_export/out/mdv6-yolov10c_320_fp16.tflite", "input_px": 320, "precision": "fp16", "role": "detector, MDV6-yolov10-c"},
+        {"name": "mdv6-yolov10c_640_fp16.tflite", "local": "detector_export/out/mdv6-yolov10c_640_fp16.tflite", "input_px": 640, "precision": "fp16", "role": "detector, MDV6-yolov10-c"},
+        {"name": "mdv6-yolov10e_320_fp16.tflite", "local": "detector_export/out/mdv6-yolov10e_320_fp16.tflite", "input_px": 320, "precision": "fp16", "role": "detector, MDV6-yolov10-e"},
+        {"name": "mdv6-yolov10e_640_fp16.tflite", "local": "detector_export/out/mdv6-yolov10e_640_fp16.tflite", "input_px": 640, "precision": "fp16", "role": "detector, MDV6-yolov10-e"},
+        {"name": "mdv6-yolov10c_320_fp16.json", "local": "detector_export/out/mdv6-yolov10c_320_fp16.json", "role": "export manifest"},
+        {"name": "mdv6-yolov10c_640_fp16.json", "local": "detector_export/out/mdv6-yolov10c_640_fp16.json", "role": "export manifest"},
+        {"name": "mdv6-yolov10e_320_fp16.json", "local": "detector_export/out/mdv6-yolov10e_320_fp16.json", "role": "export manifest"},
+        {"name": "mdv6-yolov10e_640_fp16.json", "local": "detector_export/out/mdv6-yolov10e_640_fp16.json", "role": "export manifest"},
         {"name": "mdv6-yolov10c_256_w8a32.tflite", "local": "detector_export/out/MDV6-yolov10-c_int8_256.tflite", "input_px": 256, "precision": "w8a32", "role": "detector, MDV6-yolov10-c"},
         {"name": "LICENSE", "local": "hf_cards/mdv6-tflite/LICENSE", "role": "licence of the original model"}
       ]

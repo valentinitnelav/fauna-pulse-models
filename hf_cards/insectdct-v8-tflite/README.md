@@ -25,13 +25,13 @@ for the [FaunaPulse](https://github.com/valentinitnelav/fauna-pulse) Android app
 the work of Bjerge et al. (2026), see [Original work](#original-work) below. This file is not
 provided or endorsed by the insectDCT authors.
 
-> **This detector is for demo purposes for the FaunaPulse app.**
-> I did not train this model, and its authors did not make it for FaunaPulse.
-> It is converted to `tflite` and published here so that FaunaPulse can be tried
-> with a ready-made detector. It has not yet been tested at scale in the app, so how well it
-> works there is not known yet, especially in live use on natural backgrounds with insects flying to and visiting flowers.
-> The model was trained on whole pictures from fixed time-lapse camera traps
-> (resized to 1920 × 1080 pixels). FaunaPulse runs it on live phone video at 640 px.
+> **FaunaPulse is in beta.** Tests are ongoing; no large-scale test of this file in the app has been
+> carried out yet.
+> I did not train this model, and its authors did not make it for FaunaPulse. It is converted to
+> `tflite` so that FaunaPulse can be tried with a ready-made detector. It was trained on whole
+> pictures from fixed time-lapse camera traps (resized to 1920 × 1080 pixels); FaunaPulse runs
+> it on live phone video at 640 px, often of insects flying to and visiting flowers on natural
+> backgrounds.
 > See also [Limitations](#limitations).
 
 ## Files
@@ -120,9 +120,7 @@ The script wrote `insectdct-v8-s_640_fp16.tflite`, published here as
   Arctic and Danish farmland. The authors' tests of this YOLO11s model give a mean F1 of 0.81 over
   9 camera-trap test sets (`metrics/detectTestColorSV8.csv` in the insectDCT repository).
 - FaunaPulse runs it at 640 × 640 pixels instead of 1920 × 1080 pixels.
-- This file has not yet been tested at scale in FaunaPulse, so how well it works there (live
-  phone video, insects in flight, other cameras and places) is not known yet. The app can run
-  it, but the results depend on many factors: image quality (focus, motion blur, light,
+- Results in FaunaPulse depend on many factors: image quality (focus, motion blur, light,
   resolution, video compression), how large the insects appear in the picture (distance, zoom,
   the area of interest), the background, the phone and its camera, and the app's settings (for
   example the confidence threshold and the input size). Try it on your own footage.

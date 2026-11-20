@@ -27,15 +27,15 @@ network) to a LiteRT `.tflite` file plus its class list, made for the
 of Bjerge et al. (2026), see [Original work](#original-work) below. These files are not
 provided or endorsed by the insectDCT authors.
 
-> **This model is for demo purposes for the FaunaPulse app.**
-> I did not train this classifier, and its authors did not make it for FaunaPulse.
-> They trained it on crops from their own camera traps, mostly of Northern and
-> Central European flower visitors. It has not yet been tested at scale in FaunaPulse, so how
-> accurate it is on FaunaPulse crops (from phone video, other cameras and places, insects in
-> flight, small crops) is not known yet. Treat its answers as suggestions to check. For identification, FaunaPulse is meant to use
-> [BioCLIP 2](https://huggingface.co/Valen-Peregrine/bioclip-2-tflite) with custom label
-> packs for now. This `tflite` converted insectDCT classifier is offered as an
-> alternative to compare with. Its 104 classes are fixed by its authors' training.
+> **FaunaPulse is in beta.** Tests are ongoing; no large-scale test of this file in the app has been
+> carried out yet.
+> I did not train this classifier, and its authors did not make it for FaunaPulse. They trained
+> it on crops from their own camera traps, mostly of Northern and Central European flower
+> visitors; FaunaPulse crops come from phone video and other cameras and places, often of small
+> insects or insects in flight. Treat its answers as suggestions to check. For identification,
+> FaunaPulse is meant to use [BioCLIP 2](https://huggingface.co/Valen-Peregrine/bioclip-2-tflite)
+> with custom label packs for now; this classifier is offered as an alternative to compare with.
+> Its 104 classes are fixed by its authors' training.
 
 ## Files
 
@@ -142,8 +142,7 @@ name. The `.json` keeps the network's date (`exported`) and records the class li
 - Trained by its authors on camera-trap crops of flower visitors, mostly Northern and Central
   European taxa. It can only answer with its 104 classes, so a taxon it was not trained on gets
   the most similar class.
-- This file has not yet been tested at scale in FaunaPulse, so how accurate it is there is not
-  known yet. The app can run it, but the results depend on many factors: the quality of each
+- Results in FaunaPulse depend on many factors: the quality of each
   crop (focus, motion blur, light, resolution, video compression), how large and how complete
   the insect is in the crop (distance, zoom, the detector's box), whether the taxon is among its
   104 classes, the phone and its camera, and the app's settings. Try it on your own footage.

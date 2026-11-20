@@ -95,7 +95,7 @@ SHA-256-checked 2026-10-16).
 
 | HF repo | Files (published name) | Catalogue name today | Licence | Status |
 |---|---|---|---|---|
-| `mdv6-tflite` | `mdv6-yolov10c_256_w8a32.tflite` | `MDV6-yolov10-c_int8_256.tflite` | AGPL-3.0 | public, `009a5a9` |
+| `mdv6-tflite` | `mdv6-yolov10c_256_w8a32.tflite`; 2026-11: `mdv6-yolov10{c,e}_{320,640}_fp16.tflite` (+ `.json`) | `MDV6-yolov10-c_int8_256.tflite`; 2026-11 none yet | AGPL-3.0 | public, `009a5a9` |
 | `flatbug-tflite` | `flatbug-n_640_fp16.tflite` (+ `.json`), `flatbug-s_640_fp16.tflite` (+ `.json`; new, gets a catalogue file when the links go in) | same / none | MIT | public, `0ab3ca4` |
 | `insectdct-v8-tflite` | `insectdct-v8s_640_fp16.tflite` (+ `.json`) | `insectdct-v8-s_640_fp16.tflite` | GPL-3.0 | public, `f5ac1bb` |
 | `insectdct-cls-v7-tflite` | `insectdct-cls-v7-eff2s_224_fp16.tflite`, `.fpack` (+ `.json`) | `insectdct-cls-v7_eff2s_fp16.*` | GPL-3.0 | public, `8ded6d9` |
@@ -114,6 +114,8 @@ Facts that are easy to get wrong (verified 2026-10-15, sources on the cards):
   stays only where its design is compared, e.g. `classifier_export/README.md` section 5).
 - The MegaDetector file is w8a32 (8-bit weights, float activations), not full INT8: Ultralytics
   8.3 names its dynamic-range TFLite `_int8.tflite`; no calibration pictures were involved.
+  Its NMS-free top-k head has no GPU path; the 2026-11 fp16 files (Ultralytics 8.4, `nms=None`)
+  carry the one-to-many head `[1, 7, N]`, which runs on phone GPUs (the app does NMS).
 - flat-bug N and S are the 2024 YOLOv8-seg models of the paper. The authors' default since
   flat-bug 1.2 (July 2026) is `flat_bug_M_v2.pt`: YOLO26m-seg, checkpoint 54.6 MB, trained at
   1024 px for 300 epochs on the flatbug data; on the authors' validation set vs the old M:

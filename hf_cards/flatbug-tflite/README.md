@@ -26,12 +26,11 @@ Android app. flat-bug is the work of Svenning et al. (2026), see
 [Original work](#original-work) below. These files are not provided or endorsed by the
 flat-bug authors.
 
-> **This detector is for demo purposes for the FaunaPulse app.**
-> I did not train this model, and its authors did not make it for FaunaPulse.
-> It is converted to `tflite` and published here so that FaunaPulse can be tried
-> with a ready-made detector. It has not yet been tested at scale in the app, so how well
-> it works there is not known yet, especially in live use on natural backgrounds with insects
-> flying to and visiting flowers. The model was not trained for that kind of deployment.
+> **FaunaPulse is in beta.** Tests are ongoing; no large-scale test of these files in the app has been
+> carried out yet.
+> I did not train this model, and its authors did not make it for FaunaPulse. It is converted to
+> `tflite` so that FaunaPulse can be tried with a ready-made detector. It was not trained for live
+> use on natural backgrounds, with insects flying to and visiting flowers.
 > See also [Limitations](#limitations).
 
 ## Files
@@ -125,8 +124,7 @@ python export_detector.py --weights flat_bug_S.pt --name flatbug-s --imgsz 640 -
   tiling, so the accuracy reported in the paper cannot be assumed for them.
 - N is the smallest flat-bug model; the preprint reports that the smallest model loses the
   most on the hardest datasets.
-- These files have not yet been tested at scale in FaunaPulse, so how well they work there is
-  not known yet. The app can run them, but the results depend on many factors: image quality
+- Results in FaunaPulse depend on many factors: image quality
   (focus, motion blur, light, resolution, video compression), how large the insects appear in
   the picture (distance, zoom, the area of interest), the background, the phone and its camera,
   and the app's settings (for example the confidence threshold and the input size). Choose
